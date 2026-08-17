@@ -1,94 +1,56 @@
-# Kế Hoạch Kỹ Thuật Tổng Thể (Technical Implementation Plan)
+# Kế Hoạch Kỹ Thuật & Cấu Trúc Giao Diện (Technical & Design Plan)
 
-## 1. Công Nghệ & Kiến Trúc
+## 1. Thiết Kế Hệ Thống Giao Diện (Design System Spec)
 
-- **Backend**: ASP.NET Core Web API trên nền **.NET 10** (C# 13).
-- **ORM & Data Access**: Entity Framework Core 10 với Microsoft SQL Server / PostgreSQL.
-- **Multi-Tenancy**: Shared Database, Tenant Discriminator Column (`TenantId`) kết hợp EF Core Global Query Filter.
-- **Authentication & Authorization**: JWT Access Token (ngắn hạn) + Refresh Token Rotation (7 ngày), Role-Based & Policy-Based Authorization.
-- **Real-Time Communication**: ASP.NET Core SignalR cho module Buồng phòng & Bàn giao ca lễ tân.
-- **Background Jobs**: .NET `BackgroundService` chạy định kỳ dọn dẹp các BookingHold quá hạn 15 phút.
-- **Payment Gateway**: VNPay Sandbox API (chuẩn mã hóa SHA512, chữ ký số).
+- **Style**: Liquid Glass / Modern Flat Clean (Giao diện phẳng, tinh tế, đổ bóng dịu, bo góc `12px - 16px`).
+- **Bảng Màu (Color Tokens)**:
+  - `--primary`: `#0284C7` (Sky Blue - Traveloka Brand Style)
+  - `--primary-hover`: `#0369A1`
+  - `--accent-orange`: `#F59E0B` (Amber Orange - Agoda Action CTA)
+  - `--bg-main`: `#F8FAFC` (Slate 50)
+  - `--card-bg`: `#FFFFFF`
+  - `--text-main`: `#0F172A` (Slate 900)
+  - `--text-muted`: `#64748B` (Slate 500)
+  - `--status-clean`: `#10B981` (Emerald Green)
+  - `--status-dirty`: `#F59E0B` (Amber Yellow)
+  - `--status-occupied`: `#EF4444` (Rose Red)
+
+- **Typography System**:
+  - Heading: `Plus Jakarta Sans`, font-weight 600/700
+  - Body: `Inter` / `System Sans-Serif`, font-size 15px - 16px, line-height 1.5
 
 ---
 
-## 2. Thiết Kế Cơ Sở Dữ Liệu (Database Schema)
+## 2. Kiến Trúc Backend .NET 10 Web API
 
 ```
-[Tenants] (Cơ sở lưu trú)
-  ├── Id (PK)
-  ├── Name, Code, Slug, Address, Phone, Email
-  ├── SubscriptionTier (Basic, Pro, Enterprise)
-  ├── IsActive, Status
-  └── CustomVnPayTmnCode, CustomVnPaySecret
-
-[TenantSubscriptions] (Lịch sử gói cước)
-  ├── Id (PK), TenantId (FK)
-  ├── Tier, StartDate, EndDate, AmountPaid, IsActive
-
-[Users] (Người dùng)
-  ├── Id (PK), TenantId (FK, null nếu là SuperAdmin hoặc Customer)
-  ├── Username, Email, PasswordHash, FullName, PhoneNumber
-  ├── GlobalRole (SuperAdmin, Customer)
-  └── IsActive
-
-[TenantStaff] (Nhân viên cơ sở)
-  ├── Id (PK), TenantId (FK), UserId (FK)
-  ├── StaffRole (Owner, Manager, Receptionist, Housekeeper)
-  └── IsActive
-
-[RoomTypes] (Loại phòng)
-  ├── Id (PK), TenantId (FK)
-  ├── Name, Code, BasePricePerNight, CapacityAdults, CapacityChildren, AreaSquareMeters
-  └── Description, IsActive
-
-[Rooms] (Phòng thực tế)
-  ├── Id (PK), TenantId (FK), RoomTypeId (FK)
-  ├── RoomNumber, Floor, Status (Clean, Dirty, Cleaning, Occupied, OutOfService)
-  └── RowVersion (Concurrency Token)
-
-[BookingHolds] (Khóa giữ phòng 15 phút)
-  ├── Id (PK), TenantId (FK), RoomTypeId (FK)
-  ├── CheckInDate, CheckOutDate, Quantity, HoldToken, ExpiresAtUtc, IsReleased
-
-[Reservations] (Đơn đặt phòng)
-  ├── Id (PK), TenantId (FK), CustomerUserId (FK, nullable)
-  ├── BookingCode, GuestFullName, GuestEmail, GuestPhone
-  ├── CheckInDate, CheckOutDate, ActualCheckInUtc, ActualCheckOutUtc
-  ├── Status (PendingPayment, Confirmed, CheckedIn, CheckedOut, Cancelled)
-  └── TotalAmount, DepositAmount
-
-[ReservationDetails] (Chi tiết phòng trong đơn)
-  ├── Id (PK), ReservationId (FK), RoomTypeId (FK), RoomId (FK, nullable)
-  └── NightlyPrice, NumberOfNights, SubTotal
-
-[Folios] & [FolioItems] (Hồ sơ tài chính & Chi phí phát sinh)
-  ├── Folio: Id (PK), ReservationId (FK), TotalCharges, TotalCredits, BalanceDue, IsClosed
-  └── FolioItem: Id (PK), FolioId (FK), ItemType, Description, UnitPrice, Quantity, Amount
-
-[Payments] & [PaymentTransactions] (Thanh toán & VNPay)
-  ├── Payment: Id (PK), ReservationId (FK), Amount, Method, Status
-  └── PaymentTransaction: Id (PK), PaymentId (FK), Provider, TransactionNo, ResponseCode
-
-[HousekeepingTasks] (Công việc buồng phòng)
-  ├── Id (PK), TenantId (FK), RoomId (FK), AssignedStaffId (FK, nullable)
-  └── Status, Priority, Notes, StartedAtUtc, CompletedAtUtc
+hotel-saas-platform/backend/
+├── HotelSaas.sln
+├── src/
+│   ├── HotelSaas.Domain/               # BaseEntity, ITenantScopedEntity, Enums, Entities
+│   ├── HotelSaas.Application/          # Interfaces, Result<T>, DTOs
+│   ├── HotelSaas.Infrastructure/       # ApplicationDbContext (Global Query Filter), VNPay, SignalR, Worker
+│   └── HotelSaas.WebApi/               # Controllers, Middlewares, DbInitializer, Swagger
 ```
 
 ---
 
-## 3. Cấu Trúc Mã Nguồn Dự Kiến
+## 3. Bản Đồ API Endpoints (API Mapping)
 
-```
-hotel-saas-platform/
-├── backend/
-│   ├── HotelSaas.sln
-│   ├── src/
-│   │   ├── HotelSaas.Domain/               # Entities, Enums, Multi-tenant Base, Exceptions
-│   │   ├── HotelSaas.Application/          # DTOs, Use Cases, Interfaces, Validators, Result<T>
-│   │   ├── HotelSaas.Infrastructure/       # EF Core Context, Tenant Resolution, VNPay, SignalR
-│   │   └── HotelSaas.WebApi/               # REST API Controllers, Middlewares, Swagger, DI
-│   └── tests/
-├── frontend/                               # Angular 20+ Client (Customer Portal & Tenant Admin)
-└── docs/                                   # Toàn bộ Spec-Driven Documents
-```
+| Endpoint | Method | Vai trò | Mô tả nghiệp vụ |
+| :--- | :---: | :--- | :--- |
+| `/api/auth/register-customer` | `POST` | Guest | Đăng ký tài khoản khách hàng |
+| `/api/auth/login` | `POST` | All | Đăng nhập hệ thống (trả JWT + TenantId + StaffRole) |
+| `/api/tenants` | `GET` | Public | Danh sách các cơ sở lưu trú hoạt động |
+| `/api/tenants/register-property` | `POST` | Tenant Owner| Đăng ký cơ sở lưu trú mới trên sàn |
+| `/api/tenants/{id}/subscription-tier` | `PUT` | SuperAdmin | Nâng/Hạ gói dịch vụ SaaS (`Basic`, `Pro`, `Enterprise`) |
+| `/api/rooms/search` | `GET` | Guest | Tìm kiếm phòng trống theo khoảng ngày không overlap |
+| `/api/reservations/hold` | `POST` | Guest | Khóa giữ chỗ 15 phút (chống overbooking) |
+| `/api/reservations/confirm` | `POST` | Guest | Xác nhận thông tin và tạo đơn đặt phòng kèm Folio |
+| `/api/payments/vnpay-url/{id}` | `POST` | Guest | Sinh URL thanh toán VNPay Sandbox chữ ký SHA512 |
+| `/api/payments/vnpay-callback` | `GET` | Public | Xử lý VNPay Callback & IPN xác nhận đơn |
+| `/api/frontdesk/check-in` | `POST` | Receptionist| Check-in gán phòng vật lý (chỉ phòng `Clean`) |
+| `/api/frontdesk/folio/add-item` | `POST` | Receptionist| Ghi nhận chi phí dịch vụ vào Folio (Khóa nếu gói Basic) |
+| `/api/frontdesk/check-out` | `POST` | Receptionist| Quyết toán số dư, đóng Folio, đổi phòng sang `Dirty` |
+| `/api/analytics/tenant-dashboard` | `GET` | Manager | Báo cáo tỷ lệ lấp đầy, doanh thu, RevPAR, ADR |
+| `/api/analytics/platform-overview` | `GET` | SuperAdmin | Báo cáo tổng thể toàn sàn SaaS |
