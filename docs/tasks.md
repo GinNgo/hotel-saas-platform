@@ -36,7 +36,9 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
   - [ ] 6.3 Móc API `GET /api/analytics/platform-overview` hiển thị biểu đồ doanh thu toàn sàn.
 
 - [ ] **Giai Đoạn 7: Kiểm Thử E2E & Nghiệm Thu Đồ Án**
-  - [ ] 7.1 Kiểm thử E2E luồng người dùng từ Tìm phòng $	o$ Giữ chỗ 15p $	o$ VNPay $	o$ Lễ tân Check-in $	o$ Folio $	o$ Check-out.
+  - [ ] 7.1 Kiểm thử E2E luồng người dùng từ Tìm phòng -> Giữ chỗ 15p -> VNPay -> Lễ tân Check-in -> Folio -> Check-out.
+    - [x] Gate smoke chạy hành trình tạo booking + payment idempotency và check-in -> folio -> thanh toán nhiều lần -> check-out -> hóa đơn bất biến.
+    - [ ] Ghép search/hold/VNPay và PMS thành một journey liên tục dùng chung reservation identity trên môi trường tích hợp.
   - [x] 7.3 Thêm relational concurrency test và k6 load scenario cho luồng hold chống overbooking.
   - [x] 7.4 Thêm Playwright visual regression gate desktop/mobile với reduced-motion và baseline Liquid Glass.
   - [ ] 7.2 Hoàn thiện báo cáo Đồ án Tốt nghiệp và xuất tài liệu hướng dẫn vận hành.

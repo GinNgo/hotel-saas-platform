@@ -196,13 +196,14 @@
       </footer>
     </article>
 
-    <ng-template pTemplate="footer">
-      <div class="dialog-actions">
+  </ng-container>
+
+  <ng-template pTemplate="footer">
+    <div class="dialog-actions" *ngIf="currentInvoice() as invoice">
         <p-button icon="pi pi-times" [label]="copy('Đóng', 'Close')" styleClass="p-button-text" [disabled]="downloadingInvoiceId() !== null || emailingInvoiceId() !== null" (onClick)="closeInvoice()" />
         <p-button icon="pi pi-envelope" [label]="copy('Gửi email', 'Email')" severity="secondary" [loading]="emailingInvoiceId() === invoice.id" [disabled]="downloadingInvoiceId() !== null" (onClick)="emailInvoice(invoice)" />
         <p-button icon="pi pi-download" [label]="copy('Tải PDF', 'Download PDF')" severity="secondary" [loading]="downloadingInvoiceId() === invoice.id" [disabled]="emailingInvoiceId() !== null" (onClick)="downloadPdf(invoice)" />
         <p-button icon="pi pi-print" [label]="copy('In hóa đơn', 'Print invoice')" [disabled]="downloadingInvoiceId() !== null || emailingInvoiceId() !== null" (onClick)="printInvoice()" />
-      </div>
-    </ng-template>
-  </ng-container>
+    </div>
+  </ng-template>
 </p-dialog>

@@ -130,8 +130,8 @@ test.describe('Property booking deposit journey', () => {
     });
 
     const query = new URLSearchParams({
-      checkIn: '2026-08-10',
-      checkOut: '2026-08-12',
+      checkIn: '2099-08-10',
+      checkOut: '2099-08-12',
       adultCount: '2',
       childCount: '0',
       quantity: '1',
@@ -148,7 +148,7 @@ test.describe('Property booking deposit journey', () => {
     await page.locator('input[name="email"]').fill('payment@example.test');
     await page.locator('input[value="MOMO"]').check();
 
-    const submit = page.locator('button[type="submit"]');
+    const submit = page.locator('#bookingForm button[type="submit"]');
     await submit.click();
     await expect(submit).toBeDisabled();
     await expect.poll(() => bookingMutations).toBe(1);

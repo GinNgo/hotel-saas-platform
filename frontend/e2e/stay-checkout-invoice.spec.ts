@@ -1,8 +1,11 @@
 import { expect, Page, Route, test } from '@playwright/test';
+import { seedSession, syntheticAdminSession } from './helpers/audit-fixtures';
 
 const reservationId = 314;
 const roomId = 1204;
 const invoiceId = 420;
+const stayCheckInDate = new Date().toISOString().slice(0, 10);
+const stayCheckOutDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 interface JourneyState {
   checkoutMutations: number;
@@ -19,16 +22,14 @@ interface JourneyState {
 }
 
 async function seedAdminSession(page: Page): Promise<void> {
+  await seedSession(page, {
+    ...syntheticAdminSession(),
+    fullName: 'Checkout Administrator',
+    userId: 900,
+    username: 'checkout-admin',
+  });
   await page.addInitScript(() => {
     localStorage.setItem('luxestay.locale', 'vi');
-    localStorage.setItem('token', 'stay-checkout-e2e-admin-token');
-    localStorage.setItem('user', JSON.stringify({
-      id: 900,
-      username: 'checkout-admin',
-      fullName: 'Checkout Administrator',
-      roles: ['ADMIN'],
-      permissions: [],
-    }));
     window.print = () => document.body.setAttribute('data-invoice-printed', 'true');
   });
 }
@@ -50,14 +51,15 @@ async function installJourneyApi(page: Page, state: JourneyState): Promise<void>
     if (method === 'GET' && path === '/api/users/me') {
       return json(200, state.customerView ? customerProfile() : adminProfile());
     }
-    if (method === 'GET' && path === '/api/notifications') return json(200, []);
+    if (method === 'GET' && path === '/api/notifications') {
+      return json(200, { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 });
+    }
     if (method === 'GET' && path === '/api/services') return json(200, [breakfastService()]);
 
     if (method === 'GET' && path === '/api/reservations') {
       return json(200, [reservationSummary(state)]);
     }
-    if (method === 'PUT' && path === `/api/reservations/${reservationId}/status`) {
-      expect(url.searchParams.get('status')).toBe('CHECKED_IN');
+    if (method === 'POST' && path === `/api/reservations/${reservationId}/check-in`) {
       state.checkInMutations += 1;
       state.reservationStatus = 'CHECKED_IN';
       state.roomStatus = 'OCCUPIED';
@@ -172,6 +174,23 @@ async function installJourneyApi(page: Page, state: JourneyState): Promise<void>
         housekeepingStatus: state.roomStatus === 'DIRTY' ? 'DIRTY' : 'CLEAN',
         maintenanceStatus: 'NONE',
       }]);
+    }
+    if (method === 'GET' && path === '/api/rooms/paged') {
+      return json(200, {
+        items: [{
+          id: roomId,
+          hotelId: 9,
+          roomTypeId: 17,
+          roomTypeCode: 'DLX',
+          roomTypeNameVi: 'Phòng Deluxe',
+          roomNumber: '1204',
+          floor: 12,
+          status: state.roomStatus,
+          housekeepingStatus: state.roomStatus === 'DIRTY' ? 'DIRTY' : 'CLEAN',
+          maintenanceStatus: 'NONE',
+        }],
+        page: 1, pageSize: 15, totalItems: 1, totalPages: 1,
+      });
     }
 
     if (method === 'GET' && path === '/api/invoices/finalized/my') {
@@ -346,28 +365,28 @@ test.describe('Stay checkout and invoice journey', () => {
 
     await page.goto('/admin/rooms', { waitUntil: 'domcontentloaded' });
     const roomRow = page.locator('tbody tr').filter({ hasText: '1204' });
-    await expect(roomRow).toContainText('DIRTY');
+    await expect(roomRow).toContainText('Chờ dọn');
 
     state.customerView = true;
-    await page.evaluate(() => {
-      localStorage.setItem('token', 'stay-checkout-e2e-customer-token');
-      localStorage.setItem('user', JSON.stringify({
-        id: 501,
-        username: 'invoice-customer',
-        fullName: 'Invoice Customer',
-        roles: ['CUSTOMER'],
-        permissions: [],
-      }));
+    const customerPage = await page.context().newPage();
+    await seedSession(customerPage, {
+      fullName: 'Invoice Customer', permissions: [], roles: ['CUSTOMER'],
+      token: 'stay-checkout-e2e-customer-token', userId: 501, username: 'invoice-customer',
     });
-    await page.goto('/my-invoices', { waitUntil: 'domcontentloaded' });
-    const invoiceCard = page.locator('.invoice-card').filter({ hasText: 'INV-2026-0314' });
+    await customerPage.addInitScript(() => {
+      localStorage.setItem('luxestay.locale', 'vi');
+      window.print = () => document.body.setAttribute('data-invoice-printed', 'true');
+    });
+    await installJourneyApi(customerPage, state);
+    await customerPage.goto('/my-invoices', { waitUntil: 'domcontentloaded' });
+    const invoiceCard = customerPage.locator('.invoice-card').filter({ hasText: 'INV-2026-0314' });
     await expect(invoiceCard).toBeVisible();
     await invoiceCard.click();
-    await expect(page.locator('.detail-panel')).toContainText('INV-2026-0314');
-    await expect(page.locator('.detail-panel')).toContainText('Breakfast buffet');
-    await expect(page.locator('.detail-panel')).toContainText('MANUAL_TRANSFER');
-    await page.getByRole('button', { name: /In hóa đơn|Print invoice/i }).click();
-    await expect(page.locator('body')).toHaveAttribute('data-invoice-printed', 'true');
+    await expect(customerPage.locator('.detail-panel')).toContainText('INV-2026-0314');
+    await expect(customerPage.locator('.detail-panel')).toContainText('Breakfast buffet');
+    await expect(customerPage.locator('.detail-panel')).toContainText('MANUAL_TRANSFER');
+    await customerPage.getByRole('button', { name: /In hóa đơn|Print invoice/i }).click();
+    await expect(customerPage.locator('body')).toHaveAttribute('data-invoice-printed', 'true');
 
     expect(state.reservationStatus).toBe('CHECKED_OUT');
     expect(state.roomStatus).toBe('DIRTY');
@@ -385,8 +404,8 @@ function reservationSummary(state: JourneyState) {
     userId: 501,
     username: 'invoice-customer',
     userFullName: 'Invoice Customer',
-    checkInDate: '2026-07-31',
-    checkOutDate: '2026-08-01',
+    checkInDate: stayCheckInDate,
+    checkOutDate: stayCheckOutDate,
     guests: 2,
     totalAmount: grossAmount(state),
     status: state.reservationStatus,

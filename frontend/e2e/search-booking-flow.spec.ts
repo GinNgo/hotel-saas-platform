@@ -22,7 +22,7 @@ async function installSearchFixtures(page: Page): Promise<void> {
     descriptionVi: 'Phòng nhìn ra sông', descriptionEn: 'River view room', availableRooms: 3,
   }] }));
   await page.route('**/api/public/quotes**', route => route.fulfill({ json: {
-    quoteId: 'quote-mobile-501', expiresAt: '2026-08-20T12:30:00Z', propertyId: 501,
+    quoteId: 'quote-mobile-501', expiresAt: '2099-08-20T12:30:00Z', propertyId: 501,
     roomTypeId: 901, nightlyPrice: 500000, numberOfNights: 1, roomQuantity: 1,
     baseSubtotal: 500000, taxAmount: 30000, feeAmount: 7500, taxesAndFees: 37500,
     appliedPromotions: [], memberBenefit: { eligible: false }, totalDiscount: 0,
@@ -101,7 +101,7 @@ test.describe('Search result and room selection', () => {
 
   test('mobile checkout keeps the authoritative total and submit action visible', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/booking/901?hotelId=501&roomTypeName=Deluxe&checkIn=2026-08-20&checkOut=2026-08-21&adultCount=2&childCount=0&quantity=1');
+    await page.goto('/booking/901?hotelId=501&roomTypeName=Deluxe&checkIn=2099-08-20&checkOut=2099-08-21&adultCount=2&childCount=0&quantity=1');
 
     const checkoutBar = page.locator('.mobile-checkout-bar');
     await expect(checkoutBar).toBeVisible();
@@ -124,7 +124,7 @@ test.describe('Search result and room selection', () => {
   test('mobile checkout remains recoverable when booking creation fails', async ({ page }) => {
     await page.route('**/api/reservations/book', route => route.fulfill({ status: 503, json: { message: 'Cổng đặt phòng đang tạm gián đoạn.' } }));
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/booking/901?hotelId=501&roomTypeName=Deluxe&checkIn=2026-08-20&checkOut=2026-08-21&adultCount=2&childCount=0&quantity=1');
+    await page.goto('/booking/901?hotelId=501&roomTypeName=Deluxe&checkIn=2099-08-20&checkOut=2099-08-21&adultCount=2&childCount=0&quantity=1');
 
     await page.getByLabel('Họ').fill('Nguyễn');
     await page.getByLabel('Tên').fill('An');
