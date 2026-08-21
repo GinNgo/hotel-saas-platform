@@ -43,6 +43,7 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
   - [ ] 7.1 Kiểm thử E2E luồng người dùng từ Tìm phòng -> Giữ chỗ 15p -> VNPay -> Lễ tân Check-in -> Folio -> Check-out.
     - [x] Gate smoke chạy hành trình tạo booking + payment idempotency và check-in -> folio -> thanh toán nhiều lần -> check-out -> hóa đơn bất biến.
     - [x] Integration test SQLite chạy cùng một reservation qua hold -> booking -> VNPay IPN -> check-in -> service folio -> checkout -> housekeeping.
+    - [x] Runner authenticated browser đã chuyển từ Java/Spring cũ sang .NET WebApi, tự tạo database SQL Server E2E cô lập và xác minh login/portal bằng tài khoản seed thật.
     - [ ] Ghép search/hold/VNPay và PMS thành một journey liên tục dùng chung reservation identity trên môi trường tích hợp.
     - Phần còn thiếu: browser E2E chạy trên backend tích hợp thật; các gate Playwright hiện vẫn dùng fixture riêng.
   - [x] 7.3 Thêm relational concurrency test và k6 load scenario cho luồng hold chống overbooking.

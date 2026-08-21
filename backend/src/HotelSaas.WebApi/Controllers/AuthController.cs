@@ -187,11 +187,12 @@ public class AuthController : ControllerBase
             if (staff.AccessRole != null) roleCodes.Add(staff.AccessRole.Code);
         }
         var normalized = roleCodes.Select(role => role.Replace("_", string.Empty, StringComparison.Ordinal).ToUpperInvariant()).ToHashSet();
+        var databaseRoleCodes = normalized.ToArray();
         var tenantId = staff?.TenantId ?? user.TenantId;
         var rows = await _context.RolePermissions.IgnoreQueryFilters().AsNoTracking()
             .Include(item => item.Role).Include(item => item.Function)
             .Where(item => item.Role != null && (!item.Role.TenantId.HasValue || item.Role.TenantId == tenantId) &&
-                item.Function != null && item.Function.IsActive && normalized.Contains(item.Role.Code.Replace("_", string.Empty, StringComparison.Ordinal).ToUpperInvariant()))
+                item.Function != null && item.Function.IsActive && databaseRoleCodes.Contains(item.Role.Code.Replace("_", "").ToUpper()))
             .ToListAsync();
         if (rows.Count > 0)
             return rows.GroupBy(item => item.Function!.Code, StringComparer.OrdinalIgnoreCase)

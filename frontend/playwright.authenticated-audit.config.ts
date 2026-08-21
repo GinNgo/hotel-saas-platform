@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const webUrl = process.env.LUXESTAY_E2E_WEB_URL || 'http://localhost:4420';
 const webPort = new URL(webUrl).port || '4420';
+const webHost = new URL(webUrl).hostname;
 
 export default defineConfig({
   testDir: './e2e',
@@ -22,7 +23,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run start -- --port ${webPort}`,
+    command: `npm run start -- --host ${webHost} --port ${webPort}`,
     url: webUrl,
     reuseExistingServer: false,
     timeout: 300_000,

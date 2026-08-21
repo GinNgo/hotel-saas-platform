@@ -6,6 +6,7 @@ using HotelSaas.Infrastructure.Services;
 using HotelSaas.WebApi.Controllers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Xunit;
@@ -169,6 +170,37 @@ public class AuthSessionControllerTests
             .Where(claim => claim.Type == "permission").Select(claim => claim.Value).ToList();
         Assert.Contains("CHECKIN:64", permissions);
         Assert.DoesNotContain("CHECKOUT:64", permissions);
+    }
+
+    [Fact]
+    public async Task Active_staff_permission_query_is_translatable_by_a_relational_provider()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).Options;
+        await using var db = new ApplicationDbContext(options, new CurrentTenantService());
+        await db.Database.EnsureCreatedAsync();
+        var tenant = new Tenant { Name = "Relational Hotel", Code = "REL", Slug = "relational" };
+        var staff = Customer();
+        staff.GlobalRole = GlobalUserRole.TenantStaff;
+        staff.TenantId = tenant.Id;
+        var role = new AccessRole { TenantId = tenant.Id, Code = "MANAGER", Name = "Manager" };
+        var function = new PermissionFunction { Code = "CHECKIN", Name = "Check-in", ModuleCode = "RESERVATION", SupportedActionMask = 127 };
+        var profile = new TenantStaff
+        {
+            TenantId = tenant.Id, Tenant = tenant, UserId = staff.Id, User = staff, Role = StaffRole.Manager,
+            IsActive = true, AccessRole = role, AccessRoleId = role.Id
+        };
+        db.AddRange(tenant, staff, profile, role, function,
+            new RolePermission { Role = role, RoleId = role.Id, Function = function, FunctionId = function.Id, ActionMask = 64 });
+        await db.SaveChangesAsync();
+
+        var result = await Controller(db).Login(new(staff.Email, null, "Password123!"));
+
+        var response = Assert.IsType<WebAuthResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        var permissions = new JwtSecurityTokenHandler().ReadJwtToken(response.AccessToken).Claims
+            .Where(claim => claim.Type == "permission").Select(claim => claim.Value).ToList();
+        Assert.Contains("CHECKIN:64", permissions);
     }
 
     private static AuthController Controller(ApplicationDbContext db, string? refreshToken = null)
