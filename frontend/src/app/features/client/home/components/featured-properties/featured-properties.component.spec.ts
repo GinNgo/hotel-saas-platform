@@ -1,5 +1,6 @@
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 
 import { FeaturedPropertiesComponent } from './featured-properties.component';
 import { HomeSearchStateService } from '../../services/home-search-state.service';
@@ -34,6 +35,7 @@ describe('FeaturedPropertiesComponent', () => {
   it('clears stale location and property type filters before opening all stays', () => {
     const fixture = TestBed.createComponent(FeaturedPropertiesComponent);
     const state = TestBed.inject(HomeSearchStateService);
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     state.restoreLocation({ keyword: '', displayName: 'Tất cả chỗ nghỉ', selectedSuggestionType: 'PROVINCE', provinceId: 10133, wardId: null });
     state.updatePropertyTypes(['MOTEL']);
     fixture.componentInstance.viewAll();
