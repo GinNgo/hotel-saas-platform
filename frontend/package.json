@@ -8,6 +8,8 @@
     "build": "ng build",
     "e2e": "playwright test",
     "e2e:smoke": "playwright test --config=playwright.smoke.config.ts",
+    "e2e:visual": "playwright test --config=playwright.visual.config.ts",
+    "e2e:visual:update": "playwright test --config=playwright.visual.config.ts --update-snapshots",
     "e2e:integration": "playwright test --config=playwright.config.ts",
     "test:unit:ci": "ng test --watch=false --coverage",
     "test:all": "npm run test:unit:ci && npm run e2e:smoke",

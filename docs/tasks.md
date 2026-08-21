@@ -38,4 +38,5 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
 - [ ] **Giai Đoạn 7: Kiểm Thử E2E & Nghiệm Thu Đồ Án**
   - [ ] 7.1 Kiểm thử E2E luồng người dùng từ Tìm phòng $	o$ Giữ chỗ 15p $	o$ VNPay $	o$ Lễ tân Check-in $	o$ Folio $	o$ Check-out.
   - [x] 7.3 Thêm relational concurrency test và k6 load scenario cho luồng hold chống overbooking.
+  - [x] 7.4 Thêm Playwright visual regression gate desktop/mobile với reduced-motion và baseline Liquid Glass.
   - [ ] 7.2 Hoàn thiện báo cáo Đồ án Tốt nghiệp và xuất tài liệu hướng dẫn vận hành.
