@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using System.Net.Mail;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -11,6 +12,43 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 namespace HotelSaas.Infrastructure.Services;
+
+public sealed class SmtpEmailDeliveryService(IConfiguration configuration) : IEmailDeliveryService
+{
+    private string Host => configuration["Email:Smtp:Host"]?.Trim() ?? string.Empty;
+    private string FromAddress => configuration["Email:FromAddress"]?.Trim() ?? string.Empty;
+    public bool IsConfigured => Host.Length > 0 && FromAddress.Length > 0;
+
+    public async Task<EmailDeliveryResult> SendAsync(string recipient, string subject, string htmlBody, CancellationToken cancellationToken = default)
+    {
+        if (!IsConfigured) return new(false, "NOT_CONFIGURED");
+        try
+        {
+            var port = int.TryParse(configuration["Email:Smtp:Port"], out var configuredPort) ? configuredPort : 587;
+            using var client = new SmtpClient(Host, port)
+            {
+                EnableSsl = !bool.TryParse(configuration["Email:Smtp:EnableSsl"], out var ssl) || ssl
+            };
+            var username = configuration["Email:Smtp:Username"]?.Trim();
+            if (!string.IsNullOrWhiteSpace(username))
+                client.Credentials = new NetworkCredential(username, configuration["Email:Smtp:Password"] ?? string.Empty);
+            using var message = new MailMessage
+            {
+                From = new MailAddress(FromAddress, configuration["Email:FromName"] ?? "LuxeStay"),
+                Subject = subject,
+                Body = htmlBody,
+                IsBodyHtml = true
+            };
+            message.To.Add(new MailAddress(recipient));
+            await client.SendMailAsync(message, cancellationToken);
+            return new(true, "SENT");
+        }
+        catch (Exception exception)
+        {
+            return new(false, "FAILED", exception.Message.Length > 500 ? exception.Message[..500] : exception.Message);
+        }
+    }
+}
 
 public class PasswordHasher : IPasswordHasher
 {
@@ -31,7 +69,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         _configuration = configuration;
     }
 
-    public string GenerateAccessToken(User user, Guid? tenantId = null, StaffRole? staffRole = null)
+    public string GenerateAccessToken(User user, Guid? tenantId = null, StaffRole? staffRole = null, string? accessRoleCode = null, IEnumerable<string>? permissions = null)
     {
         var secretKey = _configuration["JwtSettings:Secret"] ?? "SuperSecretKeyForHotelSaasPlatform2026!@#$%LongEnough";
         var issuer = _configuration["JwtSettings:Issuer"] ?? "HotelSaasApi";
@@ -61,6 +99,10 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         {
             claims.Add(new Claim(ClaimTypes.Role, user.GlobalRole.ToString()));
         }
+        if (!string.IsNullOrWhiteSpace(accessRoleCode))
+            claims.Add(new Claim(ClaimTypes.Role, accessRoleCode));
+        if (permissions != null)
+            claims.AddRange(permissions.Where(permission => !string.IsNullOrWhiteSpace(permission)).Select(permission => new Claim("permission", permission)));
 
         var token = new JwtSecurityToken(
             issuer: issuer,
@@ -98,7 +140,7 @@ public class VnPayService : IVnPayService
         _configuration = configuration;
     }
 
-    public string CreatePaymentUrl(Guid reservationId, string bookingCode, decimal amount, string orderInfo, string ipAddress, string? customTmnCode = null, string? customHashSecret = null)
+    public string CreatePaymentUrl(Guid reservationId, string bookingCode, decimal amount, string orderInfo, string ipAddress, string? customTmnCode = null, string? customHashSecret = null, string? transactionReference = null)
     {
         var vnp_TmnCode = !string.IsNullOrEmpty(customTmnCode) ? customTmnCode : (_configuration["VnPay:TmnCode"] ?? "DEMOSAAS");
         var vnp_HashSecret = !string.IsNullOrEmpty(customHashSecret) ? customHashSecret : (_configuration["VnPay:HashSecret"] ?? "SECRETKEYVNPAYSAASHOTEL2026");
@@ -118,7 +160,7 @@ public class VnPayService : IVnPayService
             { "vnp_OrderInfo", string.IsNullOrWhiteSpace(orderInfo) ? $"Thanh toan {bookingCode}" : orderInfo },
             { "vnp_OrderType", "other" },
             { "vnp_ReturnUrl", vnp_ReturnUrl },
-            { "vnp_TxnRef", $"{bookingCode}_{DateTime.UtcNow.Ticks}" },
+            { "vnp_TxnRef", string.IsNullOrWhiteSpace(transactionReference) ? $"{bookingCode}_{DateTime.UtcNow.Ticks}" : transactionReference },
             { "vnp_ExpireDate", DateTime.UtcNow.AddHours(7).AddMinutes(15).ToString("yyyyMMddHHmmss") }
         };
 
@@ -140,7 +182,7 @@ public class VnPayService : IVnPayService
         return $"{vnp_Url}?{queryString}&vnp_SecureHash={signValue}";
     }
 
-    public (bool IsSuccess, string TransactionNo, string ResponseCode) ProcessIpn(IDictionary<string, string> queryParams, string? customHashSecret = null)
+    public (bool IsValidSignature, bool IsSuccess, string TransactionNo, string ResponseCode) ProcessIpn(IDictionary<string, string> queryParams, string? customHashSecret = null)
     {
         var vnp_HashSecret = !string.IsNullOrEmpty(customHashSecret) ? customHashSecret : (_configuration["VnPay:HashSecret"] ?? "SECRETKEYVNPAYSAASHOTEL2026");
         var vnp_SecureHash = queryParams.TryGetValue("vnp_SecureHash", out var sec) ? sec : string.Empty;
@@ -169,7 +211,7 @@ public class VnPayService : IVnPayService
         var responseCode = queryParams.TryGetValue("vnp_ResponseCode", out var rc) ? rc : "99";
         var transactionNo = queryParams.TryGetValue("vnp_TransactionNo", out var tn) ? tn : string.Empty;
 
-        return (isValid && responseCode == "00", transactionNo, responseCode);
+        return (isValid, isValid && responseCode == "00", transactionNo, responseCode);
     }
 
     private static string HmacSha512(string key, string inputData)

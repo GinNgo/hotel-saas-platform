@@ -1,0 +1,49 @@
+<section class="owner-dashboard">
+  <header>
+    <div><h1>Tổng quan cơ sở</h1><p>Tồn phòng và mức sử dụng gói theo cơ sở đang chọn.</p></div>
+    <select [(ngModel)]="selectedPropertyId" (change)="selectProperty()" aria-label="Cơ sở đang quản lý">
+      @for (property of context?.properties || []; track property.id) { <option [ngValue]="property.id">{{ propertyName(property) }}</option> }
+    </select>
+  </header>
+  @if (error) {
+    <app-feedback-state state="error" title="Không thể tải tổng quan" [message]="error" actionLabel="Thử lại" (actionTriggered)="load(selectedPropertyId)" />
+  } @else if (loading) {
+    <app-feedback-state state="loading" title="Đang tải tổng quan" message="Đang đồng bộ số liệu vận hành và giới hạn gói." />
+  } @else if (!context || !context.properties.length) {
+    <app-feedback-state state="empty" title="Chưa có cơ sở được cấp" message="Tài khoản này chưa có cơ sở lưu trú để hiển thị tổng quan." />
+  } @else if (context) {
+    @if (context.upgradeRequired) { <div class="upgrade"><strong>Gói {{ context.planCode }}</strong><span>Một số chức năng nâng cao đang bị giới hạn. Dữ liệu đã nhập vẫn được giữ nguyên.</span><a routerLink="/management/billing">Xem gói phần mềm</a></div> }
+    <div class="summary"><div><span>Gói hiện tại</span><strong>{{ context.planCode }}</strong></div><div><span>Trạng thái</span><strong>{{ statusLabel(context.subscriptionStatus) }}</strong></div><div><span>Cơ sở</span><strong>{{ context.usage.properties || 0 }} / {{ limit('MAX_PROPERTIES') }}</strong></div><div><span>Phòng</span><strong>{{ context.usage.rooms || 0 }} / {{ limit('MAX_ROOMS') }}</strong></div><div><span>Nhân viên</span><strong>{{ context.usage.staff || 0 }} / {{ limit('MAX_STAFF') }}</strong></div></div>
+    <p class="entitlement-source">Nguồn quyền lợi: <strong>{{ sourceLabel(context.subscriptionSource) }}</strong>. Số phòng sử dụng chỉ tính trong cơ sở đang chọn.</p>
+    @if (!activePropertyOperational && activeProperty) {
+      <div class="operation-gate" role="status">
+        <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+        <div>
+          <strong>Chưa thể vận hành cơ sở này</strong>
+          <p>Trạng thái duyệt: {{ statusLabel(activeProperty.approvalStatus) }} · Trạng thái vận hành: {{ statusLabel(activeProperty.operationStatus) }}.</p>
+          <p>Hãy hoàn thiện hồ sơ hoặc chờ quản trị viên phê duyệt. Bạn vẫn có thể xem và mua gói phần mềm.</p>
+        </div>
+        <a routerLink="/management/properties">Hoàn thiện hồ sơ</a>
+        <a routerLink="/management/billing">Quản lý gói</a>
+      </div>
+    } @else {
+      <section class="operations-hero">
+        <div><span class="operations-kicker">Today's operation</span><h2>{{ propertyName(activeProperty!) }}</h2><p>Tình trạng phòng và công việc cần xử lý trong ca hiện tại.</p></div>
+        <div class="occupancy-ring" [style.--occupancy]="occupancyRate + '%'" [attr.aria-label]="'Công suất ' + occupancyRate + '%'"><span><strong>{{ occupancyRate }}%</strong><small>Công suất</small></span></div>
+      </section>
+      <div class="metrics">
+        <article class="available"><i class="pi pi-check-circle"></i><span>Phòng trống</span><strong>{{ value('availableRooms') }}</strong><small>Sẵn sàng nhận khách</small></article>
+        <article class="reserved"><i class="pi pi-calendar"></i><span>Đã đặt</span><strong>{{ value('reservedRooms') }}</strong><small>Chuẩn bị check-in</small></article>
+        <article class="occupied"><i class="pi pi-users"></i><span>Đang ở</span><strong>{{ value('occupiedRooms') }}</strong><small>Khách đang lưu trú</small></article>
+        <article class="dirty"><i class="pi pi-sparkles"></i><span>Cần dọn</span><strong>{{ value('dirtyRooms') }}</strong><small>Chờ buồng phòng</small></article>
+        <article class="maintenance"><i class="pi pi-wrench"></i><span>Bảo trì</span><strong>{{ value('maintenanceRooms') }}</strong><small>Tạm ngưng bán</small></article>
+        <article class="housekeeping"><i class="pi pi-list-check"></i><span>Tác vụ dọn</span><strong>{{ value('pendingHousekeeping') }}</strong><small>Công việc đang mở</small></article>
+        <article><i class="pi pi-sign-in"></i><span>Khách đến hôm nay</span><strong>{{ value('arrivalsToday') }}</strong><small>Booking cần check-in</small></article>
+        <article><i class="pi pi-sign-out"></i><span>Khách đi hôm nay</span><strong>{{ value('departuresToday') }}</strong><small>Phòng cần quyết toán</small></article>
+        <article><i class="pi pi-chart-line"></i><span>ADR tháng</span><strong>{{ formatVnd(value('adr')) }}</strong><small>Giá phòng bán bình quân</small></article>
+        <article><i class="pi pi-chart-bar"></i><span>RevPAR tháng</span><strong>{{ formatVnd(value('revPar')) }}</strong><small>Doanh thu trên phòng khả dụng</small></article>
+      </div>
+      <nav class="operation-actions" aria-label="Thao tác vận hành"><a routerLink="/management/rooms"><i class="pi pi-th-large"></i><span><strong>Mở sơ đồ phòng</strong><small>Theo dõi trạng thái theo tầng</small></span><i class="pi pi-arrow-right"></i></a><a routerLink="/management/housekeeping"><i class="pi pi-sparkles"></i><span><strong>Buồng phòng</strong><small>Xử lý phòng cần dọn</small></span><i class="pi pi-arrow-right"></i></a><a routerLink="/management/tasks"><i class="pi pi-clipboard"></i><span><strong>Tác vụ vận hành</strong><small>Phân công và theo dõi ca</small></span><i class="pi pi-arrow-right"></i></a></nav>
+    }
+  }
+</section>

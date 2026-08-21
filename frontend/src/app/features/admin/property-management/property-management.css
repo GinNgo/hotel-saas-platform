@@ -1,0 +1,104 @@
+:host { display: block; }
+
+.admin-page {
+  min-height: 100%;
+  padding: var(--hotel-space-8);
+  background: var(--hotel-bg);
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--hotel-space-6);
+  margin-bottom: var(--hotel-space-6);
+}
+
+.eyebrow {
+  margin: 0 0 var(--hotel-space-2);
+  color: var(--hotel-primary);
+  font-size: var(--hotel-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.page-header h1 {
+  display: flex;
+  align-items: center;
+  gap: var(--hotel-space-3);
+  margin: 0;
+  color: var(--hotel-heading);
+  font-size: clamp(1.5rem, 2vw, 2rem);
+}
+
+.page-header h1 i { color: var(--hotel-primary); }
+.page-description { margin: var(--hotel-space-2) 0 0; color: var(--hotel-text-muted); }
+.header-actions { display: flex; flex-wrap: wrap; gap: var(--hotel-space-3); }
+
+.context-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--hotel-space-3);
+  margin-bottom: var(--hotel-space-5);
+  padding: var(--hotel-space-4) var(--hotel-space-5);
+  border: 1px solid var(--hotel-primary-light);
+  border-radius: var(--hotel-radius-md);
+  background: linear-gradient(135deg, var(--hotel-card-bg), var(--hotel-primary-light));
+  box-shadow: var(--hotel-shadow-sm);
+  color: var(--hotel-text);
+}
+
+.context-banner > i { margin-top: 0.2rem; color: var(--hotel-primary); font-size: 1.2rem; }
+.context-banner strong, .context-banner span { display: block; }
+.context-banner span { margin-top: var(--hotel-space-1); color: var(--hotel-text-muted); font-size: var(--hotel-text-sm); }
+
+.table-shell {
+  overflow: hidden;
+  border: 1px solid var(--hotel-border);
+  border-radius: var(--hotel-radius-md);
+  background: var(--hotel-card-bg);
+  box-shadow: var(--hotel-shadow-sm);
+}
+
+.table-shell small, td small { display: block; margin-top: var(--hotel-space-1); color: var(--hotel-text-muted); }
+.actions { width: 9rem; text-align: center; white-space: nowrap; }
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hotel-space-3);
+  min-height: 16rem;
+  padding: var(--hotel-space-8);
+  color: var(--hotel-text-muted);
+  text-align: center;
+}
+
+.empty-state > * { display: block; }
+.empty-state i { color: var(--hotel-primary); font-size: 2rem; }
+.empty-state strong { color: var(--hotel-heading); font-size: var(--hotel-text-lg); }
+
+.property-form { padding-top: var(--hotel-space-2); }
+.form-intro { margin: 0 0 var(--hotel-space-5); color: var(--hotel-text-muted); font-size: var(--hotel-text-sm); }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--hotel-space-5); }
+.form-grid label { display: flex; flex-direction: column; gap: var(--hotel-space-2); color: var(--hotel-text); font-weight: 700; }
+.form-grid .wide { grid-column: 1 / -1; }
+.form-grid input, .form-grid textarea, .form-grid p-select { width: 100%; font-weight: 400; }
+.form-grid input.invalid { border-color: var(--hotel-danger); }
+.field-error { color: var(--hotel-danger); font-size: var(--hotel-text-xs); font-weight: 500; }
+.form-error { display: flex; align-items: flex-start; gap: var(--hotel-space-2); margin-bottom: var(--hotel-space-4); padding: var(--hotel-space-3) var(--hotel-space-4); border: 1px solid var(--hotel-danger-light); border-radius: var(--hotel-radius-sm); background: var(--hotel-danger-light); color: var(--hotel-danger); }
+
+@media (max-width: 760px) {
+  .admin-page { padding: var(--hotel-space-4); }
+  .page-header { align-items: flex-start; flex-direction: column; }
+  .header-actions { width: 100%; }
+  .header-actions button { flex: 1; min-width: 10rem; }
+  .form-grid { grid-template-columns: 1fr; }
+  .form-grid .wide { grid-column: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table-shell, .context-banner { transition: none; }
+}
+.amenity-fieldset{border:1px solid #d8dee8;border-radius:8px;padding:14px;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 16px}.amenity-fieldset legend{padding:0 6px;font-weight:700;color:#334155}.amenity-option{display:flex!important;flex-direction:row!important;align-items:center;gap:8px;font-weight:500!important}.amenity-option input{width:18px;height:18px;accent-color:#0f766e}@media(max-width:700px){.amenity-fieldset{grid-template-columns:1fr 1fr}}

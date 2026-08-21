@@ -1,0 +1,34 @@
+:host { display: block; min-height: 100vh; color: #17233c; background: radial-gradient(circle at 12% 8%, #dff4ff 0, transparent 34%), linear-gradient(145deg, #f8fbff 0%, #eef5f2 100%); font-family: "Be Vietnam Pro", sans-serif; }
+.guest-booking-shell { width: min(920px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 64px; }
+.brand-link { display: inline-flex; gap: 7px; margin-bottom: 28px; color: #073b5c; font-size: 24px; font-weight: 900; text-decoration: none; letter-spacing: -.7px; }
+.brand-link span { color: #d95d32; }
+.trip-card, .state-card { overflow: hidden; border: 1px solid rgba(8, 59, 92, .12); border-radius: 28px; background: rgba(255,255,255,.94); box-shadow: 0 24px 70px rgba(24, 52, 74, .12); }
+.trip-card header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 28px 32px; color: white; background: linear-gradient(115deg, #073b5c, #0b6a79); }
+.eyebrow { margin: 0 0 7px; color: #618094; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+header .eyebrow { color: #bfe8ee; }
+h1, h2, p { margin-top: 0; } h1 { margin-bottom: 0; font-size: clamp(22px, 4vw, 34px); } h2 { margin-bottom: 8px; }
+.status { padding: 9px 13px; border-radius: 999px; color: #073b5c; background: #dff7df; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.status[data-status="CANCELLED"], .status[data-status="NO_SHOW"] { color: #812d20; background: #ffe0d8; }
+.status[data-status="PENDING_PAYMENT"] { color: #76520a; background: #fff0bd; }
+.property-block { padding: 28px 32px 12px; }
+.property-block p:last-child { color: #607083; }
+.trip-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: 16px 32px 28px; overflow: hidden; border: 1px solid #e3ebef; border-radius: 18px; background: #e3ebef; }
+.trip-grid div { min-height: 104px; padding: 19px; background: #fff; }
+dt { margin-bottom: 9px; color: #6a7887; font-size: 13px; } dd { margin: 0; font-weight: 800; } .price { color: #d95d32; }
+.policy { display: flex; gap: 12px; margin: 0 32px 28px; padding: 16px 18px; border-radius: 14px; color: #205a4d; background: #e7f7f0; line-height: 1.5; }
+.policy--blocked { color: #704a12; background: #fff3d4; }
+.email-state{display:flex;gap:12px;margin:0 32px 20px;padding:15px 17px;border:1px solid #ead18b;border-radius:14px;color:#704a12;background:#fff8df;line-height:1.5}.email-state i{margin-top:4px}.email-state strong{overflow-wrap:anywhere}
+.refund-state{display:flex;gap:13px;margin:0 32px 20px;padding:17px 18px;border:1px solid #99d5c4;border-radius:14px;color:#155e54;background:#ecfdf8}.refund-state i{margin-top:3px;font-size:20px}.refund-state div{display:grid;gap:4px}.refund-state span,.refund-state small{overflow-wrap:anywhere}.refund-state small{color:#47736d}
+.payment-resume { display: grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:18px; margin:0 32px 28px; padding:20px; border:1px solid #b9d8e6; border-radius:18px; background:linear-gradient(135deg,#eef9fc,#f8fcff); }.payment-resume h2 { margin-bottom:6px; }.payment-resume p { margin-bottom:0; color:#526879; line-height:1.5; }.payment-resume button { min-height:48px; padding:0 18px; border:0; border-radius:12px; color:#fff; background:#0b6a79; font:inherit; font-weight:900; cursor:pointer; white-space:nowrap; }.payment-resume button:disabled { opacity:.65; cursor:wait; }.payment-resume .payment-error { grid-column:1/-1; color:#a43124; font-weight:700; }
+.actions { display: flex; gap: 12px; padding: 0 32px 32px; }
+.actions a { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; padding: 0 20px; border-radius: 12px; color: white; background: #d95d32; font-weight: 800; text-decoration: none; }
+.actions button { min-height: 46px; padding: 0 20px; border: 1px solid #c84635; border-radius: 12px; color: #a43124; background: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+.actions .secondary { color: #073b5c; background: #edf4f6; }
+.cancel-panel { margin: 0 32px 28px; padding: 22px; border: 1px solid #f1c7bf; border-radius: 18px; background: #fff8f6; }
+.cancel-panel label { display: block; margin: 15px 0 7px; font-size: 13px; font-weight: 800; }
+.cancel-panel select, .cancel-panel textarea { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid #cbd7dd; border-radius: 10px; color: #17233c; background: #fff; font: inherit; }
+.cancel-panel textarea { resize: vertical; }.cancel-error { margin: 12px 0 0; color: #a43124; font-weight: 700; }
+.cancel-actions { display: flex; gap: 10px; margin-top: 18px; }.cancel-actions button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; font: inherit; font-weight: 800; cursor: pointer; }.cancel-actions .danger { color: #fff; background: #b83c2d; }.cancel-actions button:not(.danger) { color: #073b5c; background: #e8f0f3; }.cancel-actions button:disabled { opacity: .6; cursor: wait; }
+.state-card { padding: 54px 32px; text-align: center; }.state-card > i { margin-bottom: 18px; color: #0b6a79; font-size: 42px; }.state-card p { color: #607083; }.state-card .actions { justify-content: center; padding-bottom: 0; }.state-card--error > i { color: #d95d32; }
+.recovery-card { max-width: 620px; margin: 0 auto; text-align: left; }.recovery-card > i { display: block; text-align: center; }.recovery-card > h1, .recovery-card > p { text-align: center; }.recovery-card form { display: grid; gap: 8px; margin-top: 26px; }.recovery-card label { margin-top: 8px; font-size: 13px; font-weight: 800; }.recovery-card input { min-height: 48px; padding: 0 14px; border: 1px solid #c8d6dc; border-radius: 11px; color: #17233c; background: #fff; font: inherit; }.recovery-card input[readonly] { color: #526879; background: #edf4f6; }.recovery-card button { min-height: 50px; margin-top: 14px; border: 0; border-radius: 12px; color: #fff; background: #d95d32; font: inherit; font-weight: 900; cursor: pointer; }.recovery-card button:disabled { opacity: .6; cursor: wait; }.recovery-error { margin: 8px 0 0; color: #a43124 !important; font-weight: 700; text-align: left !important; }
+@media (max-width: 680px) { .guest-booking-shell { width: min(100% - 20px, 920px); padding-top: 20px; }.trip-card header { align-items: flex-start; padding: 24px 20px; }.trip-grid { grid-template-columns: 1fr 1fr; margin-inline: 20px; }.property-block { padding-inline: 20px; }.policy, .cancel-panel, .payment-resume, .email-state, .refund-state { margin-inline: 20px; }.payment-resume { grid-template-columns:1fr; }.payment-resume button { width:100%; }.actions, .cancel-actions { flex-direction: column; padding-inline: 20px; }.cancel-actions { padding-inline: 0; }.actions a, .actions button { width: 100%; }.status { margin-top: 3px; } }

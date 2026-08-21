@@ -1,0 +1,175 @@
+<main class="timeline-page">
+  <header class="timeline-hero">
+    <div>
+      <a [routerLink]="frontDeskRoute" class="back-link">
+        <i class="pi pi-arrow-left" aria-hidden="true"></i>
+        Quản lý đặt phòng
+      </a>
+      <p class="eyebrow">ĐIỀU PHỐI LƯU TRÚ</p>
+      <h1>Lịch phòng</h1>
+      <p class="hero-copy">Theo dõi công suất, khách lưu trú và tình trạng từng phòng trong một lịch vận hành thống nhất.</p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="secondary-button" (click)="loadData()" [disabled]="loading">
+        <i [class]="loading ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'" aria-hidden="true"></i>
+        Làm mới
+      </button>
+      <a *ngIf="canCreateReservation" [routerLink]="createReservationRoute" class="primary-button">
+        <i class="pi pi-plus" aria-hidden="true"></i>
+        Tạo đặt phòng
+      </a>
+    </div>
+  </header>
+
+  <section class="metric-grid" aria-label="Tổng quan lịch phòng">
+    <article class="metric-card metric-accent">
+      <span class="metric-icon"><i class="pi pi-building" aria-hidden="true"></i></span>
+      <div><strong>{{ totalRoomCount }}</strong><span>Tổng số phòng</span></div>
+    </article>
+    <article class="metric-card">
+      <span class="metric-icon"><i class="pi pi-key" aria-hidden="true"></i></span>
+      <div><strong>{{ occupiedRoomCount }}</strong><span>Phòng có lịch</span></div>
+    </article>
+    <article class="metric-card">
+      <span class="metric-icon"><i class="pi pi-chart-line" aria-hidden="true"></i></span>
+      <div><strong>{{ occupancyRate }}%</strong><span>Công suất giai đoạn</span></div>
+    </article>
+    <article class="metric-card">
+      <span class="metric-icon"><i class="pi pi-calendar" aria-hidden="true"></i></span>
+      <div><strong>{{ activeReservations.length }}</strong><span>Booking đang hiển thị</span></div>
+    </article>
+  </section>
+
+  <section class="timeline-panel" aria-labelledby="timeline-title">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">LỊCH VẬN HÀNH</p>
+        <h2 id="timeline-title">Phòng và lượt lưu trú</h2>
+      </div>
+      <div class="range-switch" aria-label="Số ngày hiển thị">
+        <button *ngFor="let days of [7, 14, 21]" type="button" (click)="setVisibleDays(days)" [class.active]="visibleDays === days">
+          {{ days }} ngày
+        </button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="date-navigation">
+        <button type="button" class="icon-button" (click)="moveRange(-visibleDays)" aria-label="Xem giai đoạn trước">
+          <i class="pi pi-chevron-left" aria-hidden="true"></i>
+        </button>
+        <label class="date-field">
+          <span>Từ ngày</span>
+          <p-datepicker [(ngModel)]="startDate" (onSelect)="onStartDateChange()" [showIcon]="true" dateFormat="dd/mm/yy" appendTo="body"></p-datepicker>
+        </label>
+        <label class="date-field">
+          <span>Đến ngày</span>
+          <p-datepicker [(ngModel)]="endDate" (onSelect)="onEndDateChange()" [minDate]="startDate" [showIcon]="true" dateFormat="dd/mm/yy" appendTo="body"></p-datepicker>
+        </label>
+        <button type="button" class="today-button" (click)="goToToday()">Hôm nay</button>
+        <button type="button" class="icon-button" (click)="moveRange(visibleDays)" aria-label="Xem giai đoạn sau">
+          <i class="pi pi-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <label class="search-field">
+        <i class="pi pi-search" aria-hidden="true"></i>
+        <span class="visually-hidden">Tìm phòng</span>
+        <input [(ngModel)]="roomQuery" type="search" autocomplete="off" placeholder="Tìm số phòng, loại phòng..." />
+      </label>
+    </div>
+
+    <div class="status-filter" aria-label="Lọc theo trạng thái đặt phòng">
+      <button *ngFor="let option of statusOptions" type="button" (click)="selectStatus(option.value)" [class.active]="selectedStatus === option.value" [attr.aria-pressed]="selectedStatus === option.value">
+        <i [class]="option.icon" aria-hidden="true"></i>
+        {{ option.label }}
+      </button>
+      <span class="sync-state" aria-live="polite">
+        <i [class]="syncing ? 'pi pi-spin pi-spinner' : 'pi pi-cloud'" aria-hidden="true"></i>
+        {{ syncing ? 'Đang đồng bộ...' : (lastSyncedAt ? 'Cập nhật ' + (lastSyncedAt | date: 'HH:mm:ss') : '') }}
+      </span>
+    </div>
+
+    <p *ngIf="syncWarning" class="sync-warning" role="status">{{ syncWarning }}</p>
+
+    <section *ngIf="!loading && !errorMessage && unassignedReservations.length" class="unassigned-queue" aria-labelledby="unassigned-title">
+      <div class="unassigned-heading">
+        <div>
+          <p class="eyebrow">CẦN XỬ LÝ</p>
+          <h3 id="unassigned-title">{{ unassignedReservations.length }} booking chưa xếp phòng</h3>
+        </div>
+        <a [routerLink]="frontDeskRoute">Mở bàn lễ tân <i class="pi pi-arrow-right" aria-hidden="true"></i></a>
+      </div>
+      <div class="unassigned-list">
+        <article *ngFor="let reservation of unassignedReservations" class="unassigned-card">
+          <div>
+            <span class="booking-code">{{ reservation.bookingCode || ('RES-' + reservation.id) }}</span>
+            <strong>{{ guestName(reservation) }}</strong>
+          </div>
+          <span><i class="pi pi-calendar" aria-hidden="true"></i>{{ reservation.checkInDate | date: 'dd/MM/yyyy' }} - {{ reservation.checkOutDate | date: 'dd/MM/yyyy' }}</span>
+          <span><i class="pi pi-users" aria-hidden="true"></i>{{ reservation.guests }} khách</span>
+          <span class="queue-status" [ngClass]="statusClass(reservation.status)">{{ statusLabel(reservation.status) }}</span>
+          <a class="queue-action" [routerLink]="frontDeskRoute" [queryParams]="{ q: reservation.bookingCode || reservation.id }">
+            Xử lý booking <i class="pi pi-arrow-right" aria-hidden="true"></i>
+          </a>
+        </article>
+      </div>
+    </section>
+
+    <div *ngIf="errorMessage" class="feedback-state error" role="alert">
+      <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+      <div><strong>Chưa thể tải lịch phòng</strong><span>{{ errorMessage }}</span></div>
+      <button type="button" (click)="loadData()">Thử lại</button>
+    </div>
+
+    <div *ngIf="loading" class="timeline-skeleton" aria-label="Đang tải lịch phòng" aria-busy="true">
+      <div *ngFor="let row of [1, 2, 3, 4, 5]" class="skeleton-row"></div>
+    </div>
+
+    <div *ngIf="!loading && !errorMessage" class="timeline-scroll" tabindex="0" aria-label="Bảng lịch phòng, có thể cuộn ngang">
+      <table class="timeline-table">
+        <thead>
+          <tr>
+            <th class="room-column" scope="col">Phòng</th>
+            <th *ngFor="let date of dates; trackBy: trackDate" scope="col" [class.today]="isToday(date)" [class.weekend]="isWeekend(date)">
+              <span class="weekday">{{ date | date: 'EEE' : undefined : 'vi-VN' }}</span>
+              <strong>{{ date | date: 'dd' }}</strong>
+              <span>{{ date | date: 'MM/yyyy' }}</span>
+              <em *ngIf="isToday(date)">Hôm nay</em>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let room of filteredRooms; trackBy: trackRoom">
+            <th class="room-column" scope="row">
+              <span class="room-number">{{ room.roomNumber }}</span>
+              <span class="room-type">{{ roomTypeLabel(room) }}</span>
+              <span class="room-meta">Tầng {{ room.floor }} · {{ room.status === 'AVAILABLE' ? 'Sẵn sàng' : room.status }}</span>
+            </th>
+            <td *ngFor="let date of dates; trackBy: trackDate" [class.today]="isToday(date)" [class.weekend]="isWeekend(date)">
+              <article *ngIf="getReservationForCell(room.id, date) as reservation; else availableCell" class="booking-block" [ngClass]="statusClass(reservation.status)" tabindex="0" [attr.aria-label]="'Booking ' + (reservation.bookingCode || ('RES-' + reservation.id)) + ', ' + guestName(reservation) + ', ' + statusLabel(reservation.status)">
+                <span class="booking-code">{{ reservation.bookingCode || ('RES-' + reservation.id) }}</span>
+                <strong>{{ guestName(reservation) }}</strong>
+                <span class="booking-status"><i class="pi pi-circle-fill" aria-hidden="true"></i>{{ statusLabel(reservation.status) }}</span>
+                <span class="booking-guests"><i class="pi pi-users" aria-hidden="true"></i>{{ reservation.guests }} khách</span>
+              </article>
+              <ng-template #availableCell><span class="available-mark" aria-label="Phòng trống">—</span></ng-template>
+            </td>
+          </tr>
+          <tr *ngIf="!filteredRooms.length">
+            <td [attr.colspan]="dates.length + 1" class="empty-row">
+              <i class="pi pi-search" aria-hidden="true"></i>
+              <strong>Không tìm thấy phòng phù hợp</strong>
+              <span>Thử thay đổi từ khóa tìm kiếm.</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="timeline-footer" *ngIf="!loading && !errorMessage">
+      <span><i class="pi pi-info-circle" aria-hidden="true"></i> Ngày trả phòng không tính là ngày chiếm phòng.</span>
+      <span>Hiển thị {{ filteredRooms.length }}/{{ totalRoomCount }} phòng{{ totalRoomCount > rooms.length ? ' (ưu tiên phòng có lịch)' : '' }}</span>
+    </footer>
+  </section>
+</main>

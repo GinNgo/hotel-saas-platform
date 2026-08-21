@@ -1,0 +1,22 @@
+<section
+  class="feedback-state"
+  [class]="'feedback-state feedback-state--' + state"
+  [attr.role]="role"
+  [attr.aria-live]="ariaLive"
+  [attr.aria-busy]="state === 'loading'"
+>
+  <span class="feedback-state__icon" [class]="icon + ' feedback-state__icon'" aria-hidden="true"></span>
+  <h2 class="feedback-state__title">{{ resolvedTitle }}</h2>
+  <p class="feedback-state__message">{{ resolvedMessage }}</p>
+
+  @if (actionLabel) {
+    <button
+      class="feedback-state__action"
+      type="button"
+      [attr.aria-label]="actionLabel"
+      (click)="actionTriggered.emit()"
+    >
+      {{ actionLabel }}
+    </button>
+  }
+</section>

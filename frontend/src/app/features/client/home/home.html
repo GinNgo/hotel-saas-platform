@@ -1,0 +1,124 @@
+<div class="home-page">
+  <app-sticky-search-bar [isVisible]="showStickySearch"></app-sticky-search-bar>
+
+  <section id="home" class="home-hero" aria-labelledby="home-title">
+    <div class="hero-backdrop" aria-hidden="true">
+      <img src="assets/images/login-bg.png" alt="" class="hero-image">
+      <div class="hero-overlay"></div>
+    </div>
+
+    <div class="hero-content">
+      <span class="hero-kicker">{{ 'HOME.HERO_KICKER' | translate }}</span>
+      <h1 id="home-title">LuxeStay</h1>
+      <p>{{ 'HOME.HERO_DESCRIPTION' | translate }}</p>
+      <div class="hero-trust" [attr.aria-label]="'HOME.TRUST_LABEL' | translate">
+        <span><i class="pi pi-check-circle" aria-hidden="true"></i> {{ 'HOME.TRUST_INVENTORY' | translate }}</span>
+        <span><i class="pi pi-map-marker" aria-hidden="true"></i> {{ 'HOME.TRUST_DESTINATIONS' | translate }}</span>
+      </div>
+    </div>
+  </section>
+
+  <div #heroSearchRef class="hero-search-wrap">
+    <app-hero-search></app-hero-search>
+  </div>
+
+  <main class="home-content">
+    <div class="content-intro reveal-on-scroll">
+      <span class="eyebrow">{{ 'HOME.INTRO_KICKER' | translate }}</span>
+      <p>{{ 'HOME.INTRO_DESCRIPTION' | translate }}</p>
+    </div>
+
+    <section class="member-benefits reveal-on-scroll" aria-labelledby="member-benefits-title">
+      <article class="member-card">
+        <div class="member-card-icon"><i class="pi pi-star" aria-hidden="true"></i></div>
+        <div class="member-card-copy">
+          <span class="eyebrow">{{ 'HOME.MEMBER_KICKER' | translate }}</span>
+          <h2 id="member-benefits-title">{{ 'HOME.MEMBER_TITLE' | translate }}</h2>
+          <p *ngIf="isAuthenticated; else memberSignInCopy">{{ 'HOME.MEMBER_READY' | translate }}</p>
+          <ng-template #memberSignInCopy><p>{{ 'HOME.MEMBER_SIGN_IN' | translate }}</p></ng-template>
+        </div>
+        <div *ngIf="memberProfile && !memberLoading; else memberStatus" class="member-points" aria-live="polite">
+          <strong>{{ memberPoints | number }}</strong>
+          <span>{{ 'HOME.MEMBER_POINTS' | translate }}</span>
+          <small>{{ memberTierLabel || ('HOME.MEMBER_TIER_BASE' | translate) }}</small>
+        </div>
+        <ng-template #memberStatus>
+          <div *ngIf="isAuthenticated" class="member-points member-points-pending" aria-live="polite">
+            <strong>--</strong>
+            <span>{{ memberLoading ? ('HOME.MEMBER_LOADING' | translate) : ('HOME.MEMBER_POINTS' | translate) }}</span>
+            <small>{{ memberError ? ('HOME.MEMBER_TIER_PENDING' | translate) : ('HOME.MEMBER_TIER_BASE' | translate) }}</small>
+          </div>
+          <button *ngIf="!isAuthenticated" type="button" class="member-action" (click)="openLogin()">
+            {{ 'HOME.MEMBER_SIGN_IN_CTA' | translate }} <i class="pi pi-arrow-up-right" aria-hidden="true"></i>
+          </button>
+        </ng-template>
+      </article>
+
+      <article class="promotion-card" aria-labelledby="promotion-card-title">
+        <div class="promotion-card-icon"><i class="pi pi-ticket" aria-hidden="true"></i></div>
+        <div>
+          <span class="eyebrow">{{ 'HOME.PROMOTION_KICKER' | translate }}</span>
+          <h2 id="promotion-card-title">{{ 'HOME.PROMOTION_TITLE' | translate }}</h2>
+          <p *ngIf="isAuthenticated; else promotionGuestCopy">
+            {{ promotionSummaryKey | translate:{ count: promotions.length } }}
+          </p>
+          <ng-template #promotionGuestCopy><p>{{ 'HOME.PROMOTION_SIGN_IN' | translate }}</p></ng-template>
+        </div>
+        <a *ngIf="isAuthenticated" class="promotion-link" routerLink="/profile" [queryParams]="{ tab: 'profile' }">
+          {{ 'HOME.PROMOTION_ACCOUNT_CTA' | translate }} <i class="pi pi-arrow-right" aria-hidden="true"></i>
+        </a>
+        <button *ngIf="!isAuthenticated" type="button" class="promotion-link" (click)="openLogin()">
+          {{ 'HOME.MEMBER_SIGN_IN_CTA' | translate }} <i class="pi pi-arrow-right" aria-hidden="true"></i>
+        </button>
+      </article>
+    </section>
+
+    <app-promotions class="reveal-on-scroll"
+      [promotions]="promotions"
+      [loading]="promotionsLoading"
+      [error]="promotionsError"
+      (retry)="loadPromotions()">
+    </app-promotions>
+
+    <div class="editorial-section reveal-on-scroll">
+      <app-editorial-slideshow></app-editorial-slideshow>
+    </div>
+
+    <app-partner-spotlight-carousel class="reveal-on-scroll"></app-partner-spotlight-carousel>
+
+    <section id="destinations" class="home-section reveal-on-scroll" aria-labelledby="destinations-title">
+      <app-popular-destinations
+        [destinations]="destinations"
+        [loading]="isLoadingDestinations"
+        [error]="destinationsError">
+      </app-popular-destinations>
+    </section>
+
+    <app-destination-recommendations class="reveal-on-scroll"></app-destination-recommendations>
+
+    <section id="featured" class="home-section reveal-on-scroll" aria-labelledby="featured-title">
+      <app-featured-properties
+        [properties]="featuredProperties"
+        [loading]="isLoadingFeatured"
+        [error]="featuredError">
+      </app-featured-properties>
+    </section>
+  </main>
+
+  <section id="partner" class="owner-band reveal-on-scroll" aria-labelledby="partner-title">
+    <div class="owner-copy">
+      <span class="eyebrow">{{ 'HOME.PARTNER_KICKER' | translate }}</span>
+      <h2 id="partner-title">{{ 'HOME.PARTNER_TITLE' | translate }}</h2>
+      <p>{{ 'HOME.PARTNER_DESCRIPTION' | translate }}</p>
+      <ul class="owner-benefits">
+        <li><i class="pi pi-check" aria-hidden="true"></i> {{ 'HOME.PARTNER_BENEFIT_ONE' | translate }}</li>
+        <li><i class="pi pi-check" aria-hidden="true"></i> {{ 'HOME.PARTNER_BENEFIT_TWO' | translate }}</li>
+      </ul>
+    </div>
+    <button type="button" class="owner-button" (click)="openOwnerPortal()">
+      <i class="pi pi-building" aria-hidden="true"></i>
+      <span>{{ 'HOME.PARTNER_CTA' | translate }}</span>
+      <i class="pi pi-arrow-up-right" aria-hidden="true"></i>
+    </button>
+  </section>
+</div>

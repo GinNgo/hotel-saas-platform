@@ -40,6 +40,8 @@ public class TenantsController : ControllerBase
     {
         var existingCode = await _context.Tenants.AnyAsync(t => t.Code == request.Code);
         if (existingCode) return BadRequest(Result<TenantDto>.Failure("Mã cơ sở đã tồn tại trên sàn."));
+        var existingOwner = await _context.Users.AnyAsync(u => u.Username == request.OwnerUsername || u.Email == request.OwnerEmail);
+        if (existingOwner) return BadRequest(Result<TenantDto>.Failure("Tài khoản hoặc email chủ cơ sở đã tồn tại."));
 
         var tenant = new Tenant
         {
@@ -51,7 +53,7 @@ public class TenantsController : ControllerBase
             PhoneNumber = request.PhoneNumber,
             Email = request.Email,
             SubscriptionTier = request.Tier,
-            Status = TenantStatus.Active
+            Status = TenantStatus.PendingApproval
         };
 
         var ownerUser = new User
@@ -80,10 +82,10 @@ public class TenantsController : ControllerBase
         await _context.SaveChangesAsync();
 
         var dto = new TenantDto(tenant.Id, tenant.Name, tenant.Code, tenant.Slug, tenant.Address, tenant.City, tenant.PhoneNumber, tenant.Email, tenant.SubscriptionTier, tenant.Status);
-        return Ok(Result<TenantDto>.Success(dto, "Đăng ký cơ sở lưu trú thành công!"));
+        return Ok(Result<TenantDto>.Success(dto, "Đăng ký cơ sở thành công và đang chờ quản trị sàn phê duyệt."));
     }
 
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Policy = "platform_billing.update")]
     [HttpPut("{tenantId:guid}/subscription-tier")]
     public async Task<ActionResult<Result>> UpdateSubscriptionTier(Guid tenantId, [FromBody] UpdateSubscriptionTierDto request)
     {

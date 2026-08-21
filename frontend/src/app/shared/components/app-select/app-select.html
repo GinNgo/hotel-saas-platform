@@ -1,0 +1,32 @@
+<ng-container *ngIf="!multiple; else multiSelectTpl">
+  <p-select 
+    [options]="options" 
+    [ngModel]="value" 
+    (ngModelChange)="onModelChange($event)"
+    [optionLabel]="optionLabel" 
+    [optionValue]="optionValue"
+    [placeholder]="placeholder"
+    [filter]="true"
+    filterBy="label"
+    [showClear]="true"
+    [disabled]="disabled"
+    styleClass="w-100 p-fluid">
+  </p-select>
+</ng-container>
+
+<ng-template #multiSelectTpl>
+  <p-multiSelect 
+    [options]="options" 
+    [ngModel]="value" 
+    (ngModelChange)="onModelChange($event)"
+    [optionLabel]="optionLabel" 
+    [optionValue]="optionValue"
+    [placeholder]="placeholder"
+    [filter]="true"
+    filterBy="label"
+    [showClear]="true"
+    [disabled]="disabled"
+    display="chip"
+    styleClass="w-100 p-fluid">
+  </p-multiSelect>
+</ng-template>

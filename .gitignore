@@ -293,6 +293,9 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 
+# Runtime user uploads (persist with object/blob storage in production)
+backend/src/HotelSaas.WebApi/wwwroot/uploads/
+
 # Visual Studio 6 build log
 *.plg
 
@@ -480,3 +483,13 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Temporary alternate build output used while the development server is running.
+.tmp-build/
+.tmp-test/
+.tmp-test-full/
+.tmp-build-sort/
+.tmp-build-page/
+
+# Codex test/build output directories.
+.codex-*-out/

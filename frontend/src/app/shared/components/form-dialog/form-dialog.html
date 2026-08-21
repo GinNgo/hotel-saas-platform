@@ -1,0 +1,46 @@
+<p-dialog 
+  [header]="headerTitle" 
+  [(visible)]="visible" 
+  (onHide)="onHide()"
+  [modal]="true" 
+  [draggable]="false"
+  [resizable]="false"
+  [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }" 
+  [style]="{ width: '50vw' }"
+  styleClass="rounded-4 shadow-lg border-0 overflow-hidden">
+  
+  <div class="p-4 bg-white">
+    <ng-content></ng-content>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="d-flex justify-content-end gap-2 p-3 bg-light border-top">
+      <p-button 
+        label="Hủy" 
+        icon="pi pi-times" 
+        (onClick)="onHide()" 
+        [text]="true" 
+        severity="secondary">
+      </p-button>
+      
+      <p-button 
+        *ngIf="canSave && requiredPermission" 
+        [hasPermission]="requiredPermission"
+        label="Lưu" 
+        icon="pi pi-check" 
+        (onClick)="onSave()" 
+        [loading]="loading"
+        styleClass="p-button-primary">
+      </p-button>
+
+      <p-button 
+        *ngIf="canSave && !requiredPermission" 
+        label="Lưu" 
+        icon="pi pi-check" 
+        (onClick)="onSave()" 
+        [loading]="loading"
+        styleClass="p-button-primary">
+      </p-button>
+    </div>
+  </ng-template>
+</p-dialog>

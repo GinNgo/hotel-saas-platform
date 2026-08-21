@@ -1,0 +1,53 @@
+<div class="forbidden-container">
+  <div class="forbidden-content">
+    
+    <!-- Left Section: Info Cards (Decorative) -->
+    <div class="info-section">
+      <div class="card-glass text-center p-4 mb-3 d-flex flex-column align-items-center justify-content-center">
+        <i class="pi pi-shield text-primary mb-3" style="font-size: 2rem;"></i>
+        <p class="m-0 text-muted small fw-bold">Tính toàn vẹn hệ thống</p>
+        <p class="m-0 text-muted small">Đã xác minh</p>
+      </div>
+      <div class="card-glass text-center p-4 mb-3 d-flex flex-column align-items-center justify-content-center">
+        <i class="pi pi-ban text-danger mb-3" style="font-size: 2rem;"></i>
+        <p class="m-0 text-muted small fw-bold">Trạng thái truy cập</p>
+        <p class="m-0 text-muted small">Bị hạn chế</p>
+      </div>
+      <div class="card-glass card-wide p-4 position-relative overflow-hidden">
+        <div class="watermark-403">403</div>
+        <h6 class="fw-bold mb-2">Truy cập bị hạn chế</h6>
+        <p class="m-0 text-muted small position-relative z-1">
+          Tài khoản hiện tại của bạn không có đủ quyền hạn để truy cập vào cổng quản trị này hoặc thực hiện hành động này.
+        </p>
+      </div>
+    </div>
+
+    <!-- Right Section: Main Error Message -->
+    <div class="text-section">
+      <p class="text-uppercase text-primary fw-bold letter-spacing-1 mb-2 d-flex align-items-center">
+        <span class="line-indicator me-2"></span> TỪ CHỐI TRUY CẬP
+      </p>
+      <h1 class="display-3 fw-bolder text-dark mb-0">Truy cập</h1>
+      <h1 class="display-3 fw-bolder text-primary mb-4">Bị Từ Chối</h1>
+      
+      <p class="lead text-dark mb-4">Bạn không có quyền để xem trang hoặc thực hiện thao tác này.</p>
+      
+      <div class="border-start border-3 border-secondary ps-3 py-1 mb-5 text-muted fst-italic">
+        Tài khoản của bạn được phân một vai trò không có quyền quản trị cho tính năng này. Vui lòng liên hệ Quản trị viên hệ thống nếu bạn cho rằng đây là lỗi.
+      </div>
+
+      <div class="d-flex flex-wrap gap-3 buttons-container">
+        <button class="btn btn-primary btn-lg px-4 d-flex align-items-center justify-content-center gap-2 text-nowrap" (click)="goBack()">
+          <i class="pi pi-arrow-left"></i> Quay lại trang trước
+        </button>
+        <button class="btn btn-outline-secondary btn-lg px-4 d-flex align-items-center justify-content-center gap-2 text-nowrap" (click)="returnToDashboard()">
+          <i class="pi pi-home"></i> Về Dashboard
+        </button>
+        <button class="btn btn-outline-danger btn-lg px-4 d-flex align-items-center justify-content-center gap-2 text-nowrap" (click)="logout()">
+          <i class="pi pi-sign-out"></i> Đăng nhập lại
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,53 @@
+<section class="email-outbox-page" aria-labelledby="email-outbox-title">
+  <header class="email-outbox-hero">
+    <div>
+      <p class="eyebrow">Operations / Mail delivery</p>
+      <h1 id="email-outbox-title">Hàng đợi email lỗi</h1>
+      <p class="subtitle">Theo dõi lần gửi xác nhận booking gần nhất mà không hiển thị địa chỉ người nhận đầy đủ.</p>
+    </div>
+    <button type="button" class="refresh-button" [disabled]="loading" (click)="load()">Làm mới</button>
+  </header>
+
+  <p *ngIf="error" class="error-banner" role="alert">{{ error }}</p>
+  <div *ngIf="loading" class="state-card" role="status">Đang tải hàng đợi email...</div>
+  <div *ngIf="!loading && !error && failures.length === 0" class="state-card" role="status">
+    <strong>Không có email lỗi</strong><span>Hệ thống chưa ghi nhận bản tin cần xử lý.</span>
+  </div>
+
+  <div *ngIf="!loading && failures.length > 0" class="table-shell">
+    <div class="table-meta"><span>{{ totalElements | number }} bản ghi lỗi</span><span>Trang {{ page + 1 }} / {{ totalPages }}</span></div>
+    <div class="table-scroll">
+      <table>
+        <caption class="visually-hidden">Các email cần theo dõi hoặc retry</caption>
+        <thead><tr><th>Template</th><th>Người nhận</th><th>Trạng thái</th><th>Lần thử</th><th>Lỗi</th><th>Thời điểm</th><th>Thao tác</th></tr></thead>
+        <tbody>
+          <ng-container *ngFor="let item of failures; trackBy: trackById">
+            <tr [class.expanded]="expandedId === item.id">
+              <td><strong>{{ item.templateKey }}</strong><small>v{{ item.templateVersion }} · #{{ item.id }}</small></td>
+              <td>{{ item.maskedRecipient }}<small>{{ item.subject }}</small></td>
+              <td><span class="status-pill" [class.bounced]="item.status === 'BOUNCED'">{{ item.status }}</span></td>
+              <td>{{ item.attemptCount }} / {{ item.maxAttempts }}<small *ngIf="item.manualRetryCount">Retry thủ công: {{ item.manualRetryCount }}</small></td>
+              <td><code>{{ item.lastErrorCode || 'UNKNOWN' }}</code></td>
+              <td class="time">{{ item.failedAt || item.createdAt | date:'dd/MM/yyyy HH:mm':'UTC' }}</td>
+              <td class="actions">
+                <button type="button" class="details-button" (click)="toggleAttempts(item)" [attr.aria-expanded]="expandedId === item.id">{{ expandedId === item.id ? 'Thu gọn' : 'Lần gửi gần nhất' }}</button>
+                <button *ngIf="canRetry" type="button" class="retry-button" [disabled]="retryingId !== null" (click)="retry(item)">{{ retryingId === item.id ? 'Đang retry...' : 'Retry' }}</button>
+              </td>
+            </tr>
+            <tr *ngIf="expandedId === item.id" class="attempt-row">
+              <td colspan="7">
+                <div *ngIf="!attemptsById.has(item.id)" class="attempt-loading" role="status">Đang tải lịch sử...</div>
+                <ol *ngIf="attemptsById.has(item.id)" class="attempt-list">
+                  <li *ngFor="let attempt of attemptsById.get(item.id)">
+                    <span>#{{ attempt.attemptNumber }} · {{ attempt.outcome }}</span><code>{{ attempt.errorCode || attempt.providerMessageId || 'OK' }}</code><time>{{ attempt.attemptedAt | date:'dd/MM/yyyy HH:mm:ss':'UTC' }}</time>
+                  </li>
+                </ol>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+    <footer class="pagination"><button type="button" [disabled]="page === 0" (click)="previousPage()">← Trước</button><button type="button" [disabled]="page + 1 >= totalPages" (click)="nextPage()">Sau →</button></footer>
+  </div>
+</section>

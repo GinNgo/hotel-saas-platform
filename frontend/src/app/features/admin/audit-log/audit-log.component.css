@@ -1,0 +1,36 @@
+:host { display: block; min-height: 100%; background: #f4f7fb; }
+.audit-page { max-width: 1440px; margin: 0 auto; padding: 2rem clamp(1rem, 3vw, 3rem) 3rem; color: #172033; }
+.audit-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; margin-bottom: 1.5rem; padding: 2rem; border-radius: 1.5rem; color: #f8fafc; background: radial-gradient(circle at 85% 20%, #e2aa68 0, transparent 32%), linear-gradient(120deg, #172033 0%, #263c5c 100%); box-shadow: 0 1rem 2.5rem rgb(31 49 77 / 18%); }
+.eyebrow { margin: 0 0 .45rem; color: #ffdca8; font-size: .75rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+h1 { margin: 0; font-size: clamp(1.8rem, 3vw, 3rem); letter-spacing: -.04em; }
+.subtitle { max-width: 46rem; margin: .75rem 0 0; color: #d9e5f5; }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+.export-button, .primary-button { border: 0; border-radius: .75rem; padding: .75rem 1rem; color: #172033; background: #f4c47f; font-weight: 800; }
+.export-button:disabled, button:disabled { cursor: not-allowed; opacity: .55; }
+.filter-panel { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 1rem; align-items: end; margin-bottom: 1.25rem; padding: 1.25rem; border: 1px solid #e1e8f0; border-radius: 1rem; background: #fff; box-shadow: 0 .45rem 1.25rem rgb(31 49 77 / 6%); }
+label { display: grid; gap: .4rem; color: #52637b; font-size: .78rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+input, select { min-height: 2.65rem; border: 1px solid #cbd7e5; border-radius: .65rem; padding: .55rem .7rem; color: #172033; background: #fff; }
+.filter-actions { display: flex; gap: .5rem; }
+.quiet-button, .details-button, .pagination button { border: 1px solid #cbd7e5; border-radius: .65rem; padding: .65rem .85rem; color: #31445f; background: #fff; font-weight: 700; }
+.error-banner { margin: 1rem 0; padding: .85rem 1rem; border-radius: .75rem; color: #9f1239; background: #fff1f2; }
+.loading-state, .empty-state { display: grid; place-items: center; gap: .4rem; min-height: 14rem; border: 1px dashed #cbd7e5; border-radius: 1rem; color: #60718a; background: #fff; }
+.empty-state strong { color: #253957; }
+.table-shell { overflow: hidden; border: 1px solid #e1e8f0; border-radius: 1rem; background: #fff; box-shadow: 0 .45rem 1.25rem rgb(31 49 77 / 6%); }
+.table-meta, .pagination { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .9rem 1rem; color: #667991; font-size: .85rem; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; min-width: 940px; border-collapse: collapse; }
+th { padding: .8rem 1rem; color: #687b96; background: #f8fafc; font-size: .7rem; letter-spacing: .08em; text-align: left; text-transform: uppercase; }
+td { padding: 1rem; border-top: 1px solid #edf1f6; vertical-align: top; font-size: .9rem; }
+td small { display: block; margin-top: .25rem; color: #8291a6; font-size: .72rem; }
+.time { white-space: nowrap; color: #5e708a; }
+.domain-pill { display: inline-block; border-radius: 99px; padding: .25rem .5rem; color: #1d4ed8; background: #eff6ff; font-size: .7rem; font-weight: 900; }
+.reason { max-width: 20rem; color: #52637b; }
+.details-button { padding: .45rem .65rem; white-space: nowrap; }
+tr.expanded td { border-top-color: #f4c47f; }
+.detail-row td { padding-top: 0; background: #fcfdff; }
+.state-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; padding: 0 0 1rem; }
+.state-grid h3 { margin: .75rem 0 .4rem; color: #687b96; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; }
+pre { max-height: 15rem; overflow: auto; margin: 0; padding: .8rem; border-radius: .65rem; color: #d9e5f5; background: #172033; font: .75rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; }
+@media (max-width: 900px) { .filter-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); } .filter-actions { grid-column: 1 / -1; } }
+@media (max-width: 640px) { .audit-page { padding: 1rem .75rem 2rem; } .audit-hero { align-items: stretch; flex-direction: column; padding: 1.25rem; } .export-button { width: 100%; } .filter-panel { grid-template-columns: 1fr; padding: 1rem; } .filter-actions { display: grid; grid-template-columns: 1fr 1fr; } .state-grid { grid-template-columns: 1fr; } }

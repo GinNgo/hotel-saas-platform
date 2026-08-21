@@ -1,0 +1,59 @@
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white py-3">
+    <h4 class="mb-0 text-primary">Tạo đặt phòng mới</h4>
+  </div>
+  <div class="card-body">
+    <div class="row g-4">
+      <div class="col-md-6"><label class="form-label fw-bold">Họ tên khách <span class="text-danger">*</span></label><input pInputText [(ngModel)]="reservation.guestFullName" autocomplete="name" class="w-100" /></div>
+      <div class="col-md-6"><label class="form-label fw-bold">Số điện thoại <span class="text-danger">*</span></label><input pInputText [(ngModel)]="reservation.guestPhoneNumber" autocomplete="tel" class="w-100" /></div>
+      <div class="col-md-6"><label class="form-label fw-bold">Email</label><input pInputText type="email" [(ngModel)]="reservation.guestEmail" autocomplete="email" class="w-100" /></div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Phòng <span class="text-danger">*</span></label>
+        <p-select [options]="rooms" [(ngModel)]="selectedRoomId" (ngModelChange)="onRoomOrGuestsChange()" optionLabel="roomNumber" optionValue="id" [filter]="true" filterBy="roomNumber" [loading]="loadingRooms" [disabled]="!reservation.checkInDate || !reservation.checkOutDate" placeholder="Chọn phòng khả dụng theo ngày" styleClass="w-100">
+          <ng-template let-room pTemplate="item">
+            <div class="d-flex justify-content-between w-100">
+              <span>{{ room.roomNumber }}</span>
+              <span class="text-muted">{{ room.roomTypeNameVi }}</span>
+            </div>
+          </ng-template>
+        </p-select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Ngày nhận phòng <span class="text-danger">*</span></label>
+        <p-datepicker [(ngModel)]="reservation.checkInDate" (ngModelChange)="onCheckInChange($event)" dateFormat="dd/mm/yy" [showIcon]="true" [minDate]="minCheckInDate" [readonlyInput]="true" placeholder="Chọn ngày nhận phòng" styleClass="w-100"></p-datepicker>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Ngày trả phòng <span class="text-danger">*</span></label>
+        <p-datepicker [(ngModel)]="reservation.checkOutDate" (ngModelChange)="onCheckOutChange()" dateFormat="dd/mm/yy" [showIcon]="true" [minDate]="minCheckOutDate" [disabled]="!reservation.checkInDate" [readonlyInput]="true" placeholder="Chọn ngày trả phòng" styleClass="w-100"></p-datepicker>
+        <small class="text-muted" *ngIf="!reservation.checkInDate">Chọn ngày nhận phòng trước để mở ngày trả phòng.</small>
+      </div>
+      <div class="col-md-6"><label class="form-label fw-bold">Người lớn</label><p-inputNumber [(ngModel)]="reservation.adults" (ngModelChange)="onRoomOrGuestsChange()" [min]="1" [max]="10" [showButtons]="true" styleClass="w-100"></p-inputNumber></div>
+      <div class="col-md-6"><label class="form-label fw-bold">Trẻ em</label><p-inputNumber [(ngModel)]="reservation.children" (ngModelChange)="onRoomOrGuestsChange()" [min]="0" [max]="10" [showButtons]="true" styleClass="w-100"></p-inputNumber></div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Phương thức thanh toán dự kiến</label>
+        <p-select [options]="paymentMethods" [(ngModel)]="reservation.paymentMethod" styleClass="w-100"></p-select>
+        <small class="text-muted">Lựa chọn này không tự ghi nhận khách đã thanh toán.</small>
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-bold">Yêu cầu đặc biệt</label>
+        <textarea pTextarea [(ngModel)]="reservation.specialRequests" rows="3" class="w-100"></textarea>
+      </div>
+      <div class="col-12" *ngIf="loadingQuote || quote || quoteError">
+        <section class="quote-card" aria-live="polite">
+          <div *ngIf="loadingQuote" class="quote-loading"><i class="pi pi-spin pi-spinner"></i> Đang tính giá từ hệ thống…</div>
+          <div *ngIf="quoteError && !loadingQuote" class="quote-error">{{ quoteError }}</div>
+          <ng-container *ngIf="quote && !loadingQuote">
+            <div class="quote-heading"><div><small>Báo giá phòng {{ quote.roomNumber }} · {{ reservation.adults }} người lớn · {{ reservation.children || 0 }} trẻ em</small><strong>{{ quote.roomTypeName }}</strong></div><span>{{ quote.nights }} đêm</span></div>
+            <div class="quote-row"><span>{{ quote.nightlyPrice | number:'1.0-0' }} ₫ × {{ quote.nights }} đêm</span><b>{{ quote.baseSubtotal | number:'1.0-0' }} ₫</b></div>
+            <div *ngIf="quote.discount > 0" class="quote-row discount"><span>Ưu đãi {{ quote.promotionCode }}</span><b>−{{ quote.discount | number:'1.0-0' }} ₫</b></div>
+            <div class="quote-total"><span>Tổng tiền lưu trú</span><strong>{{ quote.finalTotal | number:'1.0-0' }} ₫</strong></div>
+          </ng-container>
+        </section>
+      </div>
+    </div>
+  </div>
+  <div class="card-footer bg-light d-flex justify-content-end gap-2 py-3">
+    <p-button label="Hủy" icon="pi pi-times" styleClass="p-button-secondary p-button-outlined" (onClick)="cancel()"></p-button>
+    <p-button label="Lưu thông tin" icon="pi pi-check" styleClass="p-button-primary" [loading]="saving" [disabled]="!formValid || saving || loadingQuote || !quote" (onClick)="save()"></p-button>
+  </div>
+</div>

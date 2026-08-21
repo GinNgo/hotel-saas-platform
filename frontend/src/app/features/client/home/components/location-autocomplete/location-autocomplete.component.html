@@ -1,0 +1,133 @@
+<div class="location-shell" (click)="onShellClick($event)">
+  <i class="pi pi-search location-icon" aria-hidden="true"></i>
+  <input
+    #searchInput
+    type="search"
+    autocomplete="off"
+    [formControl]="searchControl"
+    (focus)="openPopup()"
+    (keydown)="onKeydown($event)"
+    [placeholder]="i18n.text('PUBLIC.SEARCH.LOCATION_PLACEHOLDER')"
+    [attr.aria-label]="i18n.text('PUBLIC.SEARCH.LOCATION_ARIA')"
+    aria-autocomplete="list"
+    [attr.aria-expanded]="popupOpen"
+    [attr.aria-activedescendant]="activeIndex >= 0 ? 'location-option-' + activeIndex : null">
+  <button *ngIf="searchControl.value" type="button" class="clear-input" (click)="clearInput($event)" [title]="i18n.text('PUBLIC.SEARCH.CLEAR_INPUT')" [attr.aria-label]="i18n.text('PUBLIC.SEARCH.CLEAR_INPUT')">
+    <i class="pi pi-times" aria-hidden="true"></i>
+  </button>
+
+  <section *ngIf="popupOpen" class="location-popup" [class.search-mode]="keyword.length >= 2"
+    (pointerdown)="$event.stopPropagation()"
+    (mousedown)="$event.stopPropagation()"
+    (click)="$event.stopPropagation()"
+    role="dialog" [attr.aria-label]="i18n.text('PUBLIC.SEARCH.SUGGESTIONS_ARIA')">
+    <header class="mobile-popup-header">
+      <strong>{{ i18n.text('PUBLIC.SEARCH.CHOOSE_DESTINATION') }}</strong>
+      <button type="button" (click)="closePopup()" [title]="i18n.text('PUBLIC.SEARCH.CLOSE')" [attr.aria-label]="i18n.text('PUBLIC.SEARCH.CLOSE')"><i class="pi pi-times" aria-hidden="true"></i></button>
+    </header>
+
+    <div *ngIf="keyword.length < 2" class="discovery-grid">
+      <div class="recent-column">
+        <div class="section-heading">
+          <span>{{ i18n.text('PUBLIC.SEARCH.RECENT') }}</span>
+          <button *ngIf="recentSearches.length" type="button" (click)="clearRecent()">{{ i18n.text('PUBLIC.SEARCH.CLEAR_ALL') }}</button>
+        </div>
+
+        <div *ngIf="recentSearches.length; else noRecent" class="recent-list">
+          <div *ngFor="let recent of recentSearches" class="recent-item" role="button" tabindex="0"
+            (click)="selectRecent(recent)" (keydown.enter)="selectRecent(recent)" (keydown.space)="selectRecent(recent); $event.preventDefault()">
+            <span class="result-symbol"><i class="pi pi-history"></i></span>
+            <span class="result-copy">
+              <strong>{{ recent.displayLocation }}</strong>
+              <small>{{ i18n.count('PUBLIC.GUESTS.ADULT_COUNT', recent.adultCount) }} · {{ i18n.count('PUBLIC.GUESTS.ROOM_COUNT', recent.roomCount) }}</small>
+            </span>
+            <button type="button" class="remove-recent" (click)="removeRecent($event, recent)" [title]="i18n.text('PUBLIC.SEARCH.REMOVE_RECENT')" [attr.aria-label]="i18n.text('PUBLIC.SEARCH.REMOVE_RECENT')">
+              <i class="pi pi-times" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+        <ng-template #noRecent>
+          <div class="compact-empty">
+            <i class="pi pi-clock"></i>
+            <span>{{ i18n.text('PUBLIC.SEARCH.RECENT_EMPTY') }}</span>
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="popular-column">
+        <div class="section-heading"><span>{{ i18n.text('PUBLIC.SEARCH.POPULAR_CITIES') }}</span></div>
+        <div *ngIf="popularLoading" class="popular-skeleton">
+          <span *ngFor="let row of skeletonRows"></span>
+        </div>
+        <div *ngIf="!popularLoading" class="popular-list">
+          <button *ngFor="let destination of popularDestinations" type="button" class="popular-item"
+            (mousedown)="selectResultFromMouse($event, destination)"
+            (click)="selectResult(destination)">
+            <img [src]="displayImage(destination.imageUrl)" [alt]="destination.name" loading="lazy"
+              (error)="handleImageError($event)">
+            <span class="result-copy">
+              <strong>{{ destination.name }}</strong>
+              <small>{{ i18n.text('PUBLIC.HOME_CARDS.PROPERTY_COUNT', { count: destination.propertyCount || 0 }) }} · {{ i18n.text('PUBLIC.SEARCH.PROVINCE_SUFFIX') }}</small>
+            </span>
+            <i class="pi pi-angle-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="keyword.length >= 2" class="search-results" role="listbox">
+      <div *ngIf="loading" class="loading-results" [attr.aria-label]="i18n.text('PUBLIC.SEARCH.LOADING')">
+        <div *ngFor="let row of skeletonRows" class="result-skeleton"><span></span><div><b></b><i></i></div></div>
+      </div>
+
+      <div *ngIf="!loading && loadError" class="message-state error-state">
+        <i class="pi pi-exclamation-circle"></i>
+        <strong>{{ i18n.text('PUBLIC.SEARCH.LOAD_ERROR_TITLE') }}</strong>
+        <span>{{ i18n.text('PUBLIC.SEARCH.LOAD_ERROR_BODY') }}</span>
+        <button type="button" (click)="retrySearch()">{{ i18n.text('PUBLIC.SEARCH.TRY_AGAIN') }}</button>
+      </div>
+
+      <ng-container *ngIf="!loading && !loadError && hasResults">
+        <div *ngFor="let group of groupedResults" class="result-group">
+          <h3><i [class]="group.icon"></i>{{ group.label }}<span>{{ group.items.length }}</span></h3>
+          <button *ngFor="let result of group.items" type="button" class="suggestion-item"
+            [id]="'location-option-' + resultIndex(result)"
+            [class.active]="activeResult === result"
+            [attr.aria-selected]="activeResult === result"
+            [attr.data-suggestion-type]="result.type"
+            role="option"
+            (mousedown)="selectResultFromMouse($event, result)"
+            (click)="selectResult(result)">
+            <img *ngIf="result.type === 'PROPERTY'" [src]="displayImage(result.thumbnailUrl, result.propertyType)"
+              [alt]="result.name" loading="lazy" (error)="handleImageError($event, result.propertyType)">
+            <span *ngIf="result.type !== 'PROPERTY'" class="result-symbol"><i [class]="group.icon"></i></span>
+            <span class="result-copy">
+              <strong><app-safe-highlight [text]="result.name" [keyword]="keyword"></app-safe-highlight></strong>
+              <small *ngIf="result.type === 'PROVINCE'">{{ i18n.text('PUBLIC.HOME_CARDS.PROPERTY_COUNT', { count: result.propertyCount || 0 }) }} · {{ i18n.text('PUBLIC.SEARCH.PROVINCE_SUFFIX') }}</small>
+              <small *ngIf="result.type === 'WARD'">{{ result.provinceName }}<ng-container *ngIf="result.propertyCount !== undefined"> · {{ i18n.text('PUBLIC.HOME_CARDS.PROPERTY_COUNT', { count: result.propertyCount }) }}</ng-container></small>
+              <small *ngIf="result.type === 'PROPERTY'">
+                {{ propertyTypeLabel(result.propertyType) }} · {{ result.wardName || result.provinceName }}<ng-container *ngIf="result.address"> · {{ result.address }}</ng-container>
+              </small>
+              <small *ngIf="result.type === 'LANDMARK'" class="landmark-meta">
+                {{ result.secondaryText || i18n.text('PUBLIC.SEARCH.LANDMARK_FALLBACK') }}<ng-container *ngIf="result.defaultRadiusKm"> · {{ i18n.text('PUBLIC.SEARCH.WITHIN_RADIUS', { radius: result.defaultRadiusKm }) }}</ng-container>
+              </small>
+              <small *ngIf="result.type === 'LANDMARK' && result.descriptionVi" class="landmark-description">
+                {{ result.descriptionVi }}
+              </small>
+            </span>
+            <span *ngIf="result.reviewScore" class="review-score">{{ result.reviewScore | number:'1.1-1' }}</span>
+            <span *ngIf="result.distanceKm !== undefined && result.distanceKm !== null" class="distance">{{ result.distanceKm }} km</span>
+            <i class="pi pi-angle-right result-arrow"></i>
+          </button>
+        </div>
+      </ng-container>
+
+      <div *ngIf="!loading && !loadError && !hasResults" class="message-state empty-state">
+        <i class="pi pi-search-minus"></i>
+        <strong>{{ i18n.text('PUBLIC.SEARCH.NO_RESULTS_TITLE') }}</strong>
+        <span>{{ i18n.text('PUBLIC.SEARCH.NO_RESULTS_BODY') }}</span>
+        <button type="button" (click)="clearInput($event)">{{ i18n.text('PUBLIC.SEARCH.SEARCH_ALL') }}</button>
+      </div>
+    </div>
+  </section>
+</div>

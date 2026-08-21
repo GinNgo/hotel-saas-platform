@@ -1,0 +1,116 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="m-3">
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+    <div>
+      <h2 class="mb-1 text-dark fw-bold"><i class="pi pi-shield me-2" aria-hidden="true" style="color: var(--hotel-gold);"></i>Ma trận phân quyền</h2>
+      <p class="text-muted mb-0">Cấp quyền xem, thêm, sửa, xóa, xuất, duyệt và thực hiện tác vụ theo từng chức năng.</p>
+    </div>
+    <div class="d-flex gap-2"><button pButton label="Đặt lại" icon="pi pi-undo" class="p-button-outlined" [disabled]="!dirty || saving" (click)="resetPermissions()"></button><button pButton label="Lưu phân quyền" icon="pi pi-save" class="btn btn-primary-hotel" [disabled]="!selectedRole || !dirty || saving || protectedRole" [loading]="saving" (click)="savePermissions()"></button></div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-3">
+      <p-card styleClass="shadow-sm border-0 rounded-4 h-100" [style]="{'border-radius': '12px'}">
+        <h5 class="fw-bold mb-3 border-bottom pb-2">Vai tr&ograve;</h5>
+        <div *ngIf="loadingRoles" class="text-center py-4 text-muted" role="status" aria-live="polite">
+          <i class="pi pi-spin pi-spinner me-2" aria-hidden="true"></i> Đang tải vai trò...
+        </div>
+        <div class="list-group list-group-flush">
+          <button
+            type="button"
+            class="list-group-item list-group-item-action border-0 rounded mb-1"
+            *ngFor="let role of roles"
+            [class.active]="selectedRole?.id === role.id"
+            [class.bg-primary-hotel]="selectedRole?.id === role.id"
+            [class.text-white]="selectedRole?.id === role.id"
+            [attr.aria-pressed]="selectedRole?.id === role.id"
+            (click)="onRoleChange(role)">
+            <i class="pi pi-user me-2" aria-hidden="true"></i> {{ role.name }}
+            <small class="d-block opacity-75">{{ role.code }}</small>
+          </button>
+        </div>
+      </p-card>
+    </div>
+
+    <div class="col-lg-9">
+      <p-card styleClass="shadow-sm border-0 rounded-4" [style]="{'border-radius': '12px'}">
+        <div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center justify-content-between gap-3 mb-3">
+          <span><i class="pi pi-exclamation-circle me-2" aria-hidden="true"></i>{{ errorMessage }}</span>
+          <button pButton label="Thử lại" icon="pi pi-refresh" class="p-button-sm p-button-danger p-button-outlined" (click)="selectedRole ? loadPermissions() : loadRoles()" [disabled]="loading || loadingRoles"></button>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0 text-primary-hotel" *ngIf="selectedRole">
+            Ma trận quyền: {{ selectedRole.name }}
+          </h5>
+          <h5 class="fw-bold mb-0 text-muted" *ngIf="!selectedRole">
+            Vui l&ograve;ng ch&#7885;n vai tr&ograve;
+          </h5>
+        </div>
+        <div *ngIf="protectedRole" class="alert alert-info">Vai trò quản trị lõi được bảo vệ và không thể chỉnh sửa quyền.</div>
+        <div *ngIf="editableSystemRole" class="alert alert-info">Có thể chỉnh quyền vai trò vận hành tại đây. Bỏ quyền Xem sẽ chặn trang; bỏ Thêm, Sửa, Xóa hoặc Duyệt sẽ chặn thao tác tương ứng.</div>
+        <div *ngIf="dirty" class="alert alert-warning py-2" role="status" aria-live="polite">Có {{ changedPermissionCount }} chức năng đã thay đổi nhưng chưa được lưu.</div>
+
+        <div *ngIf="loading" class="text-center py-5" role="status" aria-live="polite">
+          <i class="pi pi-spin pi-spinner" aria-hidden="true" style="font-size: 2rem; color: var(--hotel-primary);"></i>
+          <span class="visually-hidden">Đang tải ma trận phân quyền</span>
+        </div>
+
+        <div *ngIf="!loading && selectedRole" class="permission-table-region" role="region" [attr.aria-label]="'Ma trận quyền của ' + selectedRole.name" tabindex="0">
+          <p-table [value]="modules" responsiveLayout="scroll" styleClass="p-datatable-sm p-datatable-gridlines">
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="fw-bold bg-light" style="min-width: 240px">Nh&oacute;m / Trang</th>
+                <th *ngFor="let act of actions" class="text-center fw-bold bg-light" style="min-width: 92px"><span>{{ act.label }}</span><p-checkbox class="d-block mt-2" [binary]="true" [disabled]="protectedRole" [ngModel]="allHavePermission(act.value)" [indeterminate]="someHavePermission(act.value)" [attr.aria-label]="'Bật hoặc tắt quyền ' + act.label + ' cho tất cả chức năng'" (onChange)="toggleAll(act.value,$event.checked)"></p-checkbox></th>
+              </tr>
+            </ng-template>
+
+            <ng-template pTemplate="body" let-module>
+              <tr class="bg-light">
+                <td class="fw-bold text-dark">
+                  <i class="pi pi-folder-open me-2 text-warning" aria-hidden="true"></i> {{ module.name }}
+                </td>
+                <td *ngFor="let act of actions" class="text-center">
+                  <p-checkbox
+                    [binary]="true"
+                    [disabled]="protectedRole || !moduleSupportsAction(module, act.value)"
+                    [ngModel]="moduleHasPermission(module, act.value)"
+                    [indeterminate]="moduleSomeHavePermission(module, act.value)"
+                    [attr.aria-label]="'Quyền ' + act.label + ' cho nhóm ' + module.name"
+                    (onChange)="toggleModule(module, act.value, $event.checked)">
+                  </p-checkbox>
+                </td>
+              </tr>
+              <tr *ngFor="let func of module.functions">
+                <td class="ps-4">
+                  <i [class]="(func.icon || 'pi pi-file') + ' me-2 text-muted'" aria-hidden="true"></i>
+                  <span>{{ func.name }}</span>
+                  <small class="text-muted d-block ms-4">{{ func.code }} - {{ func.url || '-' }}</small>
+                </td>
+                <td *ngFor="let act of actions" class="text-center">
+                  <p-checkbox
+                    [binary]="true"
+                    [disabled]="protectedRole || !supportsAction(func, act.value)"
+                    [ngModel]="hasPermission(func, act.value)"
+                    [attr.aria-label]="'Quyền ' + act.label + ' cho ' + func.name"
+                    (onChange)="togglePermission(func, act.value, $event.checked)">
+                  </p-checkbox>
+                </td>
+              </tr>
+            </ng-template>
+
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td [attr.colspan]="actions.length + 1" class="text-center p-4 text-muted">
+                  Ch&#432;a c&oacute; trang/ch&#7913;c n&#259;ng &#273;&#7875; ph&acirc;n quy&#7873;n.
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </p-card>
+    </div>
+  </div>
+</div>

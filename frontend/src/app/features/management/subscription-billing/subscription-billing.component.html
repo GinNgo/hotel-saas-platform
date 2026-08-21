@@ -1,0 +1,110 @@
+<div class="billing-container">
+  <header class="billing-hero">
+    <div>
+      <p class="eyebrow">Thanh toán nền tảng</p>
+      <h1>Gói phần mềm cho cơ sở</h1>
+      <p class="hero-copy">Giá, thời hạn và quyền lợi được lấy từ danh mục do máy chủ quản lý.</p>
+    </div>
+    <div class="source-pill"><span class="status-dot"></span> Máy chủ là nguồn dữ liệu chuẩn</div>
+  </header>
+
+  <div class="current-plan-card" *ngIf="currentEntitlement && currentEntitlement.status !== 'NONE'">
+    <div class="plan-header">
+      <h3>Gói hiện tại của cơ sở đã chọn</h3>
+      <span class="status-badge" [class.active]="currentEntitlement.status === 'ACTIVE'">{{ statusLabel(currentEntitlement.status) }}</span>
+    </div>
+    <div class="plan-details">
+      <div class="plan-name">{{ currentEntitlement.planName || currentEntitlement.planCode || 'Chưa có gói' }}</div>
+      <div class="plan-meta">
+        <p *ngIf="currentEntitlement.effectiveUntil">Hết hạn: <strong>{{ currentEntitlement.effectiveUntil | date:'dd/MM/yyyy' }}</strong></p>
+        <p *ngIf="!currentEntitlement.effectiveUntil">Gói trọn đời hoặc không giới hạn thời gian</p>
+        <small>Nguồn: {{ sourceLabel(currentEntitlement.source) }}</small>
+      </div>
+    </div>
+  </div>
+  <app-feedback-state *ngIf="subscriptionError && !currentEntitlement" state="error" title="Chưa tải được gói của cơ sở" [message]="subscriptionError" actionLabel="Thử lại" (actionTriggered)="loadEntitlement()" />
+  <div class="inline-error" *ngIf="currentEntitlement?.migrationBlocker" role="status">
+    Cơ sở chưa có gói hoạt động: {{ currentEntitlement.migrationBlocker }}
+  </div>
+
+  <section class="policy-card" *ngIf="policyAvailability && !loadingPolicy" aria-labelledby="policy-title">
+    <div>
+      <p class="eyebrow">Chính sách thương mại</p>
+      <h2 id="policy-title">Quy tắc thay đổi gói an toàn</h2>
+    </div>
+    <div class="policy-grid">
+      <div class="policy-item" [class.blocked]="!policyAvailability.downgradeConfigured">
+        <span class="policy-icon">{{ policyAvailability.downgradeConfigured ? 'OK' : '!' }}</span>
+        <div><strong>Hạ gói</strong><small>{{ policyAvailability.downgradeConfigured ? 'Đã sẵn sàng' : 'Chưa cấu hình chính sách hạ gói' }}</small></div>
+      </div>
+      <div class="policy-item" [class.blocked]="!policyAvailability.prorationConfigured">
+        <span class="policy-icon">{{ policyAvailability.prorationConfigured ? 'OK' : '!' }}</span>
+        <div><strong>Tính phí chênh lệch</strong><small>{{ policyAvailability.prorationConfigured ? 'Đã sẵn sàng' : 'Chưa cấu hình cách tính phí chênh lệch' }}</small></div>
+      </div>
+    </div>
+  </section>
+  <app-feedback-state *ngIf="policyError" state="error" title="Chưa tải được chính sách" [message]="policyError" actionLabel="Thử lại" (actionTriggered)="loadPolicyAvailability()" />
+
+  <h2 class="section-title">Các gói đang cung cấp</h2>
+  <app-feedback-state *ngIf="plansError && !isLoading" state="error" title="Chưa tải được danh mục gói" [message]="plansError" actionLabel="Thử lại" (actionTriggered)="loadPlans()" />
+  <app-feedback-state *ngIf="!isLoading && !plansError && !plans.length" state="empty" title="Chưa có gói nào" message="Hệ thống chưa công bố gói phần mềm đang hoạt động." />
+  <div class="pricing-grid" *ngIf="!isLoading && !plansError && plans.length">
+    <div class="pricing-card" *ngFor="let plan of plans">
+      <div class="card-header">
+        <h4>{{ planName(plan) }}</h4>
+        <div class="price">
+          <span class="amount">{{ plan.price | number:'1.0-0' }}</span>
+          <span class="currency">{{ plan.currency }}</span>
+          <span class="period">/ {{ billingPeriodLabel(plan) }}</span>
+        </div>
+        <p class="desc">{{ plan.nameEn }}</p>
+      </div>
+      <div class="card-body">
+        <ul class="features">
+          <li *ngFor="let feature of plan.features">
+            <span class="feature-check">+</span>
+            {{ feature.nameVi || feature.nameEn || feature.code }}: {{ featureLimit(feature.limit) }}
+          </li>
+          <li *ngIf="!plan.features.length">Chưa công bố giới hạn tính năng.</li>
+        </ul>
+      </div>
+      <div class="card-footer">
+        <span class="current-plan-label" *ngIf="currentEntitlement?.planId === plan.id">Gói hiện tại</span>
+        <button *ngIf="canCreateOrder" class="btn btn-primary w-full" type="button" [disabled]="creatingOrderFor === plan.id" (click)="createOrder(plan)">
+          {{ orderActionLabel(plan) }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <p class="inline-error" *ngIf="orderError" role="alert">{{ orderError }}</p>
+  <section class="order-snapshot" *ngIf="latestOrder" aria-labelledby="order-snapshot-title">
+    <div class="snapshot-heading">
+      <div><p class="eyebrow">Dữ liệu đã chốt trên máy chủ</p><h2 id="order-snapshot-title">Đơn {{ latestOrder.orderCode }}</h2></div>
+      <span class="status-badge active">{{ statusLabel(latestOrder.status) }}</span>
+    </div>
+    <div class="snapshot-grid">
+      <div><span>Gói</span><strong>{{ latestOrder.planName }} ({{ latestOrder.planVersion }})</strong></div>
+      <div><span>Giá</span><strong>{{ latestOrder.price | number:'1.0-0' }} {{ latestOrder.currency }}</strong></div>
+      <div><span>Hết hạn thanh toán</span><strong>{{ latestOrder.expiresAt | date:'dd/MM/yyyy HH:mm' }}</strong></div>
+      <div><span>Mã định danh đơn</span><strong>{{ latestOrder.publicId }}</strong></div>
+    </div>
+    <p class="snapshot-note">Giá và quyền lợi của đơn này không bị thay đổi. Gói chỉ được kích hoạt sau khi máy chủ xác minh thanh toán.</p>
+  </section>
+  <app-platform-payment-panel *ngIf="latestOrder" [order]="latestOrder" (orderChanged)="updateLatestOrder($event)" />
+
+  <section class="usage-summary" *ngIf="!isLoading && currentEntitlement" aria-labelledby="usage-summary-title">
+    <h3 id="usage-summary-title">Giới hạn tính năng của cơ sở</h3>
+    <div class="usage-grid">
+      <div *ngFor="let feature of currentEntitlement.limits | keyvalue">
+        <span>{{ feature.key }}</span>
+        <strong>{{ featureLimit(feature.value) }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <div class="loading-state" *ngIf="isLoading" role="status" aria-live="polite">
+    <div class="spinner"></div>
+    <p>Đang tải dữ liệu gói từ máy chủ...</p>
+  </div>
+</div>

@@ -1,0 +1,336 @@
+<main class="profile-page">
+  <aside class="profile-sidebar">
+    <div class="profile-avatar">
+      <img
+        *ngIf="profileForm.controls.avatarUrl.value"
+        [src]="profileForm.controls.avatarUrl.value"
+        [attr.alt]="i18n.text('PUBLIC.ACCOUNT.AVATAR_ALT')"
+        (error)="avatarError()"
+      />
+      <span *ngIf="!profileForm.controls.avatarUrl.value">{{ initials }}</span>
+    </div>
+    <strong>{{ user?.fullName || user?.username }}</strong
+    ><small>{{ user?.email }}</small>
+    <label class="upload-button"
+      ><i class="pi pi-camera"></i>{{ uploading ? i18n.text('PUBLIC.ACCOUNT.UPLOADING') : i18n.text('PUBLIC.ACCOUNT.CHANGE_PHOTO')
+      }}<input type="file" accept="image/*" (change)="uploadAvatar($event)" [disabled]="uploading"
+    /></label>
+    <nav>
+      <button
+        type="button"
+        [class.active]="activeTab === 'profile'"
+        (click)="setActiveTab('profile')"
+      >
+        <i class="pi pi-user"></i>{{ i18n.text('PUBLIC.ACCOUNT.PERSONAL_INFO') }}
+      </button>
+      <button
+        type="button"
+        [class.active]="activeTab === 'bookings'"
+        (click)="setActiveTab('bookings')"
+      >
+        <i class="pi pi-briefcase" aria-hidden="true"></i>{{ i18n.text('PUBLIC.ACCOUNT.MY_TRIPS') }}
+      </button>
+      <a routerLink="/my-invoices"><i class="pi pi-file"></i>{{ i18n.text('PUBLIC.ACCOUNT.MY_INVOICES') }}</a>
+      <a routerLink="/support"><i class="pi pi-question-circle"></i>{{ i18n.text('LAYOUT.SUPPORT_CENTER') }}</a>
+      <button type="button" class="logout" (click)="logout()">
+        <i class="pi pi-sign-out"></i>{{ i18n.text('PUBLIC.ACCOUNT.LOGOUT') }}
+      </button>
+    </nav>
+  </aside>
+
+  <section class="profile-content">
+    <div *ngIf="loading" class="message">
+      <i class="pi pi-spin pi-spinner"></i>{{ i18n.text('PUBLIC.ACCOUNT.LOADING_PROFILE') }}
+    </div>
+    <div *ngIf="error" class="alert error">
+      <span>{{ error }}</span>
+      <button
+        *ngIf="profileLoadFailed"
+        type="button"
+        class="profile-retry"
+        (click)="loadProfile()"
+      >
+        {{ profileReadText.retry }}
+      </button>
+    </div>
+    <div *ngIf="success" class="alert success">{{ success }}</div>
+    <section
+      *ngIf="!loading && !error && profileEmpty && activeTab === 'profile'"
+      class="content-panel empty profile-empty"
+    >
+      <i class="pi pi-user-minus" aria-hidden="true"></i>
+      <strong>{{ profileReadText.emptyTitle }}</strong>
+      <span>{{ profileReadText.emptyHelp }}</span>
+      <button type="button" class="profile-retry" (click)="loadProfile()">
+        {{ profileReadText.retry }}
+      </button>
+    </section>
+    <section *ngIf="!loading && !profileEmpty && activeTab === 'profile'" class="content-panel">
+      <header>
+        <h1>{{ i18n.text('PUBLIC.ACCOUNT.PROFILE_TITLE') }}</h1>
+        <p>{{ i18n.text('PUBLIC.ACCOUNT.PROFILE_HELP') }}</p>
+      </header>
+      <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+        <label>{{ i18n.text('PUBLIC.ACCOUNT.FULL_NAME') }}<input formControlName="fullName" type="text" /></label>
+        <div class="email-field">
+          <label>{{ i18n.text('PUBLIC.ACCOUNT.EMAIL') }}<input formControlName="email" type="email" autocomplete="email" /></label>
+          <div class="email-status" [class.email-status--verified]="user?.emailVerified">
+            <strong>
+              {{ user?.emailVerified
+                ? emailVerificationText.verified
+                : emailVerificationText.unverified }}
+            </strong>
+            <span *ngIf="user?.pendingEmail">
+              {{ emailVerificationText.pending }}: {{ user.pendingEmail }}
+            </span>
+            <button
+              *ngIf="user && (!user.emailVerified || user.pendingEmail)"
+              type="button"
+              [disabled]="emailActionBusy"
+              (click)="resendEmailVerification()"
+            >
+              {{ emailActionBusy
+                ? emailVerificationText.sending
+                : emailVerificationText.resend }}
+            </button>
+          </div>
+        </div>
+        <label>{{ i18n.text('PUBLIC.ACCOUNT.PHONE') }}<input formControlName="phone" type="tel" /></label>
+        <button type="submit" [disabled]="saving || profileForm.invalid">
+          {{ saving ? i18n.text('PUBLIC.ACCOUNT.SAVING') : i18n.text('PUBLIC.ACCOUNT.SAVE') }}
+        </button>
+      </form>
+    </section>
+    <section
+      *ngIf="!loading && activeTab === 'bookings'"
+      class="content-panel bookings-panel"
+      [attr.aria-busy]="bookingsLoading"
+    >
+      <header>
+        <h1>{{ i18n.text('PUBLIC.ACCOUNT.BOOKINGS_TITLE') }}</h1>
+        <p>{{ i18n.text('PUBLIC.ACCOUNT.BOOKINGS_HELP') }}</p>
+      </header>
+      <div *ngIf="bookingsLoading" class="message bookings-loading" role="status" aria-live="polite">
+        <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>{{ i18n.text('PUBLIC.ACCOUNT.LOADING_BOOKINGS') }}
+      </div>
+      <div *ngIf="bookingsError" class="alert error" role="alert">
+        {{ bookingsError }} <button type="button" (click)="loadBookings()">{{ i18n.text('PUBLIC.ACCOUNT.RETRY') }}</button>
+      </div>
+      <div *ngIf="!bookingsLoading && !bookingsError && !bookings.length" class="empty">
+        <i class="pi pi-briefcase" aria-hidden="true"></i><strong>{{ i18n.text('PUBLIC.ACCOUNT.NO_TRIPS') }}</strong
+        ><a routerLink="/search">{{ i18n.text('PUBLIC.SEARCH.SUBMIT') }}</a>
+      </div>
+      <div
+        *ngIf="cancellationBookingId !== null"
+        class="cancel-dialog-backdrop"
+        role="presentation"
+        (click)="closeCancellationDialog()"
+      >
+        <section
+          class="cancel-dialog"
+          role="dialog"
+          aria-modal="true"
+          [attr.aria-labelledby]="'cancel-dialog-title'"
+          (click)="$event.stopPropagation()"
+        >
+          <h2 id="cancel-dialog-title">{{ i18n.text('PUBLIC.ACCOUNT.CANCEL_DIALOG_TITLE') }}</h2>
+          <p>{{ i18n.text('PUBLIC.ACCOUNT.CANCEL_CONFIRM') }}</p>
+          <form [formGroup]="cancellationForm" (ngSubmit)="confirmCancellation()">
+            <label for="cancel-reason">{{ i18n.text('PUBLIC.ACCOUNT.CANCEL_REASON_LABEL') }}</label>
+            <select id="cancel-reason" formControlName="reasonCode">
+              <option value="">{{ i18n.text('PUBLIC.ACCOUNT.CANCEL_REASON_PLACEHOLDER') }}</option>
+              <option value="CHANGE_OF_PLANS">{{ i18n.text('PUBLIC.ACCOUNT.CANCEL_REASON_CHANGE') }}</option>
+              <option value="BOOKED_BY_MISTAKE">{{ i18n.text('PUBLIC.ACCOUNT.CANCEL_REASON_MISTAKE') }}</option>
+              <option value="FOUND_ANOTHER_PROPERTY">{{ i18n.text('PUBLIC.ACCOUNT.CANCEL_REASON_OTHER_PROPERTY') }}</option>
+              <option value="PAYMENT_ISSUE">{{ i18n.text('PUBLIC.ACCOUNT.CANCEL_REASON_PAYMENT') }}</option>
+              <option value="OTHER">{{ i18n.text('PUBLIC.ACCOUNT.CANCEL_REASON_OTHER') }}</option>
+            </select>
+            <small class="field-error" *ngIf="cancellationForm.controls.reasonCode.touched && cancellationForm.controls.reasonCode.invalid">
+              {{ i18n.text('PUBLIC.ACCOUNT.CANCEL_REASON_REQUIRED') }}
+            </small>
+            <label for="cancel-detail">{{ i18n.text('PUBLIC.ACCOUNT.CANCEL_REASON_DETAIL') }}</label>
+            <textarea id="cancel-detail" rows="3" maxlength="500" formControlName="reason"></textarea>
+            <small class="field-error" *ngIf="cancellationForm.controls.reason.errors?.['required']">
+              {{ i18n.text('PUBLIC.ACCOUNT.CANCEL_OTHER_REQUIRED') }}
+            </small>
+            <div class="cancel-dialog-actions">
+              <button type="button" class="dialog-secondary" (click)="closeCancellationDialog()">
+                {{ i18n.text('PUBLIC.ACCOUNT.CANCEL_DIALOG_BACK') }}
+              </button>
+              <button type="submit" class="dialog-danger" [disabled]="cancellingId !== null">
+                {{ cancellingId !== null ? i18n.text('PUBLIC.ACCOUNT.CANCEL_PENDING') : i18n.text('PUBLIC.ACCOUNT.CANCEL_DIALOG_SUBMIT') }}
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+      <div *ngIf="reviewBookingId !== null" class="cancel-dialog-backdrop" role="presentation" (click)="closeReview()">
+        <section class="cancel-dialog review-dialog" role="dialog" aria-modal="true" aria-labelledby="review-dialog-title" (click)="$event.stopPropagation()">
+          <p class="review-eyebrow">KỲ LƯU TRÚ ĐÃ XÁC MINH</p>
+          <h2 id="review-dialog-title">Chia sẻ trải nghiệm của bạn</h2>
+          <p>Điểm số từ 1 đến 10 sẽ giúp khách khác chọn chỗ nghỉ phù hợp hơn.</p>
+          <form [formGroup]="reviewForm" (ngSubmit)="submitReview()">
+            <div class="review-scores">
+              <label>Điểm tổng thể<input id="review-score" type="number" min="1" max="10" formControlName="score" /></label>
+              <label>Độ sạch sẽ<input type="number" min="1" max="10" formControlName="cleanlinessScore" /></label>
+              <label>Dịch vụ<input type="number" min="1" max="10" formControlName="serviceScore" /></label>
+              <label>Vị trí<input type="number" min="1" max="10" formControlName="locationScore" /></label>
+              <label>Đáng tiền<input type="number" min="1" max="10" formControlName="valueScore" /></label>
+            </div>
+            <label for="review-title">Tiêu đề ngắn</label><input id="review-title" type="text" maxlength="150" formControlName="title" placeholder="Điều nổi bật nhất" />
+            <label for="review-comment">Nhận xét *</label><textarea id="review-comment" rows="5" maxlength="2000" formControlName="comment" placeholder="Chia sẻ ít nhất 10 ký tự"></textarea>
+            <small class="field-error" *ngIf="reviewForm.controls.comment.touched && reviewForm.controls.comment.invalid">Nhận xét phải có từ 10 đến 2000 ký tự.</small>
+            <div class="cancel-dialog-actions"><button type="button" class="dialog-secondary" (click)="closeReview()">Để sau</button><button type="submit" [disabled]="reviewSubmitting || reviewForm.invalid">{{ reviewSubmitting ? 'Đang gửi...' : 'Đăng đánh giá' }}</button></div>
+          </form>
+        </section>
+      </div>
+      <div class="booking-list" *ngIf="!bookingsLoading && bookings.length">
+        <article *ngFor="let booking of bookings" [attr.data-booking-id]="booking.id" [attr.aria-labelledby]="'booking-title-' + booking.id">
+          <header class="booking-card-header">
+            <div>
+              <small>{{ i18n.text('PUBLIC.ACCOUNT.BOOKING_CODE') }}</small><strong [id]="'booking-title-' + booking.id">{{ booking.bookingCode || ('#' + booking.id) }}</strong>
+            </div>
+            <div class="booking-actions">
+              <span class="status">{{ getStatusLabel(booking.status) }}</span>
+              <button
+                *ngIf="booking.status === 'PENDING_PAYMENT'"
+                type="button"
+                class="pay-btn"
+                [disabled]="payingId !== null"
+                [attr.aria-busy]="payingId === booking.id"
+                (click)="resumePayment(booking)"
+              >
+                <i [class]="payingId === booking.id ? 'pi pi-spin pi-spinner' : 'pi pi-credit-card'" aria-hidden="true"></i>
+                {{ payingId === booking.id ? 'Đang mở VNPay...' : 'Thanh toán ngay' }}
+              </button>
+              <a
+                *ngIf="booking.payment?.status === 'SUCCEEDED' && booking.payment.publicId"
+                class="refund-btn"
+                [routerLink]="['/refunds']"
+                [queryParams]="{ transactionId: booking.payment.publicId }"
+              >
+                <i class="pi pi-replay" aria-hidden="true"></i>
+                Yêu cầu hoàn tiền
+              </a>
+              <button
+                *ngIf="
+                  booking.status === 'PENDING' ||
+                  booking.status === 'PENDING_PAYMENT' ||
+                  booking.status === 'CONFIRMED'
+                "
+                type="button"
+                class="cancel-btn"
+                [disabled]="cancellingId !== null || booking.canSelfCancel === false"
+                [attr.title]="booking.canSelfCancel === false ? booking.cancellationBlockReason : null"
+                [attr.aria-busy]="cancellingId === booking.id"
+                (click)="cancelBooking(booking.id, $event)"
+              >
+                {{ cancellingId === booking.id ? i18n.text('PUBLIC.ACCOUNT.CANCEL_PENDING') : i18n.text('PUBLIC.ACCOUNT.CANCEL_BOOKING') }}
+              </button>
+            </div>
+          </header>
+          <p *ngIf="paymentActionErrors['' + booking.id]" class="payment-action-error" role="alert">
+            {{ paymentActionErrors['' + booking.id] }}
+          </p>
+          <div *ngIf="booking.confirmationEmailStatus && booking.confirmationEmailStatus !== 'SENT'" class="cancellation-policy restricted">
+            <i class="pi pi-envelope" aria-hidden="true"></i>
+            <span *ngIf="booking.confirmationEmailStatus === 'NOT_CONFIGURED'">Dịch vụ email chưa được cấu hình. Hãy lưu mã booking.</span>
+            <span *ngIf="booking.confirmationEmailStatus === 'PENDING'">Email xác nhận đang được xử lý.</span>
+            <span *ngIf="booking.confirmationEmailStatus === 'FAILED'">Email xác nhận chưa gửi thành công.</span>
+            <button *ngIf="booking.confirmationEmailStatus === 'FAILED'" type="button" class="dialog-secondary"
+              [disabled]="emailSendingId !== null" (click)="resendBookingConfirmation(booking)">
+              {{ emailSendingId === booking.id ? 'Đang gửi...' : 'Gửi lại email' }}
+            </button>
+          </div>
+          <p *ngIf="emailActionErrors['' + booking.id]" class="payment-action-error" role="alert">
+            {{ emailActionErrors['' + booking.id] }}
+          </p>
+
+          <div class="cancellation-policy" [class.restricted]="booking.canSelfCancel === false">
+            <i class="pi" [class.pi-calendar-check]="booking.canSelfCancel !== false" [class.pi-lock]="booking.canSelfCancel === false" aria-hidden="true"></i>
+            <span *ngIf="booking.canSelfCancel !== false && booking.cancellationDeadline">Hủy miễn phí đến {{ booking.cancellationDeadline | date:'HH:mm dd/MM/yyyy' }}</span>
+            <span *ngIf="booking.canSelfCancel !== false && !booking.cancellationDeadline">Booking có thể hủy theo điều kiện đã xác nhận.</span>
+            <span *ngIf="booking.canSelfCancel === false">{{ booking.cancellationBlockReason || 'Booking không thể tự hủy.' }}</span>
+          </div>
+
+          <dl class="booking-meta">
+            <div>
+              <dt>{{ i18n.text('PUBLIC.ACCOUNT.TIME') }}</dt>
+              <dd>
+                {{ booking.checkInDate | date: 'dd/MM/yyyy' }} -
+                {{ booking.checkOutDate | date: 'dd/MM/yyyy' }}
+              </dd>
+            </div>
+            <div>
+              <dt>{{ i18n.text('PUBLIC.ACCOUNT.TOTAL') }}</dt>
+              <dd>{{ booking.totalAmount | currency: 'VND' : 'symbol' : '1.0-0' }}</dd>
+            </div>
+          </dl>
+
+          <section class="property-contact" *ngIf="booking.property as property">
+            <div class="property-contact-heading">
+              <i class="pi pi-building" aria-hidden="true"></i>
+              <div>
+                <small>Cơ sở lưu trú</small>
+                <strong>{{ property.name }}</strong>
+                <span *ngIf="property.address">{{ property.address }}</span>
+              </div>
+              <a *ngIf="property.id" class="property-link" [routerLink]="['/hotel', property.id]">Xem cơ sở</a>
+            </div>
+            <div class="property-contact-details">
+              <span *ngIf="property.contactName"><i class="pi pi-user" aria-hidden="true"></i>{{ property.contactName }}</span>
+              <a *ngIf="property.phone" [href]="'tel:' + property.phone"><i class="pi pi-phone" aria-hidden="true"></i>{{ property.phone }}</a>
+              <a *ngIf="property.email" [href]="'mailto:' + property.email"><i class="pi pi-envelope" aria-hidden="true"></i>{{ property.email }}</a>
+            </div>
+          </section>
+
+          <section class="financial-summary" [attr.aria-label]="i18n.text('PUBLIC.ACCOUNT.PAYMENT_REFUND')">
+            <div class="financial-row">
+              <div class="financial-heading">
+                <small>{{ i18n.text('PUBLIC.ACCOUNT.PAYMENT') }}</small>
+                <strong>{{
+                  booking.payment?.amount
+                    ? (booking.payment.amount | currency: 'VND' : 'symbol' : '1.0-0')
+                    : getProviderLabel(booking.paymentMethod)
+                }}</strong>
+              </div>
+              <span
+                class="lifecycle-chip"
+                [ngClass]="getPaymentTone(booking.payment)"
+                [attr.data-payment-status]="
+                  booking.payment?.reconciliationRequired
+                    ? 'RECONCILIATION'
+                    : booking.payment?.status || 'NONE'
+                "
+              >
+                <i [class]="getPaymentIcon(booking.payment)" aria-hidden="true"></i>
+                {{ getPaymentLabel(booking.payment) }}
+              </span>
+              <p>{{ getPaymentDescription(booking.payment) }}</p>
+            </div>
+
+            <div class="financial-row refund-row" *ngFor="let refund of booking.refunds">
+              <div class="financial-heading">
+                <small>{{ i18n.text('PUBLIC.ACCOUNT.REFUND') }} · {{ getProviderLabel(refund.provider) }}</small>
+                <strong>{{ refund.amount | currency: 'VND' : 'symbol' : '1.0-0' }}</strong>
+              </div>
+              <span
+                class="lifecycle-chip"
+                [ngClass]="getRefundTone(refund)"
+                [attr.data-refund-status]="refund.status"
+              >
+                <i [class]="getRefundIcon(refund)" aria-hidden="true"></i>
+                {{ getRefundLabel(refund) }}
+              </span>
+              <p>{{ getRefundDescription(refund) }}</p>
+            </div>
+          </section>
+          <section class="stay-review" *ngIf="booking.status === 'CHECKED_OUT'">
+            <div *ngIf="booking.review; else reviewAction"><span class="verified-review"><i class="pi pi-verified"></i>Kỳ lưu trú đã xác minh</span><strong>{{ booking.review.score }}/10 · {{ booking.review.title || 'Đánh giá của bạn' }}</strong><p>{{ booking.review.comment }}</p></div>
+            <ng-template #reviewAction><div><small>Chuyến đi đã hoàn tất</small><strong>Trải nghiệm của bạn thế nào?</strong><p>Đánh giá chỉ dành cho khách đã thực sự lưu trú.</p></div><button type="button" (click)="openReview(booking, $event)"><i class="pi pi-star" aria-hidden="true"></i> Viết đánh giá</button></ng-template>
+          </section>
+        </article>
+      </div>
+    </section>
+  </section>
+</main>

@@ -1,4 +1,5 @@
 using HotelSaas.Application.Common.Interfaces;
+using HotelSaas.Domain.Entities;
 using HotelSaas.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,14 +43,12 @@ public class BookingHoldCleanupWorker : BackgroundService
 
                 var unpaidReservations = await db.Reservations
                     .IgnoreQueryFilters()
-                    .Where(r => r.Status == ReservationStatus.PendingPayment && r.CreatedAtUtc.AddMinutes(20) < now)
+                    .Include(r => r.Payments)
+                    .Where(r => r.Status == ReservationStatus.PendingPayment &&
+                        r.CreatedAtUtc.AddMinutes(15) <= now)
                     .ToListAsync(stoppingToken);
 
-                foreach (var res in unpaidReservations)
-                {
-                    res.Status = ReservationStatus.Cancelled;
-                    res.CancellationReason = "Quá hạn thanh toán 20 phút (Auto-cancelled)";
-                }
+                foreach (var res in unpaidReservations) ReservationPaymentLifecycle.ExpireIfOverdue(res, now);
 
                 if (expiredHolds.Any() || unpaidReservations.Any())
                 {

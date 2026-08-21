@@ -1,0 +1,50 @@
+<section class="inventory-page">
+  <header>
+    <div><h1>{{ mode === 'room-types' ? 'Loại phòng' : 'Danh sách phòng' }}</h1><p>{{ mode === 'room-types' ? 'Khai báo hạng phòng, sức chứa và giá cơ bản.' : 'Quản lý từng phòng cụ thể theo số phòng và tầng.' }}</p></div>
+    <div class="actions"><select [(ngModel)]="propertyId" (change)="reload()">@for (property of properties; track property.id) { <option [ngValue]="property.id">{{ property.nameVi }}</option> }</select>@if (mode === 'rooms') { <div class="view-toggle" aria-label="Kiểu hiển thị"><button type="button" [class.active]="roomView === 'grid'" (click)="roomView='grid'" aria-label="Sơ đồ phòng"><i class="pi pi-th-large"></i></button><button type="button" [class.active]="roomView === 'table'" (click)="roomView='table'" aria-label="Danh sách phòng"><i class="pi pi-list"></i></button></div> }@if (canCreate) { <button type="button" (click)="showForm = !showForm"><i class="pi pi-plus"></i> {{ mode === 'room-types' ? 'Thêm loại phòng' : 'Tạo hàng loạt' }}</button> }</div>
+  </header>
+
+  @if (error) { <app-feedback-state state="error" title="Không thể tải dữ liệu" [message]="error" actionLabel="Thử lại" (actionTriggered)="reload()" /> }
+  @if (maintenanceRoom) {
+    <div class="maintenance-dialog-backdrop" role="presentation" (click)="maintenanceRoom=null">
+      <section class="maintenance-dialog" role="dialog" aria-modal="true" aria-labelledby="maintenance-dialog-title" (click)="$event.stopPropagation()">
+        <h2 id="maintenance-dialog-title">Bắt đầu bảo trì phòng {{ maintenanceRoom.roomNumber }}</h2>
+        <p>Phòng sẽ tạm ngưng bán đến khi hoàn tất bảo trì.</p>
+        <label for="management-maintenance-reason">Lý do bảo trì *</label>
+        <textarea id="management-maintenance-reason" [(ngModel)]="maintenanceReason" maxlength="500" rows="4" placeholder="Ví dụ: Điều hòa không làm lạnh"></textarea>
+        @if (maintenanceError) { <p class="maintenance-error" role="alert">{{ maintenanceError }}</p> }
+        <div class="form-actions"><button type="button" class="secondary" (click)="maintenanceRoom=null" [disabled]="!!changingRoomId">Hủy</button><button type="button" (click)="confirmMaintenance()" [disabled]="!!changingRoomId || maintenanceReason.trim().length < 3">{{ changingRoomId ? 'Đang xử lý...' : 'Bắt đầu bảo trì' }}</button></div>
+      </section>
+    </div>
+  }
+  @if (showForm) {
+    <form (ngSubmit)="save()">
+      @if (mode === 'room-types') {
+        <label>Mã<input [(ngModel)]="roomTypeForm.code" name="code" required></label><label>Tên tiếng Việt<input [(ngModel)]="roomTypeForm.nameVi" name="nameVi" required></label><label>Tên tiếng Anh<input [(ngModel)]="roomTypeForm.nameEn" name="nameEn" required></label><label>Loại giường<input [(ngModel)]="roomTypeForm.bedType" name="bedType"></label><label>Người lớn<input type="number" [(ngModel)]="roomTypeForm.maxAdults" name="maxAdults"></label><label>Trẻ em<input type="number" [(ngModel)]="roomTypeForm.maxChildren" name="maxChildren"></label><label>Tổng khách<input type="number" [(ngModel)]="roomTypeForm.maxGuests" name="maxGuests"></label><label>Giá cơ bản<input type="number" [(ngModel)]="roomTypeForm.basePrice" name="basePrice"></label><label><input type="checkbox" [(ngModel)]="roomTypeForm.includesBreakfast" name="includesBreakfast"> Bao gồm bữa sáng</label><label><input type="checkbox" [(ngModel)]="roomTypeForm.isRefundable" name="isRefundable"> Cho phép hoàn hủy</label><label *ngIf="roomTypeForm.isRefundable">Hủy miễn phí trước (giờ)<input type="number" min="0" max="720" [(ngModel)]="roomTypeForm.freeCancellationHours" name="freeCancellationHours"></label><label><input type="checkbox" [(ngModel)]="roomTypeForm.smokingAllowed" name="smokingAllowed"> Cho phép hút thuốc</label><fieldset class="room-amenities"><legend>Tiện nghi trong phòng</legend><label *ngFor="let amenity of roomAmenityOptions"><input type="checkbox" [checked]="roomTypeForm.amenityCodes?.includes(amenity.code)" (change)="toggleRoomAmenity(amenity.code,$any($event.target).checked)">{{amenity.label}}</label></fieldset>
+      } @else {
+        <label>Loại phòng<select [(ngModel)]="bulkForm.roomTypeId" name="roomTypeId" required>@for (type of roomTypes; track type.id) { <option [ngValue]="type.id">{{ type.nameVi }}</option> }</select></label><label>Từ số<input type="number" [(ngModel)]="bulkForm.fromNumber" name="fromNumber"></label><label>Đến số<input type="number" [(ngModel)]="bulkForm.toNumber" name="toNumber"></label><label>Tầng<select [(ngModel)]="bulkForm.floor" name="floor">@for (floor of floors; track floor) { <option [ngValue]="floor">Tầng {{ floor }}</option> }</select></label>
+      }
+      <div class="form-actions"><button type="button" class="secondary" (click)="showForm=false">Hủy</button><button type="submit" [disabled]="saving"><i class="pi" [class.pi-spin]="saving" [class.pi-spinner]="saving"></i>{{ saving ? 'Đang lưu...' : 'Lưu' }}</button></div>
+    </form>
+  }
+
+  @if (mode === 'rooms' && roomView === 'grid' && !loading && rows.length) {
+    <section class="room-board" aria-label="Sơ đồ trạng thái phòng">
+      <header class="room-board-header"><div><span class="board-kicker">Live room board</span><h2>Sơ đồ phòng theo tầng</h2></div><div class="status-legend"><span class="available">Trống</span><span class="reserved">Đã đặt</span><span class="occupied">Đang ở</span><span class="dirty">Cần dọn</span><span class="maintenance">Bảo trì</span></div></header>
+      @for (group of roomFloors; track group.floor) {
+        <div class="floor-row"><div class="floor-label"><span>Tầng</span><strong>{{ group.floor }}</strong><small>{{ group.rooms.length }} phòng</small></div><div class="room-grid">@for (room of group.rooms; track room.id) { <article class="room-tile" [attr.data-status]="roomStatus(room)"><div class="room-tile-top"><span>{{ room.roomNumber }}</span><i class="pi pi-bed"></i></div><strong>{{ room.roomTypeNameVi }}</strong><small>{{ roomStatusLabel(room) }}</small><button *ngIf="canMaintain" type="button" (click)="toggleMaintenance(room)" [disabled]="changingRoomId === room.id || room.status === 'OCCUPIED' || room.maintenanceStatus === 'OUT_OF_SERVICE'"><i class="pi" [class.pi-wrench]="room.maintenanceStatus !== 'MAINTENANCE'" [class.pi-check]="room.maintenanceStatus === 'MAINTENANCE'"></i><span>{{ room.maintenanceStatus === 'MAINTENANCE' ? 'Hoàn tất' : 'Bảo trì' }}</span></button></article> }</div></div>
+      }
+    </section>
+  }
+
+  <div class="table-panel" [class.hidden-view]="mode === 'rooms' && roomView === 'grid' && !loading && rows.length">
+    @if (loading) { <app-feedback-state state="loading" title="Đang tải dữ liệu" message="Đang đồng bộ kho phòng của cơ sở." /> }
+    @else if (!rows.length) { <app-feedback-state state="empty" title="Chưa có dữ liệu" message="Hãy tạo loại phòng hoặc phòng cụ thể đầu tiên." /> }
+    @else {
+      <table><thead><tr><th>ID</th><th>{{ mode === 'room-types' ? 'Mã' : 'Số phòng' }}</th><th>{{ mode === 'room-types' ? 'Tên' : 'Loại phòng' }}</th><th>Trạng thái</th><th>{{ mode === 'room-types' ? 'Sức chứa' : 'Tầng' }}</th>@if (mode === 'rooms') { <th>Thao tác</th> }</tr></thead>
+      <tbody>@for (row of rows; track row.id) { <tr><td>{{ row.id }}</td><td>{{ mode === 'room-types' ? row.code : row.roomNumber }}</td><td>{{ mode === 'room-types' ? row.nameVi : row.roomTypeNameVi }}</td><td>{{ mode === 'room-types' ? row.status : roomStatusLabel(row) }}</td><td>{{ mode === 'room-types' ? row.maxGuests : row.floor }}</td>@if (mode === 'rooms') { <td><button *ngIf="canMaintain" type="button" (click)="toggleMaintenance(row)" [disabled]="changingRoomId === row.id || row.status === 'OCCUPIED' || row.maintenanceStatus === 'OUT_OF_SERVICE'"><i class="pi" [class.pi-wrench]="row.maintenanceStatus !== 'MAINTENANCE'" [class.pi-check]="row.maintenanceStatus === 'MAINTENANCE'"></i>{{ row.maintenanceStatus === 'MAINTENANCE' ? 'Hoàn tất bảo trì' : 'Bắt đầu bảo trì' }}</button></td> }</tr> }</tbody></table>
+    }
+  </div>
+
+  @if (mode === 'room-types' && !loading && rows.length) { <app-room-rate-editor [roomTypes]="rows" /> }
+</section>

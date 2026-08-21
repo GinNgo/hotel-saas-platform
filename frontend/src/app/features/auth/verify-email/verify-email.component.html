@@ -1,0 +1,23 @@
+<main class="recovery-page">
+  <section class="recovery-card" aria-labelledby="verify-email-title" [attr.aria-busy]="loading">
+    <a class="recovery-back" routerLink="/">Về trang chủ / Back to home</a>
+    <div class="recovery-icon" aria-hidden="true">&#9993;</div>
+    <p class="recovery-eyebrow">LuxeStay account security</p>
+    <h1 id="verify-email-title">Xác minh email / Verify your email</h1>
+    <p class="recovery-copy">LuxeStay đang kiểm tra liên kết một lần của bạn. / LuxeStay is checking your one-time link.</p>
+
+    <div *ngIf="loading" class="recovery-alert" role="status" aria-live="polite">
+      Đang xác minh email... / Verifying email...
+    </div>
+    <div *ngIf="errorMessage" class="recovery-alert recovery-alert--error" role="alert">
+      {{ errorMessage }}
+    </div>
+    <div *ngIf="successMessage" class="recovery-alert recovery-alert--success" role="status">
+      {{ successMessage }}
+    </div>
+
+    <a *ngIf="!loading" class="recovery-primary-link" routerLink="/login">
+      Tiếp tục đăng nhập / Continue to sign in
+    </a>
+  </section>
+</main>

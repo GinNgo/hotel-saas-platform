@@ -20,8 +20,55 @@ public class AnalyticsController : ControllerBase
         _tenantService = tenantService;
     }
 
+    [HttpGet("dashboard")]
+    [Authorize(Policy = "report.read")]
+    public async Task<ActionResult<object>> GetDashboard()
+    {
+        var businessNow = DateTime.UtcNow.AddHours(7);
+        var today = DateOnly.FromDateTime(businessNow);
+        var firstDay = today.AddDays(-6);
+        var lastDayExclusive = today.AddDays(1);
+        var totalRooms = await _context.Rooms.CountAsync(room => room.IsActive && !room.IsDeleted && room.Status != RoomStatus.OutOfService);
+        var details = await _context.ReservationDetails.AsNoTracking().Include(detail => detail.Reservation)
+            .Where(detail => detail.Reservation != null &&
+                (detail.Reservation.Status == ReservationStatus.CheckedIn || detail.Reservation.Status == ReservationStatus.CheckedOut) &&
+                detail.Reservation.CheckInDate < lastDayExclusive && detail.Reservation.CheckOutDate > firstDay)
+            .ToListAsync();
+        var labels = new List<string>();
+        var revenueData = new List<decimal>();
+        var occupancyData = new List<decimal>();
+        for (var offset = 0; offset < 7; offset++)
+        {
+            var day = firstDay.AddDays(offset);
+            var occupiedRoomNights = details.Count(detail => detail.Reservation!.CheckInDate <= day && detail.Reservation.CheckOutDate > day);
+            var revenue = details.Where(detail => detail.Reservation!.CheckInDate <= day && detail.Reservation.CheckOutDate > day)
+                .Sum(detail => detail.NightlyPrice);
+            labels.Add(day.ToString("dd/MM"));
+            revenueData.Add(revenue);
+            occupancyData.Add(totalRooms > 0
+                ? decimal.Round(occupiedRoomNights * 100m / totalRooms, 2, MidpointRounding.AwayFromZero)
+                : 0);
+        }
+        var activeStatuses = new[] { ReservationStatus.Confirmed, ReservationStatus.CheckedIn, ReservationStatus.CheckedOut };
+        var totalBookings = await _context.Reservations.CountAsync(reservation => activeStatuses.Contains(reservation.Status) &&
+            reservation.CheckInDate < lastDayExclusive && reservation.CheckOutDate > firstDay);
+        var startOfTodayUtc = businessNow.Date.AddHours(-7);
+        var bookingsToday = await _context.Reservations.CountAsync(reservation =>
+            reservation.CreatedAtUtc >= startOfTodayUtc && reservation.CreatedAtUtc < startOfTodayUtc.AddDays(1));
+        return Ok(new
+        {
+            TotalRevenue = revenueData.Sum(),
+            TotalBookings = totalBookings,
+            BookingsToday = bookingsToday,
+            OccupancyRate = occupancyData.LastOrDefault(),
+            Labels = labels,
+            RevenueData = revenueData,
+            OccupancyData = occupancyData
+        });
+    }
+
     [HttpGet("tenant-dashboard")]
-    [Authorize(Roles = "Owner,Manager")]
+    [Authorize(Policy = "report.read")]
     public async Task<ActionResult<Result<object>>> GetTenantDashboard()
     {
         var totalRooms = await _context.Rooms.CountAsync(r => r.IsActive && !r.IsDeleted);
@@ -47,7 +94,7 @@ public class AnalyticsController : ControllerBase
     }
 
     [HttpGet("platform-overview")]
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Policy = "system.read")]
     public async Task<ActionResult<Result<object>>> GetPlatformOverview()
     {
         var totalTenants = await _context.Tenants.CountAsync(t => !t.IsDeleted);

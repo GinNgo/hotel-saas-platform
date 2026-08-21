@@ -44,7 +44,8 @@ public enum ReservationStatus
     Confirmed = 2,
     CheckedIn = 3,
     CheckedOut = 4,
-    Cancelled = 5
+    Cancelled = 5,
+    NoShow = 6
 }
 
 public enum PaymentStatus
@@ -52,14 +53,16 @@ public enum PaymentStatus
     Pending = 1,
     Completed = 2,
     Failed = 3,
-    Refunded = 4
+    Refunded = 4,
+    Expired = 5
 }
 
 public enum PaymentMethod
 {
     VNPay = 1,
     Cash = 2,
-    BankTransfer = 3
+    BankTransfer = 3,
+    CreditCard = 4
 }
 
 public enum FolioItemType
@@ -70,7 +73,9 @@ public enum FolioItemType
     Restaurant = 4,
     Surcharge = 5,
     Discount = 6,
-    DepositPayment = 7
+    DepositPayment = 7,
+    Tax = 8,
+    ServiceCharge = 9
 }
 
 public enum HousekeepingPriority
@@ -85,5 +90,6 @@ public enum HousekeepingTaskStatus
 {
     Pending = 1,
     InProgress = 2,
-    Completed = 3
+    Completed = 3,
+    Claimed = 4
 }

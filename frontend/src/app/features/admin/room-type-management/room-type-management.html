@@ -1,0 +1,45 @@
+<p-toast></p-toast><p-confirmDialog></p-confirmDialog>
+<section class="admin-page">
+  <header class="page-header">
+    <div><h1><i class="pi pi-th-large"></i> Quản lý loại phòng</h1><p>Giá, sức chứa, giường và hình ảnh theo từng cơ sở.</p></div>
+    <div class="header-actions"><button pButton label="Tải lại" icon="pi pi-refresh" class="p-button-outlined" (click)="loadData()" [disabled]="loading"></button><button *ngIf="canCreate" pButton label="Thêm mới" icon="pi pi-plus" (click)="openCreate()"></button></div>
+  </header>
+
+  <div class="filter-bar">
+    <span class="search"><i class="pi pi-search"></i><input pInputText [(ngModel)]="searchText" (ngModelChange)="page=1; updateQuery()" placeholder="Tìm mã hoặc tên loại phòng" /></span>
+    <p-select [options]="properties" optionLabel="name" optionValue="id" [(ngModel)]="propertyFilter" placeholder="Tất cả cơ sở" [showClear]="true"></p-select>
+    <p-select [options]="statuses" optionLabel="label" optionValue="value" [(ngModel)]="statusFilter" (ngModelChange)="page=1; updateQuery()" placeholder="Tất cả trạng thái" [showClear]="true"></p-select>
+    <button pButton icon="pi pi-filter-slash" class="p-button-text" title="Đặt lại bộ lọc" (click)="resetFilters()"></button>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-state"><span>{{ errorMessage }}</span><button pButton label="Thử lại" icon="pi pi-refresh" (click)="loadData()"></button></div>
+
+  <div class="table-shell">
+    <p-table [value]="filteredRoomTypes" [loading]="loading" [paginator]="true" [rows]="pageSize" [totalRecords]="totalItems" [rowsPerPageOptions]="[15,30,50]" (onPage)="onPageChange($event)" [rowHover]="true" responsiveLayout="scroll" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header"><tr><th pSortableColumn="code">Mã <p-sortIcon field="code"></p-sortIcon></th><th pSortableColumn="nameVi">Tên loại phòng <p-sortIcon field="nameVi"></p-sortIcon></th><th>Cơ sở</th><th>Giường / sức chứa</th><th pSortableColumn="basePrice">Giá cơ bản <p-sortIcon field="basePrice"></p-sortIcon></th><th>Phòng vật lý</th><th>Trạng thái</th><th class="actions">Thao tác</th></tr></ng-template>
+      <ng-template pTemplate="body" let-item><tr><td><b>{{ item.code }}</b></td><td><strong>{{ item.nameVi }}</strong><small>{{ item.nameEn || 'Chưa có tên tiếng Anh' }}</small></td><td>{{ propertyName(item.hotelId) }}</td><td>{{ item.bedCount || 0 }} {{ item.bedType || 'giường' }}<small>Tối đa {{ item.maxGuests }} khách · {{ item.area || 0 }} m²</small></td><td><b>{{ formatVnd(item.basePrice) }}</b></td><td>{{ item.totalRooms || 0 }}</td><td><span class="status" [class.inactive]="item.status !== 'ACTIVE'">{{ item.status === 'ACTIVE' ? 'Đang hoạt động' : item.status === 'DELETED' ? 'Đã xóa mềm' : 'Ngừng hoạt động' }}</span></td><td class="actions"><button *ngIf="canUpdate && item.status !== 'DELETED'" pButton icon="pi pi-pencil" class="p-button-text" title="Chỉnh sửa" (click)="openEdit(item)"></button><button *ngIf="canDelete && item.status === 'ACTIVE'" pButton icon="pi pi-ban" class="p-button-text p-button-danger" title="Xóa mềm" (click)="deactivate(item)"></button><button *ngIf="canUpdate && item.status === 'DELETED'" pButton icon="pi pi-replay" class="p-button-text" title="Khôi phục" (click)="restore(item)"></button></td></tr></ng-template>
+      <ng-template pTemplate="emptymessage"><tr><td colspan="8"><div class="empty-state"><i class="pi pi-inbox"></i><b>Không có dữ liệu phù hợp.</b><span>Hãy thay đổi bộ lọc hoặc thêm loại phòng mới.</span></div></td></tr></ng-template>
+    </p-table>
+  </div>
+</section>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [draggable]="false" [style]="{width:'min(820px, 96vw)'}" [header]="editingId ? 'Chỉnh sửa loại phòng' : 'Thêm loại phòng'" [closable]="!saving">
+  <div class="form-grid">
+    <label class="wide">Cơ sở *<p-select [options]="properties" optionLabel="name" optionValue="id" [(ngModel)]="form.hotelId" placeholder="Chọn cơ sở" [disabled]="!!editingId"></p-select></label>
+    <label>Mã loại phòng *<input pInputText [(ngModel)]="form.code" class="text-uppercase" /></label><label>Tên tiếng Việt *<input pInputText [(ngModel)]="form.nameVi" /></label>
+    <label>Tên tiếng Anh<input pInputText [(ngModel)]="form.nameEn" /></label><label>Loại giường<p-select [options]="bedTypes" [(ngModel)]="form.bedType"></p-select></label>
+    <label>Số giường<input pInputText type="number" min="1" [(ngModel)]="form.bedCount" /></label><label>Diện tích (m²)<input pInputText type="number" min="0" [(ngModel)]="form.area" /></label>
+    <label>Người lớn tối đa<input pInputText type="number" min="1" [(ngModel)]="form.maxAdults" /></label><label>Trẻ em tối đa<input pInputText type="number" min="0" [(ngModel)]="form.maxChildren" /></label>
+    <label>Khách tối đa *<input pInputText type="number" min="1" [(ngModel)]="form.maxGuests" /></label><label>Giá cơ bản *<input pInputText type="number" min="0" [(ngModel)]="form.basePrice" /></label>
+    <label>Trạng thái<p-select [options]="statuses" optionLabel="label" optionValue="value" [(ngModel)]="form.status"></p-select></label>
+    <label class="check-option"><input type="checkbox" [(ngModel)]="form.includesBreakfast" /> Bao gồm bữa sáng</label>
+    <label class="check-option"><input type="checkbox" [(ngModel)]="form.isRefundable" /> Cho phép hoàn hủy</label>
+    <label *ngIf="form.isRefundable">Hủy miễn phí trước (giờ)<input pInputText type="number" min="0" max="720" [(ngModel)]="form.freeCancellationHours" /></label>
+    <label class="check-option"><input type="checkbox" [(ngModel)]="form.smokingAllowed" /> Cho phép hút thuốc</label>
+    <fieldset class="wide amenity-options"><legend>Tiện nghi trong phòng</legend><label *ngFor="let amenity of amenityOptions"><input type="checkbox" [checked]="form.amenityCodes?.includes(amenity.value)" (change)="toggleAmenity(amenity.value,$any($event.target).checked)" />{{ amenity.label }}</label></fieldset>
+    <label class="wide">Mô tả tiếng Việt<textarea pInputTextarea rows="3" [(ngModel)]="form.descriptionVi"></textarea></label>
+    <div class="wide image-alt-editor" *ngIf="existingImages.length"><label *ngFor="let image of existingImages; let imageIndex = index">Alt text ảnh {{ imageIndex + 1 }}<input pInputText [(ngModel)]="image.altText" maxlength="255" placeholder="Mô tả ảnh" (blur)="saveImageAltText(image)" /></label></div>
+    <div class="wide image-upload-box"><label>Ảnh loại phòng<input type="file" accept="image/jpeg,image/png,image/webp" multiple (change)="onImagesSelected($event)" /><small *ngIf="pendingImages.length">Đã chọn {{ pendingImages.length }} ảnh, sẽ tải lên sau khi lưu.</small></label><div class="image-previews" *ngIf="existingImages.length"><div class="image-preview" *ngFor="let image of existingImages; let imageIndex = index"><img [src]="image.url" [alt]="image.altText || 'Ảnh loại phòng'" /><div class="image-actions"><button type="button" pButton icon="pi pi-arrow-left" class="p-button-text p-button-sm" (click)="moveExistingImage(imageIndex,-1)" [disabled]="imageIndex===0" title="Đưa lên"></button><button type="button" pButton icon="pi pi-arrow-right" class="p-button-text p-button-sm" (click)="moveExistingImage(imageIndex,1)" [disabled]="imageIndex===existingImages.length-1" title="Đưa xuống"></button><button type="button" pButton icon="pi pi-star" class="p-button-text p-button-sm" (click)="setPrimaryImage(imageIndex)" [disabled]="imageIndex===0" title="Đặt ảnh chính"></button><button type="button" pButton icon="pi pi-times" class="p-button-text p-button-danger p-button-sm" (click)="removeExistingImage(image)" title="Xóa ảnh"></button></div><small>{{ image.isPrimary ? 'Ảnh chính' : 'Ảnh phụ' }}</small></div></div><div class="image-previews" *ngIf="pendingImages.length"><div class="image-preview" *ngFor="let file of pendingImages; let i = index"><img [src]="previewUrls[i]" [alt]="file.name" /><button type="button" pButton icon="pi pi-times" class="p-button-rounded p-button-danger p-button-sm" (click)="removePendingImage(i)" title="Bỏ ảnh"></button><small>{{ file.name }}</small></div></div><textarea pInputTextarea rows="3" [(ngModel)]="imageText" placeholder="Ảnh URL cũ (tùy chọn)"></textarea></div>
+  </div>
+  <ng-template pTemplate="footer"><button pButton label="Hủy" class="p-button-text" (click)="dialogVisible=false" [disabled]="saving"></button><button pButton [label]="saving ? 'Đang lưu...' : 'Lưu'" icon="pi pi-check" (click)="save()" [disabled]="saving"></button></ng-template>
+</p-dialog>

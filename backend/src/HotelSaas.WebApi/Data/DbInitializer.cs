@@ -12,6 +12,8 @@ public static class DbInitializer
         var db = (DbContext)context;
         await db.Database.EnsureCreatedAsync();
 
+        await SeedRbacAsync(context);
+
         if (await context.Users.IgnoreQueryFilters().AnyAsync()) return;
 
         // 1. Seed SuperAdmin & Customer
@@ -144,6 +146,75 @@ public static class DbInitializer
         context.RoomTypes.Add(standardTypeB);
         context.Rooms.Add(roomB201);
 
+        // Public-search demo property used by local/E2E journeys.
+        var oceanPearl = new Tenant
+        {
+            Name = "Ocean Pearl",
+            Code = "HS-OCEAN-PEARL",
+            Slug = "ocean-pearl",
+            Address = "21 Đường Vườn Xanh, Mỹ Tho",
+            City = "Tiền Giang",
+            PhoneNumber = "02733889900",
+            Email = "booking@oceanpearl.vn",
+            SubscriptionTier = SubscriptionTier.Basic,
+            Status = TenantStatus.Active,
+            PropertyType = "HOTEL",
+            StarRating = 4,
+            Latitude = 10.3600,
+            Longitude = 106.3650
+        };
+        var oceanType = new RoomType
+        {
+            Tenant = oceanPearl,
+            Name = "Deluxe Garden View",
+            Code = "DLX-GARDEN",
+            BasePricePerNight = 850000,
+            CapacityAdults = 2,
+            CapacityChildren = 1,
+            AreaSquareMeters = 32,
+            BedType = "1 Giường King"
+        };
+        var oceanRoom = new Room { Tenant = oceanPearl, RoomType = oceanType, RoomNumber = "301", Floor = 3, Status = RoomStatus.Clean };
+        context.Tenants.Add(oceanPearl);
+        context.RoomTypes.Add(oceanType);
+        context.Rooms.Add(oceanRoom);
+
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedRbacAsync(IApplicationDbContext context)
+    {
+        var functionCodes = new[] { "SYSTEM", "HOTEL", "HOTEL_SERVICE", "BOOKING", "FINANCE", "RESERVATION_PAYMENT", "AI", "USER", "ROLE", "ROLE_PERMISSION", "ROOM", "ROOM_TYPE", "RESERVATION", "RESERVATION_ASSIGNMENT", "RESERVATION_CANCEL", "RESERVATION_NO_SHOW", "CHECKIN", "CHECKOUT", "HOUSEKEEPING", "OPERATIONAL_TASK", "INVOICE", "REPORT", "AI_CHAT", "CUSTOMER", "PROPERTY_CLAIM", "PROPERTY_PAYMENT_CONFIG", "PROPERTY_REFUND", "PLATFORM_REFUND", "PLATFORM_BILLING", "PLATFORM_REVENUE", "PAYMENT_READINESS", "AUDIT_LOG" };
+        var functions = await context.PermissionFunctions.IgnoreQueryFilters().ToListAsync();
+        foreach (var code in functionCodes.Where(code => functions.All(item => item.Code != code)))
+        {
+            var function = new PermissionFunction { Code = code, Name = code, ModuleCode = code.Split('_')[0], SupportedActionMask = 127 };
+            functions.Add(function);
+            context.PermissionFunctions.Add(function);
+        }
+
+        var roles = await context.AccessRoles.IgnoreQueryFilters().ToListAsync();
+        foreach (var role in new[] { ("SUPERADMIN", "Super Admin"), ("OWNER", "Chủ cơ sở"), ("MANAGER", "Quản lý"), ("RECEPTIONIST", "Lễ tân"), ("HOUSEKEEPER", "Buồng phòng") })
+        {
+            if (roles.All(item => item.Code != role.Item1))
+            {
+                var accessRole = new AccessRole { Code = role.Item1, Name = role.Item2, IsSystemRole = true };
+                roles.Add(accessRole);
+                context.AccessRoles.Add(accessRole);
+            }
+        }
+        await context.SaveChangesAsync();
+
+        var permissions = await context.RolePermissions.IgnoreQueryFilters().ToListAsync();
+        var allFunctions = await context.PermissionFunctions.IgnoreQueryFilters().ToListAsync();
+        foreach (var role in roles)
+        foreach (var function in allFunctions)
+            if (permissions.All(item => item.RoleId != role.Id || item.FunctionId != function.Id))
+            {
+                var permission = new RolePermission { RoleId = role.Id, FunctionId = function.Id, ActionMask = role.Code == "HOUSEKEEPER" ? 69 : role.Code == "RECEPTIONIST" ? 71 : 127 };
+                permissions.Add(permission);
+                context.RolePermissions.Add(permission);
+            }
         await context.SaveChangesAsync();
     }
 }

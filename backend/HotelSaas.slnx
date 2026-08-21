@@ -5,4 +5,7 @@
     <Project Path="src/HotelSaas.Infrastructure/HotelSaas.Infrastructure.csproj" />
     <Project Path="src/HotelSaas.WebApi/HotelSaas.WebApi.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/HotelSaas.WebApi.Tests/HotelSaas.WebApi.Tests.csproj" />
+  </Folder>
 </Solution>

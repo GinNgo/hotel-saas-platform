@@ -1,0 +1,207 @@
+<main class="detail-page">
+  <div *ngIf="isLoading" class="loading">
+    <i class="pi pi-spin pi-spinner"></i>
+    <span>{{ i18n.text('PUBLIC.DETAIL.LOADING') }}</span>
+  </div>
+
+  <section *ngIf="!isLoading && !hotel && pageError" class="detail-state" role="alert" aria-live="polite">
+    <span class="state-icon" aria-hidden="true"><i class="pi pi-map-marker"></i></span>
+    <p class="eyebrow">{{ i18n.text('PUBLIC.DETAIL.NOT_FOUND_KICKER') }}</p>
+    <h1>{{ i18n.text('PUBLIC.DETAIL.CONTINUE_TITLE') }}</h1>
+    <p>{{ pageError }}</p>
+    <div class="state-actions">
+      <button *ngIf="hotelId" type="button" class="secondary-action" (click)="retry()">
+        <i class="pi pi-refresh"></i> {{ i18n.text('PUBLIC.DETAIL.RETRY') }}
+      </button>
+      <button type="button" class="primary-action" (click)="browseProperties()">
+        <i class="pi pi-search"></i> {{ i18n.text('PUBLIC.DETAIL.FIND_OTHER') }}
+      </button>
+    </div>
+  </section>
+
+  <ng-container *ngIf="!isLoading && hotel">
+    <header class="property-hero">
+      <img [src]="activeHeroImage || hotel.mainImageUrl || hotel.mainImage || fallback.property(hotel.propertyType)" [alt]="hotel.name" (error)="handleHotelImageError($event)">
+      <div *ngIf="galleryImages.length > 1" class="gallery-rail" role="group" [attr.aria-label]="hotel.name">
+        <button *ngFor="let image of galleryImages.slice(0, 5); let index = index" type="button" [class.active]="image === activeHeroImage" [attr.aria-pressed]="image === activeHeroImage" (click)="selectHeroImage(image)" [attr.aria-label]="hotel.name + ' - ảnh ' + (index + 1)">
+          <img [src]="image" [alt]="hotel.name + ' - ảnh ' + (index + 1)" loading="lazy" (error)="handleHotelImageError($event)">
+        </button>
+      </div>
+      <div class="hero-overlay">
+        <span>{{ hotel.propertyType || i18n.text('PUBLIC.DETAIL.PROPERTY_TYPE_DEFAULT') }}</span>
+        <span *ngIf="hotel.sponsoredPlacement" class="placement-disclosure sponsored-placement" data-sponsored="true">
+          <i class="pi pi-megaphone" aria-hidden="true"></i> {{ sponsoredDisclosure }}
+        </span>
+        <h1>{{ hotel.name }}</h1>
+        <p><i class="pi pi-map-marker"></i> {{ hotel.addressLine }}<ng-container *ngIf="hotel.wardName">, {{ hotel.wardName }}</ng-container><ng-container *ngIf="hotel.provinceName">, {{ hotel.provinceName }}</ng-container></p>
+        <app-favorite-button [hotelId]="hotel.id" variant="hero" [showLabel]="true"></app-favorite-button>
+        <button #claimTrigger *ngIf="hotel.approvalStatus==='IMPORTED_PENDING_REVIEW'" type="button" class="claim-button" (click)="openClaimModal()">
+          {{ i18n.text('PUBLIC.DETAIL.CLAIM') }}
+        </button>
+      </div>
+    </header>
+
+    <div class="detail-container">
+      <section class="trust-strip" aria-label="Thông tin nổi bật">
+        <div><i class="pi pi-star-fill" aria-hidden="true"></i><span><strong>{{ hotel.reviewScore ? (hotel.reviewScore | number:'1.1-1') : hotel.starRating }}</strong><small>{{ hotel.reviewCount ? i18n.count('PUBLIC.RESULTS.REVIEW_COUNT', hotel.reviewCount) : i18n.count('PUBLIC.RESULTS.STAR_LABEL', hotel.starRating) }}</small></span></div>
+        <div><i class="pi pi-map-marker" aria-hidden="true"></i><span><strong>{{ hotel.wardName || hotel.provinceName || hotel.city }}</strong><small>{{ hotel.distanceText || hotel.addressLine }}</small></span></div>
+        <div><i class="pi pi-shield" aria-hidden="true"></i><span><strong>{{ i18n.text('PUBLIC.DETAIL.BACKEND_NOTE') }}</strong><small>{{ i18n.text('PUBLIC.DETAIL.AVAILABILITY') }}</small></span></div>
+        <button type="button" (click)="scrollToRooms()"><i class="pi pi-calendar" aria-hidden="true"></i>{{ i18n.text('PUBLIC.DETAIL.SELECT_ROOM') }}</button>
+      </section>
+
+      <section class="description">
+        <div>
+          <span class="eyebrow">{{ hotel.propertyType || i18n.text('PUBLIC.DETAIL.PROPERTY_TYPE_DEFAULT') }}</span>
+          <h2>{{ i18n.text('PUBLIC.DETAIL.DESCRIPTION_TITLE') }}</h2>
+          <p>{{ hotel.description || i18n.text('PUBLIC.DETAIL.DESCRIPTION_FALLBACK') }}</p>
+        </div>
+        <aside *ngIf="hotel.amenities?.length" class="amenity-panel">
+          <h3>{{ i18n.text('PUBLIC.RESULTS.FILTER') }}</h3>
+          <ul><li *ngFor="let amenity of hotel.amenities.slice(0, 8)"><i class="pi pi-check-circle" aria-hidden="true"></i>{{ amenity }}</li></ul>
+        </aside>
+      </section>
+
+      <section class="policy-section" aria-labelledby="property-policy-title">
+        <header><span class="eyebrow">THÔNG TIN LƯU TRÚ</span><h2 id="property-policy-title">Chính sách của cơ sở</h2><p>Kiểm tra thời gian và điều kiện trước khi đặt phòng.</p></header>
+        <div class="policy-grid">
+          <article><i class="pi pi-sign-in" aria-hidden="true"></i><div><h3>Nhận phòng</h3><strong>Từ {{ hotel.checkInTime || '14:00' }}</strong></div></article>
+          <article><i class="pi pi-sign-out" aria-hidden="true"></i><div><h3>Trả phòng</h3><strong>Trước {{ hotel.checkOutTime || '12:00' }}</strong></div></article>
+          <article><i class="pi pi-calendar-times" aria-hidden="true"></i><div><h3>Hủy phòng</h3><p>{{ hotel.cancellationPolicy || 'Điều kiện hủy phụ thuộc mức giá và được xác nhận trong bước thanh toán.' }}</p></div></article>
+          <article><i class="pi pi-users" aria-hidden="true"></i><div><h3>Trẻ em</h3><p>{{ hotel.childrenPolicy || 'Vui lòng khai báo đúng số trẻ em để hệ thống kiểm tra sức chứa và giá.' }}</p></div></article>
+          <article><i class="pi pi-heart" aria-hidden="true"></i><div><h3>Thú cưng</h3><p>{{ hotel.petPolicy || (hotel.amenities?.includes('Cho phép thú cưng') ? 'Cơ sở cho phép thú cưng; có thể áp dụng phụ phí.' : 'Vui lòng liên hệ cơ sở trước khi mang theo thú cưng.') }}</p></div></article>
+          <article><i class="pi pi-info-circle" aria-hidden="true"></i><div><h3>Nội quy</h3><p>{{ hotel.houseRules || 'Xuất trình giấy tờ tùy thân hợp lệ khi nhận phòng và tôn trọng quy định của cơ sở.' }}</p></div></article>
+        </div>
+      </section>
+
+      <section class="reviews-section" aria-labelledby="verified-reviews-title">
+        <header><div><span class="eyebrow">TRẢI NGHIỆM THỰC TẾ</span><h2 id="verified-reviews-title">Đánh giá từ khách đã lưu trú</h2><p>Mỗi đánh giá được liên kết với một kỳ lưu trú đã hoàn tất.</p></div><div *ngIf="reviewSummary" class="review-score-hero"><strong>{{ reviewSummary.score | number:'1.1-1' }}</strong><span>{{ reviewLabel(reviewSummary.score) }}<small>{{ reviewTotal }} đánh giá đã xác minh</small></span></div></header>
+        <div *ngIf="reviewSummary" class="review-breakdown">
+          <div><span>Sạch sẽ</span><progress max="10" [value]="reviewSummary.cleanliness"></progress><b>{{ reviewSummary.cleanliness | number:'1.1-1' }}</b></div>
+          <div><span>Dịch vụ</span><progress max="10" [value]="reviewSummary.service"></progress><b>{{ reviewSummary.service | number:'1.1-1' }}</b></div>
+          <div><span>Vị trí</span><progress max="10" [value]="reviewSummary.location"></progress><b>{{ reviewSummary.location | number:'1.1-1' }}</b></div>
+          <div><span>Đáng tiền</span><progress max="10" [value]="reviewSummary.value"></progress><b>{{ reviewSummary.value | number:'1.1-1' }}</b></div>
+        </div>
+        <div *ngIf="reviewsLoading" class="review-state" aria-live="polite"><i class="pi pi-spin pi-spinner"></i> Đang tải đánh giá...</div>
+        <div *ngIf="!reviewsLoading && reviewsError" class="review-state error" role="alert">{{ reviewsError }} <button type="button" (click)="loadReviews(reviewPage)">Thử lại</button></div>
+        <div *ngIf="!reviewsLoading && !reviewsError && !reviews.length" class="review-state"><i class="pi pi-comments"></i><strong>Chưa có đánh giá đã xác minh</strong><span>Khách hoàn tất kỳ lưu trú đầu tiên sẽ có thể chia sẻ trải nghiệm tại đây.</span></div>
+        <div *ngIf="!reviewsLoading && reviews.length" class="review-grid">
+          <article *ngFor="let review of reviews"><div class="reviewer"><span>{{ (review.reviewerName || 'Khách').charAt(0) }}</span><div><strong>{{ review.reviewerName || 'Khách đã lưu trú' }}</strong><small><i class="pi pi-verified"></i> Kỳ lưu trú đã xác minh<span *ngIf="review.stayedAt"> · {{ review.stayedAt | date:'MM/yyyy' }}</span></small></div><b>{{ review.score | number:'1.1-1' }}</b></div><h3>{{ review.title || reviewLabel(review.score) }}</h3><p>{{ review.comment }}</p></article>
+        </div>
+        <nav *ngIf="reviewTotalPages > 1" class="review-pagination" aria-label="Phân trang đánh giá"><button type="button" [disabled]="reviewPage <= 1 || reviewsLoading" (click)="loadReviews(reviewPage - 1)">Trang trước</button><span>{{ reviewPage }} / {{ reviewTotalPages }}</span><button type="button" [disabled]="reviewPage >= reviewTotalPages || reviewsLoading" (click)="loadReviews(reviewPage + 1)">Trang sau</button></nav>
+      </section>
+
+      <section id="rooms" class="rooms-section">
+        <header>
+          <div>
+            <span class="eyebrow">{{ i18n.text('PUBLIC.DETAIL.AVAILABILITY') }}</span>
+            <h2>{{ i18n.text('PUBLIC.DETAIL.SELECT_ROOM') }}</h2>
+            <p>{{ roomRequirement }}</p>
+          </div>
+        </header>
+
+        <div *ngIf="roomError" class="message error">{{ roomError }}</div>
+        <div *ngIf="!roomError && !roomTypes.length" class="message">{{ i18n.text('PUBLIC.DETAIL.ROOM_EMPTY') }}</div>
+
+        <div class="booking-layout" *ngIf="roomTypes.length">
+          <div class="room-list">
+            <article *ngFor="let room of roomTypes" class="room-card" [class.selected]="selectedRoomType?.id===room.id">
+              <img [src]="roomImage(room)" [alt]="room.nameVi" loading="lazy" (error)="handleRoomImageError($event,room)">
+              <div class="room-content">
+                <div class="room-title">
+                  <div><p>{{ room.code }}</p><h3>{{ room.nameVi }}</h3></div>
+                  <span *ngIf="room.availableRooms" [class.urgent]="room.availableRooms <= 3">{{ i18n.count('PUBLIC.DETAIL.AVAILABLE_ROOMS', room.availableRooms) }}</span>
+                </div>
+                <p class="description-text">{{ room.descriptionVi || i18n.text('PUBLIC.DETAIL.ROOM_DESCRIPTION') }}</p>
+                <div class="room-facts">
+                  <span><i class="pi pi-users" aria-hidden="true"></i> {{ i18n.count('PUBLIC.DETAIL.ADULTS', room.maxAdults || room.maxGuests || room.maxGuest) }}</span>
+                  <span><i class="pi pi-user" aria-hidden="true"></i> {{ i18n.count('PUBLIC.DETAIL.CHILDREN', room.maxChildren || 0) }}</span>
+                  <span><i class="pi pi-bed" aria-hidden="true"></i> {{ bedLabel(room.bedType) }}</span>
+                </div>
+                <div *ngIf="room.amenities?.length" class="room-amenities"><span *ngFor="let amenity of room.amenities.slice(0, 6)">{{ amenity }}</span></div>
+                <div class="room-benefits">
+                  <span *ngIf="room.includesBreakfast"><i class="pi pi-sun" aria-hidden="true"></i>Bao gồm bữa sáng</span>
+                  <span *ngIf="room.isRefundable"><i class="pi pi-calendar-times" aria-hidden="true"></i>Hủy miễn phí trước {{ room.freeCancellationHours || 24 }} giờ</span>
+                  <span *ngIf="!room.isRefundable" class="restricted"><i class="pi pi-lock" aria-hidden="true"></i>Không hoàn hủy</span>
+                  <span><i class="pi" [class.pi-ban]="!room.smokingAllowed" [class.pi-check]="room.smokingAllowed" aria-hidden="true"></i>{{ room.smokingAllowed ? 'Cho phép hút thuốc' : 'Phòng không hút thuốc' }}</span>
+                </div>
+              </div>
+              <div class="room-choice">
+                <small>{{ i18n.text('PUBLIC.DETAIL.NIGHTLY_RATE') }}</small>
+                <strong>{{ formatVnd(room.basePrice) }}</strong>
+                <label [for]="'qty-'+room.id">{{ i18n.text('PUBLIC.DETAIL.ROOM_QUANTITY') }}</label>
+                <select class="room-quantity-select" [id]="'qty-'+room.id" [ngModel]="selectedRoomType?.id===room.id ? selectedQuantity : 0" (ngModelChange)="selectQuantity(room,$event)" [disabled]="!room.availableRooms">
+                  <option *ngFor="let q of quantities(room)" [ngValue]="q">{{ q }}</option>
+                </select>
+                <em *ngIf="!room.availableRooms">{{ i18n.text('PUBLIC.DETAIL.SOLD_OUT') }}</em>
+                <small *ngIf="selectedRoomType?.id===room.id && quoteLoading" aria-live="polite">{{ i18n.text('PUBLIC.DETAIL.LOADING') }}</small>
+              </div>
+            </article>
+          </div>
+
+          <aside class="booking-summary">
+            <h3>{{ i18n.text('PUBLIC.DETAIL.BOOKING_SUMMARY') }}</h3>
+            <ng-container *ngIf="selectedRoomType; else selectHint">
+              <p>{{ hotel.name }}</p>
+              <p *ngIf="quoteError" class="capacity-error" role="alert">{{ quoteError }}</p>
+              <dl *ngIf="selectedQuote">
+                <div><dt>{{ i18n.text('PUBLIC.DATES.OVERNIGHT_TITLE') }}</dt><dd>{{ i18n.count('PUBLIC.DETAIL.NIGHTS', nights) }}</dd></div>
+                <div><dt>{{ i18n.text('PUBLIC.DETAIL.GUESTS') }}</dt><dd>{{ i18n.count('PUBLIC.DETAIL.ADULTS', bookingQueryParams.adultCount) }}<span *ngIf="bookingQueryParams.childCount">, {{ i18n.count('PUBLIC.DETAIL.CHILDREN', bookingQueryParams.childCount) }}</span></dd></div>
+                <div><dt>{{ i18n.text('PUBLIC.DETAIL.ROOM_TYPE') }}</dt><dd>{{ selectedRoomType.nameVi }}</dd></div>
+                <div><dt>{{ i18n.text('PUBLIC.DETAIL.QUANTITY') }}</dt><dd>{{ selectedQuantity }}</dd></div>
+                <div><dt>{{ i18n.text('PUBLIC.DETAIL.ORIGINAL_ROOM_TOTAL') }}</dt><dd [class.original-price]="selectedQuote.totalDiscount > 0">{{ formatVnd(roomSubtotal) }}</dd></div>
+                <div><dt>{{ i18n.text('PUBLIC.DETAIL.TAXES_FEES') }}</dt><dd>{{ formatVnd(roomTax) }}</dd></div>
+                <div *ngIf="selectedQuote.totalDiscount"><dt>{{ i18n.text('PUBLIC.DETAIL.DISCOUNT') }}</dt><dd>-{{ formatVnd(selectedQuote.totalDiscount) }}</dd></div>
+              </dl>
+              <div *ngIf="selectedQuote?.appliedPromotions?.length" class="promotion-proof" aria-live="polite">
+                <i class="pi pi-ticket" aria-hidden="true"></i>
+                <span>{{ i18n.text('PUBLIC.DETAIL.PROMOTION_APPLIED', { names: promotionNames }) }}</span>
+                <strong *ngIf="memberTierLabel">{{ i18n.text('PUBLIC.DETAIL.MEMBER_PRICE', { tier: memberTierLabel }) }}</strong>
+              </div>
+              <div *ngIf="!capacityValid" class="capacity-error">{{ i18n.text('PUBLIC.DETAIL.CAPACITY_ERROR') }}</div>
+              <div class="summary-total" aria-live="polite">
+                <span>{{ i18n.text('PUBLIC.DETAIL.TOTAL') }}</span>
+                <strong>{{ formatVnd(displayedRoomTotal) }}</strong>
+                <small *ngIf="selectedQuote">{{ i18n.text('PUBLIC.DETAIL.BACKEND_NOTE') }}</small>
+                <small *ngIf="!selectedQuote">{{ i18n.text(hasStayDates ? 'PUBLIC.DETAIL.QUOTE_PENDING_NOTE' : 'PUBLIC.DETAIL.ONE_NIGHT_ESTIMATE_NOTE') }}</small>
+              </div>
+            </ng-container>
+            <ng-template #selectHint><p class="hint">{{ i18n.text('PUBLIC.DETAIL.SELECT_HINT') }}</p></ng-template>
+            <button type="button" [disabled]="!canContinue" (click)="continueBooking()">{{ i18n.text('PUBLIC.DETAIL.CONTINUE_BOOKING') }}</button>
+          </aside>
+        </div>
+      </section>
+    </div>
+    <div *ngIf="selectedRoomType" class="mobile-booking-bar" role="region" [attr.aria-label]="i18n.text('PUBLIC.DETAIL.BOOKING_SUMMARY')" aria-live="polite">
+      <div>
+        <small>{{ selectedRoomType.nameVi }} · {{ selectedQuantity }}</small>
+        <strong>{{ formatVnd(displayedRoomTotal) }}</strong>
+      </div>
+      <button type="button" [disabled]="!canContinue" (click)="continueBooking()">{{ i18n.text('PUBLIC.DETAIL.CONTINUE_BOOKING') }}</button>
+    </div>
+  </ng-container>
+
+  <div *ngIf="showClaimModal" class="claim-backdrop" (click)="closeClaimModal()">
+    <form #claimDialog class="claim-dialog" role="dialog" aria-modal="true" aria-labelledby="claim-dialog-title" aria-describedby="claim-dialog-help" tabindex="-1" (click)="$event.stopPropagation()" (ngSubmit)="submitClaim()">
+      <header>
+        <h2 id="claim-dialog-title">{{ i18n.text('PUBLIC.DETAIL.CLAIM_TITLE') }}</h2>
+        <button type="button" (click)="closeClaimModal()" [attr.aria-label]="i18n.text('PUBLIC.DETAIL.CLOSE')"><i class="pi pi-times" aria-hidden="true"></i></button>
+      </header>
+      <p id="claim-dialog-help">{{ i18n.text('PUBLIC.DETAIL.CLAIM_HELP') }}</p>
+      <label for="claim-method">{{ i18n.text('PUBLIC.DETAIL.CLAIM_METHOD') }}</label>
+        <select id="claim-method" [(ngModel)]="claimForm.verificationMethod" name="method" [disabled]="claimSubmitting">
+          <option value="BUSINESS_LICENSE">{{ i18n.text('PUBLIC.DETAIL.BUSINESS_LICENSE') }}</option>
+          <option value="EMAIL">{{ i18n.text('PUBLIC.DETAIL.EMAIL') }}</option>
+          <option value="PHONE">{{ i18n.text('PUBLIC.DETAIL.PHONE') }}</option>
+        </select>
+      <label for="claim-verification">{{ i18n.text('PUBLIC.DETAIL.VERIFICATION_INFO') }}</label>
+      <input id="claim-verification" [(ngModel)]="claimForm.verificationData" name="verification" required [disabled]="claimSubmitting" [attr.aria-describedby]="claimError ? 'claim-feedback' : null">
+      <label for="claim-note">{{ i18n.text('PUBLIC.DETAIL.NOTE') }}</label>
+      <textarea id="claim-note" [(ngModel)]="claimForm.note" name="note" rows="3" [disabled]="claimSubmitting"></textarea>
+      <p *ngIf="claimError || claimMessage" id="claim-feedback" class="claim-feedback" [class.error]="claimError" role="status" aria-live="polite">{{ claimError || claimMessage }}</p>
+      <button class="submit-claim" type="submit" [disabled]="claimSubmitting || !claimForm.verificationData.trim()">
+        <i *ngIf="claimSubmitting" class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        {{ i18n.text(claimSubmitting ? 'PUBLIC.DETAIL.CLAIM_SENDING' : 'PUBLIC.DETAIL.SUBMIT_CLAIM') }}
+      </button>
+    </form>
+  </div>
+</main>

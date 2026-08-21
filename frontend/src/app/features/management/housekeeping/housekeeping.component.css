@@ -1,0 +1,46 @@
+.housekeeping-page { display: grid; gap: 1.5rem; padding: clamp(1rem, 2vw, 2rem); }
+.page-header { display: flex; align-items: end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.eyebrow { color: var(--hotel-primary); font-size: .72rem; font-weight: 800; letter-spacing: .12em; margin: 0; }
+h2 { margin: .3rem 0; color: var(--hotel-heading); }
+.subtitle { color: var(--hotel-text-muted); margin: 0; }
+.toolbar { align-items: end; display: flex; gap: .75rem; flex-wrap: wrap; }
+label { color: var(--hotel-text); display: grid; font-size: .78rem; font-weight: 700; gap: .3rem; }
+select, input, button { border: 1px solid var(--hotel-border); border-radius: .65rem; min-height: 2.75rem; padding: .5rem .75rem; }
+textarea{border:1px solid var(--hotel-border);border-radius:.65rem;padding:.65rem .75rem;resize:vertical}
+input { background: var(--hotel-card-bg); color: var(--hotel-text); min-width: min(18rem, 100%); }
+button { background: var(--hotel-primary); border-color: var(--hotel-primary); color: var(--hotel-card-bg); cursor: pointer; font-weight: 700; }
+button:hover:not(:disabled) { background: var(--hotel-primary-hover); border-color: var(--hotel-primary-hover); }
+button.secondary { background: var(--hotel-card-bg); color: var(--hotel-primary); }
+button.complete { background: var(--hotel-success); border-color: var(--hotel-success); }
+button.danger-outline{background:var(--hotel-card-bg);border-color:var(--hotel-danger);color:var(--hotel-danger)}button.danger-outline:hover:not(:disabled){background:var(--hotel-danger);border-color:var(--hotel-danger);color:#fff}
+button:disabled { cursor: not-allowed; opacity: .55; }
+.task-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); }
+.task-card { background: var(--hotel-card-bg); border: 1px solid var(--hotel-border); border-radius: 1rem; box-shadow: 0 12px 30px color-mix(in srgb, var(--hotel-heading) 8%, transparent); display: grid; gap: 1rem; padding: 1rem; }
+.task-card.stale { border-color: var(--hotel-warning); }
+.task-heading { align-items: start; display: flex; justify-content: space-between; gap: .75rem; }
+.task-context{align-items:center;display:flex;gap:.5rem;justify-content:space-between}.task-context>span:first-child{align-items:center;color:var(--hotel-text);display:inline-flex;font-size:.82rem;font-weight:750;gap:.4rem}.priority{background:var(--hotel-surface-muted);border-radius:999px;color:var(--hotel-text-muted);font-size:.72rem;font-weight:800;padding:.3rem .5rem}.priority[data-priority="HIGH"],.priority[data-priority="URGENT"]{background:var(--hotel-warning-light);color:var(--hotel-warning)}.task-note{align-items:flex-start;background:var(--hotel-surface-muted);border-radius:.55rem;color:var(--hotel-text);display:flex;font-size:.82rem;gap:.5rem;margin:0;padding:.65rem}.task-note i{color:var(--hotel-primary);margin-top:.1rem}
+.room-label { color: var(--hotel-heading); display: block; font-size: 1.15rem; font-weight: 800; }
+small { color: var(--hotel-text-muted); }
+.status { background: var(--hotel-info-light); border-radius: 999px; color: var(--hotel-info); font-size: .75rem; font-weight: 800; padding: .35rem .55rem; white-space: nowrap; }
+.status[data-status="IN_PROGRESS"] { background: var(--hotel-success-light); color: var(--hotel-success); }
+.status[data-status="COMPLETED"] { background: var(--hotel-surface-muted); color: var(--hotel-text-muted); }
+dl { display: grid; gap: .6rem; margin: 0; }
+dl div { display: flex; justify-content: space-between; gap: .75rem; }
+dt { color: var(--hotel-text-muted); font-size: .8rem; }
+dd { color: var(--hotel-text); margin: 0; text-align: right; }
+.warning, .completion-notice.blocked, .release-state.blocked { background: var(--hotel-warning-light); color: var(--hotel-warning); }
+.warning, .completion-notice, .release-state { border-radius: .5rem; font-size: .85rem; margin: 0; padding: .6rem; }
+.completion-notice, .release-state { background: var(--hotel-success-light); color: var(--hotel-success); }
+.sync-state{display:flex;flex-wrap:wrap;gap:.4rem 1rem;justify-content:flex-end;min-height:1.1rem;color:var(--hotel-text-muted);font-size:.75rem}.sync-warning{color:var(--hotel-warning);font-weight:700}
+.task-actions { align-items: end; display: flex; flex-wrap: wrap; gap: .5rem; }
+.cancel-panel{background:var(--hotel-surface-muted);border:1px solid var(--hotel-border);border-radius:.75rem;display:grid;gap:.65rem;padding:.75rem}.cancel-panel label{width:100%}.cancel-panel textarea{background:var(--hotel-card-bg);color:var(--hotel-text);width:100%}.cancel-panel p{color:var(--hotel-danger);font-size:.82rem;margin:0}.cancel-panel>div{display:flex;gap:.5rem;justify-content:flex-end}
+.assign-control { flex: 1 1 10rem; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--hotel-primary-light); outline-offset: 2px; }
+.create-task-panel{align-items:end;background:var(--hotel-card-bg);border:1px solid var(--hotel-border);border-radius:1rem;box-shadow:0 12px 30px color-mix(in srgb,var(--hotel-heading) 7%,transparent);display:grid;gap:1rem;grid-template-columns:minmax(14rem,1.4fr) repeat(3,minmax(10rem,1fr));padding:1rem}.create-task-panel h3{margin:.2rem 0}.create-task-panel .notes-field{grid-column:1/-2}.create-task-panel textarea{min-height:5rem}.create-task-panel .create-error{color:var(--hotel-danger);grid-column:1/-1;margin:0}.create-task-panel button[type="submit"]{min-width:9rem}
+@media (max-width: 640px) { .toolbar, .toolbar > label, .toolbar button { width: 100%; } .task-actions > button { flex: 1 1 100%; } }
+@media(max-width:900px){.create-task-panel{grid-template-columns:1fr 1fr}.create-task-panel>div,.create-task-panel .notes-field,.create-task-panel .create-error{grid-column:1/-1}}@media(max-width:560px){.create-task-panel{grid-template-columns:1fr}.create-task-panel>*{grid-column:1!important}.create-task-panel button{width:100%}}
+
+.shift-overview{display:grid;grid-template-columns:170px minmax(160px,1fr) auto;align-items:center;gap:22px;padding:20px 22px;color:#e7e5e4;background:radial-gradient(circle at 90% 10%,rgb(251 191 36 / .18),transparent 16rem),linear-gradient(135deg,#172b2a,#0f3d39);border-radius:16px;box-shadow:0 16px 36px rgb(15 61 57 / .16)}.shift-copy{display:grid}.shift-copy span{color:#fbbf24;font-size:12px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}.shift-copy strong{color:#fff;font-size:31px;line-height:1.1}.shift-copy small{color:#e2e8f0;font-size:12px}.shift-progress{height:8px;overflow:hidden;background:rgb(255 255 255 / .13);border-radius:999px}.shift-progress span{display:block;height:100%;background:linear-gradient(90deg,#2dd4bf,#fbbf24);border-radius:inherit;transition:width .3s ease}.shift-metrics{display:flex;gap:7px}.shift-metrics button{display:grid;min-width:72px;min-height:62px;padding:8px 10px;color:#e2e8f0;background:rgb(255 255 255 / .08);border:1px solid rgb(255 255 255 / .18);border-radius:10px}.shift-metrics button:hover,.shift-metrics button.active{color:#172b2a;background:#fbbf24;border-color:#fbbf24}.shift-metrics button:focus-visible{outline-color:#5eead4}.shift-metrics strong{font-size:18px;line-height:1}.shift-metrics span{font-size:12px}.task-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr));align-items:start}.task-card{position:relative;overflow:hidden;border-radius:14px;transition:border-color .18s,box-shadow .18s,transform .18s}.task-card:before{position:absolute;inset:0 auto 0 0;width:4px;content:'';background:#f59e0b}.task-card[data-status='CLAIMED']:before{background:#0ea5e9}.task-card[data-status='IN_PROGRESS']:before{background:#0f766e}.task-card[data-status='COMPLETED']:before{background:#94a3b8}.task-card:hover{border-color:#b8c9c5;box-shadow:0 16px 34px rgb(28 25 23 / .1);transform:translateY(-2px)}
+@media(max-width:1000px){.shift-overview{grid-template-columns:150px 1fr}.shift-metrics{grid-column:1/-1;overflow-x:auto}.shift-metrics button{flex:1 0 70px}}
+@media(max-width:640px){.shift-overview{grid-template-columns:1fr}.shift-progress,.shift-metrics{grid-column:auto}.task-card:hover{transform:none}}
+@media(prefers-reduced-motion:reduce){.shift-progress span,.task-card{transition:none}.task-card:hover{transform:none}}

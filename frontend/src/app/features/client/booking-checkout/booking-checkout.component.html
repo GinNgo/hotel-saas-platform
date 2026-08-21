@@ -1,0 +1,209 @@
+<div class="min-h-screen bg-gray-50 pb-12 font-sans pt-8">
+  <div class="max-w-5xl mx-auto px-4 md:px-0">
+    
+    <!-- Success State -->
+    <div *ngIf="bookingSuccess" class="bg-white p-8 rounded-lg shadow-md text-center">
+      <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <i class="pi pi-check text-green-600 text-3xl"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ i18n.text('PUBLIC.BOOKING.SUCCESS') }}</h2>
+      <p class="text-gray-600 mb-6">{{ i18n.text('PUBLIC.BOOKING.BOOKING_CODE') }} <span class="font-bold text-gray-900">{{ reservationDetails?.bookingCode || reservationDetails?.id }}</span></p>
+      <aside *ngIf="reservationDetails?.confirmationEmailStatus === 'NOT_CONFIGURED'" class="email-delivery-note" role="status">
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        <span>Booking đã được lưu, nhưng dịch vụ email chưa được cấu hình nên chưa gửi thư tới <strong>{{ reservationDetails?.confirmationEmailRecipient }}</strong>. Vui lòng lưu lại mã booking.</span>
+      </aside>
+      <aside *ngIf="reservationDetails?.confirmationEmailStatus === 'FAILED'" class="email-delivery-note" role="alert">
+        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+        <span>Booking đã được lưu nhưng email xác nhận chưa gửi thành công. Bạn có thể gửi lại trong trang chuyến đi.</span>
+      </aside>
+      <aside *ngIf="reservationDetails?.confirmationEmailStatus === 'SENT'" class="email-delivery-note" role="status">
+        <i class="pi pi-check-circle" aria-hidden="true"></i>
+        <span>Email xác nhận đã được gửi tới <strong>{{ reservationDetails?.confirmationEmailRecipient }}</strong>.</span>
+      </aside>
+      <p *ngIf="!paymentAttempt" class="text-gray-600 mb-8">{{ i18n.text('PUBLIC.BOOKING.PAY_AT_CHECKIN') }}</p>
+      <app-property-payment-panel
+        *ngIf="paymentAttempt"
+        class="block mb-8"
+        [attempt]="paymentAttempt"
+        (attemptChange)="onPaymentAttemptChange($event)"
+        (retryRequested)="retryPaymentAttempt()">
+      </app-property-payment-panel>
+      <p *ngIf="errorMessage" class="bg-red-50 border border-red-200 text-red-700 rounded p-3 mb-6 text-sm font-medium" role="alert" aria-live="assertive">
+        {{ errorMessage }}
+      </p>
+      <div class="flex flex-col sm:flex-row justify-center gap-3">
+        <button class="bg-[#0071c2] hover:bg-[#005999] text-white font-bold py-3 px-8 rounded transition-colors" (click)="goToProfileBookings()">
+          {{ i18n.text('PUBLIC.BOOKING.VIEW_TRIP') }}
+        </button>
+        <button class="bg-white hover:bg-gray-50 text-[#0071c2] border border-[#0071c2] font-bold py-3 px-8 rounded transition-colors" (click)="goHome()">
+          {{ i18n.text('PUBLIC.PAYMENT.HOME') }}
+        </button>
+      </div>
+    </div>
+
+    <section *ngIf="!bookingSuccess && !bookingContextValid" class="checkout-state" role="alert" aria-live="polite">
+      <span class="checkout-state-icon" aria-hidden="true"><i class="pi pi-link-slash"></i></span>
+      <p class="eyebrow">{{ i18n.text('PUBLIC.BOOKING.INVALID_SESSION') }}</p>
+      <h2>{{ i18n.text('PUBLIC.BOOKING.SELECT_AGAIN') }}</h2>
+      <p>{{ contextError }}</p>
+      <button type="button" class="primary-action" (click)="goToSearch()"><i class="pi pi-search"></i> {{ i18n.text('PUBLIC.BOOKING.BACK_TO_SEARCH') }}</button>
+    </section>
+
+    <!-- Booking Form -->
+    <div *ngIf="!bookingSuccess && bookingContextValid" class="checkout-grid">
+    <div class="checkout-form-card">
+      <header class="checkout-heading">
+        <div><span class="checkout-kicker">LuxeStay secure booking</span><h1>{{ i18n.text('PUBLIC.BOOKING.TITLE') }}</h1></div>
+        <div *ngIf="quote" class="hold-timer" [class.expired]="isQuoteExpired" role="timer" aria-live="polite" aria-atomic="true" [attr.aria-label]="(isQuoteExpired ? i18n.text('PUBLIC.BOOKING.QUOTE_REQUIRED') : i18n.text('PUBLIC.DETAIL.AVAILABILITY')) + ': ' + countdownLabel">
+          <i class="pi pi-clock" aria-hidden="true"></i>
+          <span><small>{{ isQuoteExpired ? i18n.text('PUBLIC.BOOKING.QUOTE_REQUIRED') : i18n.text('PUBLIC.DETAIL.AVAILABILITY') }}</small><strong>{{ countdownLabel }}</strong></span>
+          <button *ngIf="isQuoteExpired" type="button" (click)="refreshQuote()" [attr.aria-label]="i18n.text('PUBLIC.BOOKING.REFRESH_QUOTE')" [title]="i18n.text('PUBLIC.BOOKING.REFRESH_QUOTE')"><i class="pi pi-refresh" aria-hidden="true"></i></button>
+        </div>
+      </header>
+
+      <ol class="checkout-progress" [attr.aria-label]="i18n.text('PUBLIC.BOOKING.PROGRESS')">
+        <li class="complete"><span>1</span>{{ i18n.text('PUBLIC.DETAIL.SELECT_ROOM') }}</li>
+        <li class="active"><span>2</span>{{ i18n.text('PUBLIC.BOOKING.TITLE') }}</li>
+        <li><span>3</span>{{ i18n.text('PUBLIC.BOOKING.PAYMENT_METHOD') }}</li>
+      </ol>
+
+      <div *ngIf="quoteLoading" class="bg-blue-50 border border-blue-200 text-blue-700 rounded p-3 mb-6 text-sm" role="status" aria-live="polite">
+        {{ i18n.text('PUBLIC.DETAIL.LOADING') }}
+      </div>
+      <div *ngIf="quoteError" class="bg-amber-50 border border-amber-200 text-amber-800 rounded p-3 mb-6 text-sm" role="alert" aria-live="assertive">
+        {{ quoteError }}
+      </div>
+      <div *ngIf="holdLoading" class="bg-blue-50 border border-blue-200 text-blue-700 rounded p-3 mb-6 text-sm" role="status" aria-live="polite">
+        Đang khóa tồn kho cho bạn trong 15 phút...
+      </div>
+      <div *ngIf="holdError" class="bg-amber-50 border border-amber-200 text-amber-800 rounded p-3 mb-6 text-sm" role="alert">
+        {{ holdError }}
+      </div>
+      
+      <form id="bookingForm" (ngSubmit)="submitBooking()" #bookingForm="ngForm">
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <label for="booking-last-name" class="block text-sm font-bold text-gray-700 mb-2">{{ i18n.text('PUBLIC.BOOKING.LAST_NAME') }}</label>
+            <input id="booking-last-name" type="text" autocomplete="family-name" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-[#0071c2]"
+                   [(ngModel)]="bookingData.lastName" name="lastName" required>
+          </div>
+          <div>
+            <label for="booking-first-name" class="block text-sm font-bold text-gray-700 mb-2">{{ i18n.text('PUBLIC.BOOKING.FIRST_NAME') }}</label>
+            <input id="booking-first-name" type="text" autocomplete="given-name" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-[#0071c2]"
+                   [(ngModel)]="bookingData.firstName" name="firstName" required>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <label for="booking-phone" class="block text-sm font-bold text-gray-700 mb-2">{{ i18n.text('PUBLIC.BOOKING.PHONE') }}</label>
+            <input id="booking-phone" type="tel" autocomplete="tel" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-[#0071c2]"
+                   [(ngModel)]="bookingData.phone" name="phone" required maxlength="30">
+          </div>
+          <div>
+            <label for="booking-email" class="block text-sm font-bold text-gray-700 mb-2">{{ i18n.text('PUBLIC.BOOKING.EMAIL') }}</label>
+            <input id="booking-email" type="email" autocomplete="email" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-[#0071c2]"
+                   [(ngModel)]="bookingData.email" name="email" required maxlength="200">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <label for="booking-check-in" class="block text-sm font-bold text-gray-700 mb-2">{{ i18n.text('PUBLIC.BOOKING.CHECK_IN') }}</label>
+            <input id="booking-check-in" type="date" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-[#0071c2]"
+                   [(ngModel)]="bookingData.checkInDate" name="checkInDate" readonly required>
+          </div>
+          <div>
+            <label for="booking-check-out" class="block text-sm font-bold text-gray-700 mb-2">{{ i18n.text('PUBLIC.BOOKING.CHECK_OUT') }}</label>
+            <input id="booking-check-out" type="date" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-[#0071c2]"
+                   [(ngModel)]="bookingData.checkOutDate" name="checkOutDate" [min]="bookingData.checkInDate" readonly required>
+          </div>
+        </div>
+
+        <div class="mb-8">
+          <label class="block text-sm font-bold text-gray-700 mb-2">{{ i18n.text('PUBLIC.BOOKING.GUESTS_ROOMS') }}</label>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <label class="compact-input">{{ i18n.text('PUBLIC.BOOKING.ADULTS') }}<input type="number" [(ngModel)]="bookingData.adults" name="adults" min="1" readonly></label>
+            <label class="compact-input">{{ i18n.text('PUBLIC.BOOKING.CHILDREN') }}<input type="number" [(ngModel)]="bookingData.children" name="children" min="0" readonly></label>
+            <label class="compact-input">{{ i18n.text('PUBLIC.BOOKING.ROOMS') }}<input type="number" [(ngModel)]="bookingData.quantity" name="quantity" min="1" readonly></label>
+          </div>
+        </div>
+
+        <div class="mb-8"><label for="booking-special-requests" class="block text-sm font-bold text-gray-700 mb-2">{{ i18n.text('PUBLIC.BOOKING.SPECIAL_REQUESTS') }}</label><textarea id="booking-special-requests" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary" rows="3" [(ngModel)]="bookingData.specialRequests" name="specialRequests" [placeholder]="i18n.text('PUBLIC.BOOKING.SPECIAL_PLACEHOLDER')"></textarea></div>
+        
+        <div class="mb-8">
+          <label class="block text-sm font-bold text-gray-700 mb-3">{{ i18n.text('PUBLIC.BOOKING.PAYMENT_METHOD') }}</label>
+          <p *ngIf="paymentOptionsLoading" class="text-sm text-gray-500 mb-3" role="status">Đang tải phương thức thanh toán...</p>
+          <div *ngIf="paymentOptionsError" class="payment-options-error mb-3" role="alert">
+            <span>{{ paymentOptionsError }}</span>
+            <button *ngIf="paymentOptions.length === 0" type="button" (click)="retryPaymentOptions()" [disabled]="paymentOptionsLoading">
+              <i class="pi pi-refresh" aria-hidden="true"></i> Tải lại
+            </button>
+          </div>
+          <div class="payment-method-grid">
+            <label *ngFor="let option of paymentOptions"
+                   class="payment-method-card"
+                   [class.vnpay-card]="option.code === 'VNPAY'"
+                   [class.selected]="bookingData.paymentMethod === option.code">
+              <input type="radio" name="paymentMethod" [value]="option.code" [attr.value]="option.code" [(ngModel)]="bookingData.paymentMethod">
+              <div class="payment-method-copy">
+                <strong>{{ paymentMethodLabel(option.code) }}</strong>
+                <span>{{ paymentMethodHelp(option) }}</span>
+              </div>
+              <span *ngIf="option.code === 'VNPAY'; else genericPaymentIcon" class="vnpay-logo-shell"><img src="/assets/payment/vnpay-logo.svg" alt="VNPAY" width="112" height="36"></span>
+              <ng-template #genericPaymentIcon><span class="payment-method-icon" aria-hidden="true"><i class="pi pi-wallet"></i></span></ng-template>
+            </label>
+          </div>
+        </div>
+
+        <div *ngIf="errorMessage"
+             class="bg-red-50 border border-red-200 text-red-700 rounded p-3 mb-3 text-sm font-medium"
+             role="alert"
+             aria-live="assertive">
+          {{ errorMessage }}
+        </div>
+
+        <button type="submit" 
+                class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+                [disabled]="!bookingForm.valid || !bookingContextValid || isSubmitting || paymentOptionsLoading || paymentOptions.length === 0 || quoteLoading || holdLoading || !quote || isQuoteExpired || (holdRequired && !bookingHold)"
+                [attr.aria-busy]="isSubmitting">
+          <i class="pi pi-spin pi-spinner" *ngIf="isSubmitting"></i>
+          <span>{{ i18n.text('PUBLIC.BOOKING.COMPLETE') }}</span>
+        </button>
+
+      </form>
+    </div>
+    <aside class="checkout-summary">
+      <span>{{ i18n.text('PUBLIC.BOOKING.SUMMARY') }}</span>
+      <span *ngIf="sponsoredPlacement" class="placement-disclosure sponsored-placement" data-sponsored="true">
+        <i class="pi pi-megaphone" aria-hidden="true"></i> {{ sponsoredDisclosure }}
+      </span>
+      <h3>{{ roomTypeName || i18n.text('PUBLIC.BOOKING.SELECTED_ROOM') }}</h3>
+      <div *ngIf="quote" class="summary-hold" [class.expired]="isQuoteExpired"><i class="pi pi-clock" aria-hidden="true"></i><span>{{ countdownLabel }}</span><button *ngIf="isQuoteExpired" type="button" (click)="refreshQuote()" [attr.aria-label]="i18n.text('PUBLIC.BOOKING.REFRESH_QUOTE')" [title]="i18n.text('PUBLIC.BOOKING.REFRESH_QUOTE')"><i class="pi pi-refresh" aria-hidden="true"></i></button></div>
+      <dl>
+        <div><dt>{{ i18n.text('PUBLIC.BOOKING.CHECK_IN') }}</dt><dd>{{ bookingData.checkInDate | date:'dd/MM/yyyy' }}</dd></div>
+        <div><dt>{{ i18n.text('PUBLIC.BOOKING.CHECK_OUT') }}</dt><dd>{{ bookingData.checkOutDate | date:'dd/MM/yyyy' }}</dd></div>
+        <div><dt>{{ i18n.text('PUBLIC.BOOKING.GUESTS_ROOMS') }}</dt><dd>{{ i18n.count('PUBLIC.BOOKING.NIGHTS', nights) }}</dd></div>
+        <div><dt>{{ i18n.text('PUBLIC.BOOKING.ROOMS') }}</dt><dd>{{ bookingData.quantity }}</dd></div>
+        <div><dt>{{ i18n.text('PUBLIC.BOOKING.GUESTS_ROOMS') }}</dt><dd>{{ guestSummary }}</dd></div>
+        <div *ngIf="quote"><dt>{{ i18n.text('PUBLIC.BOOKING.ORIGINAL_ROOM_TOTAL') }}</dt><dd [class.original-price]="quote.totalDiscount > 0">{{ formatVnd(quote.baseSubtotal) }}</dd></div>
+        <div *ngIf="quote"><dt>{{ i18n.text('PUBLIC.DETAIL.TAXES_FEES') }}</dt><dd>{{ formatVnd(quote.taxesAndFees) }}</dd></div>
+        <div *ngIf="quote?.totalDiscount"><dt>{{ i18n.text('PUBLIC.DETAIL.DISCOUNT') }}</dt><dd>-{{ formatVnd(quote.totalDiscount) }}</dd></div>
+        <div *ngIf="quote" class="summary-final-total"><dt>{{ i18n.text('PUBLIC.BOOKING.TOTAL') }}</dt><dd>{{ formatVnd(quote.finalTotal) }}</dd></div>
+      </dl>
+      <div *ngIf="quote?.appliedPromotions?.length" class="promotion-proof" aria-live="polite">
+        <i class="pi pi-ticket" aria-hidden="true"></i>
+        <span>{{ i18n.text('PUBLIC.BOOKING.PROMOTION_APPLIED', { names: promotionNames }) }}</span>
+        <strong *ngIf="memberTierLabel">{{ i18n.text('PUBLIC.BOOKING.MEMBER_PRICE', { tier: memberTierLabel }) }}</strong>
+      </div>
+      <div class="estimate"><small>{{ i18n.text('PUBLIC.BOOKING.ESTIMATE') }}</small><strong>{{ quote ? formatVnd(estimatedTotal) : '—' }}</strong><p>{{ i18n.text('PUBLIC.BOOKING.BACKEND_RECHECK') }}</p></div>
+      <div class="checkout-assurance"><span><i class="pi pi-shield"></i>SSL</span><span><i class="pi pi-check-circle"></i>{{ i18n.text('PUBLIC.DETAIL.BACKEND_NOTE') }}</span></div>
+    </aside>
+    <div class="mobile-checkout-bar" role="region" [attr.aria-label]="i18n.text('PUBLIC.BOOKING.TITLE')">
+      <div><small>{{ i18n.text('PUBLIC.BOOKING.SUMMARY') }}</small><strong>{{ formatVnd(estimatedTotal) }}</strong></div>
+      <button type="submit" form="bookingForm" [disabled]="!bookingForm.valid || !bookingContextValid || isSubmitting || paymentOptionsLoading || paymentOptions.length === 0 || quoteLoading || holdLoading || !quote || isQuoteExpired || (holdRequired && !bookingHold)"><i class="pi pi-lock" aria-hidden="true"></i>{{ i18n.text('PUBLIC.BOOKING.COMPLETE') }}</button>
+    </div>
+    </div>
+  </div>
+</div>

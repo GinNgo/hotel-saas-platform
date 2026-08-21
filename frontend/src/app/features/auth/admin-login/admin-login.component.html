@@ -1,0 +1,127 @@
+<div class="login-layout">
+  <!-- Left Side: Hero Image & Branding -->
+  <div class="login-hero d-none d-lg-flex flex-column justify-content-between position-relative p-5">
+    <div class="hero-overlay"></div>
+    
+    <!-- Top Branding -->
+    <div class="hero-top position-relative z-1 d-flex align-items-center mt-3">
+      <div class="brand-logo-mockup bg-primary text-white d-flex align-items-center justify-content-center rounded me-3 shadow-sm">
+        <i class="pi pi-building fw-bold fs-4"></i>
+      </div>
+      <h2 class="mb-0 fw-bolder text-white">LuxeStay</h2>
+    </div>
+
+    <!-- Center Content -->
+    <div class="hero-content position-relative z-1 text-white">
+      <h1 class="display-4 fw-bold mb-4 text-white" style="line-height: 1.2;">
+        Nâng tầm nghệ thuật<br/>
+        quản lý qua sự<br/>
+        <span class="text-info" style="color: #90caf9 !important;">Chuẩn xác.</span>
+      </h1>
+      <p class="fs-6 text-white-50" style="max-width: 480px; line-height: 1.6;">
+        Truy cập hệ sinh thái quản lý toàn diện được thiết kế theo tiêu chuẩn khách sạn sang trọng toàn cầu. Công cụ mạnh mẽ giúp tối ưu hóa vận hành và nâng cao trải nghiệm khách hàng.
+      </p>
+    </div>
+
+    <!-- Bottom Branding -->
+    <div class="hero-bottom position-relative z-1 mb-3 d-flex align-items-center">
+      <div class="line-indicator-bottom me-3"></div>
+      <span class="text-white-50 small fw-bold tracking-wider text-uppercase" style="letter-spacing: 1px;">Hospitality Operations</span>
+    </div>
+  </div>
+
+  <!-- Right Side: Login Form -->
+  <div class="login-panel d-flex flex-column position-relative">
+    
+    <div class="login-form-container m-auto w-100 p-5">
+      
+      <div class="mb-5">
+        <h2 class="fw-bolder text-dark mb-2">Cổng Quản Trị</h2>
+        <p class="text-muted small">Đăng nhập để quản lý bảng điều khiển của bạn</p>
+      </div>
+
+      <div *ngIf="errorMessage" class="alert alert-danger p-3 mb-4 d-flex align-items-center rounded bg-danger-subtle text-danger border border-danger-subtle fw-medium small">
+        <i class="pi pi-exclamation-circle me-2 fs-6"></i>
+        {{ errorMessage }}
+      </div>
+
+      <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+        <!-- Username Field -->
+        <div class="mb-4">
+          <label for="username" class="form-label fw-bold small text-dark d-flex align-items-center mb-2">
+            <i class="pi pi-user me-2 text-primary"></i> Email hoặc tên đăng nhập
+          </label>
+          <input 
+            id="username" 
+            type="text" 
+            pInputText 
+            [(ngModel)]="loginObj.username" 
+            name="username" 
+            class="w-100 custom-input" 
+            placeholder="support hoặc luxestay8386@gmail.com"
+            autocomplete="username"
+            required 
+            autofocus 
+          />
+        </div>
+
+        <!-- Password Field -->
+        <div class="mb-4">
+          <label for="password" class="form-label fw-bold small text-dark d-flex align-items-center mb-2">
+            <i class="pi pi-lock me-2 text-primary"></i> Mật khẩu
+          </label>
+          <p-password 
+            id="password" 
+            [(ngModel)]="loginObj.password" 
+            name="password" 
+            [toggleMask]="true" 
+            [feedback]="false"
+            styleClass="w-100"
+            inputStyleClass="w-100 custom-input"
+            placeholder="••••••••••••••"
+            [required]="true">
+          </p-password>
+        </div>
+
+        <!-- Options -->
+        <div class="d-flex justify-content-between align-items-center mb-5">
+          <a class="text-primary fw-bold small" routerLink="/forgot-password">Forgot password?</a>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="d-grid mb-4">
+          <button 
+            type="submit" 
+            class="btn btn-primary btn-lg rounded-3 fw-medium d-flex justify-content-center align-items-center gap-2 shadow-sm py-3"
+            style="background-color: #0056b3; border: none;"
+            [disabled]="isLoading">
+            <span *ngIf="!isLoading">Đăng nhập</span>
+            <i *ngIf="!isLoading" class="pi pi-arrow-right"></i>
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span *ngIf="isLoading">Đang xử lý...</span>
+          </button>
+        </div>
+        
+        <hr class="text-black-50 mb-4 opacity-25">
+
+        <!-- Product context, not a synthetic backend-health claim. -->
+        <div class="d-flex justify-content-center">
+          <div class="system-status-pill bg-light rounded-pill px-4 py-2 d-flex align-items-center">
+            <i class="pi pi-shield me-2 text-primary" aria-hidden="true"></i>
+            <span class="text-muted small" style="font-size: 0.8rem;">Cổng quản trị LuxeStay</span>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="login-footer position-absolute bottom-0 w-100 p-4 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+      <span class="text-muted fw-medium" style="font-size: 0.75rem;">&copy; 2026 LuxeStay Hospitality Group</span>
+      <div class="d-flex gap-4">
+        <a class="text-muted fw-medium" style="font-size: 0.75rem;" routerLink="/contact">{{ i18n.text('AUTH_LEGAL.NAV.CONTACT') }}</a>
+        <a class="text-muted fw-medium" style="font-size: 0.75rem;" routerLink="/support">{{ i18n.text('AUTH_LEGAL.NAV.SUPPORT') }}</a>
+        <a class="text-muted fw-medium" style="font-size: 0.75rem;" routerLink="/privacy">{{ i18n.text('AUTH_LEGAL.NAV.PRIVACY') }}</a>
+      </div>
+    </div>
+  </div>
+</div>

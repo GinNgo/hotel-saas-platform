@@ -1,0 +1,137 @@
+<section class="chat-dashboard" aria-labelledby="support-dashboard-title">
+  <aside class="conversation-panel" aria-label="Danh sách hội thoại hỗ trợ">
+    <header class="conversation-header">
+      <div>
+        <p class="eyebrow">SYSTEM · AI_CHAT</p>
+        <h1 id="support-dashboard-title">LuxeStay Care</h1>
+        <p>Hàng đợi hỗ trợ trung tâm</p>
+      </div>
+      <span class="connection-pill" [class.is-connected]="connectionState() === 'connected'">
+        <span aria-hidden="true"></span>{{ connectionLabel() }}
+      </span>
+    </header>
+
+    <div *ngIf="connectionError()" class="dashboard-alert" role="status">
+      <span>{{ connectionError() }}</span>
+      <button type="button" class="text-action" (click)="retryConnection()">Thử lại</button>
+    </div>
+
+    <div *ngIf="conversationState() === 'loading'" class="dashboard-state" aria-label="Đang tải hội thoại">
+      <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+      <span>Đang tải hàng đợi…</span>
+    </div>
+
+    <div *ngIf="conversationState() === 'error'" class="dashboard-state dashboard-error" role="alert">
+      <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+      <span>{{ conversationError() }}</span>
+      <button type="button" class="text-action" (click)="loadConversations()">Thử lại</button>
+    </div>
+
+    <div *ngIf="conversationState() === 'ready' && conversations().length === 0" class="dashboard-state dashboard-empty">
+      <i class="pi pi-inbox" aria-hidden="true"></i>
+      <p>Chưa có cuộc hội thoại mới.</p>
+      <small>Khách hàng sẽ xuất hiện ở đây sau khi gửi yêu cầu.</small>
+    </div>
+
+    <nav *ngIf="conversationState() === 'ready'" class="conversation-list" aria-label="Các cuộc hội thoại">
+      <button
+        *ngFor="let conversation of conversations()"
+        type="button"
+        class="conversation-item"
+        [class.is-selected]="selectedConversationId() === conversation.conversationId"
+        [attr.aria-current]="selectedConversationId() === conversation.conversationId ? 'true' : null"
+        (click)="selectConversation(conversation)">
+        <span class="conversation-avatar" aria-hidden="true">{{ conversationInitials(conversation) }}</span>
+        <span class="conversation-copy">
+          <strong>{{ conversation.customerName }}</strong>
+          <small>{{ conversation.channel === 'TENANT_ADMIN' ? 'Đối tác' : 'Khách hàng' }} · {{ conversation.propertyName || conversation.hotelName }} · {{ conversation.status }}</small>
+          <span>{{ conversation.lastMessage || 'Cuộc hội thoại mới' }}</span>
+        </span>
+        <time *ngIf="conversation.lastMessageAt" [attr.datetime]="conversation.lastMessageAt">
+          {{ conversation.lastMessageAt | date:'HH:mm' }}
+        </time>
+      </button>
+    </nav>
+  </aside>
+
+  <main class="message-panel" aria-live="polite">
+    <ng-container *ngIf="selectedConversationId() as selectedId; else noSelection">
+      <header class="message-header">
+        <div class="selected-avatar" aria-hidden="true">
+          {{ (getConversation(selectedId)?.customerName || '?').charAt(0) | uppercase }}
+        </div>
+        <div>
+          <p class="eyebrow">{{ conversationTypeLabel(getConversation(selectedId)) }}</p>
+          <h2>{{ getConversation(selectedId)?.customerName || (participantLabel(getConversation(selectedId)) + ' #' + selectedId) }}</h2>
+          <p>{{ getConversation(selectedId)?.propertyName || getConversation(selectedId)?.hotelName }} · {{ getConversation(selectedId)?.status }}</p>
+        </div>
+        <div class="conversation-actions">
+          <button *ngIf="getConversation(selectedId)?.status === 'OPEN'" type="button" (click)="assignSelected()" [disabled]="!canReply || lifecycleBusy()">Nhận xử lý</button>
+          <button *ngIf="getConversation(selectedId)?.status !== 'CLOSED'" type="button" class="danger" (click)="closeSelected()" [disabled]="!canReply || lifecycleBusy()">Đóng hội thoại</button>
+          <button *ngIf="getConversation(selectedId)?.status === 'CLOSED'" type="button" (click)="reopenSelected()" [disabled]="!canReply || lifecycleBusy()">Mở lại</button>
+          <small *ngIf="getConversation(selectedId)?.assignedAt">Nhận lúc {{ getConversation(selectedId)?.assignedAt | date:'dd/MM HH:mm' }}</small>
+          <small *ngIf="getConversation(selectedId)?.closedAt">Đóng lúc {{ getConversation(selectedId)?.closedAt | date:'dd/MM HH:mm' }}</small>
+        </div>
+      </header>
+      <p *ngIf="lifecycleError()" class="dashboard-alert" role="alert">{{ lifecycleError() }}</p>
+
+      <div class="message-stream" #scrollMe role="log" aria-relevant="additions">
+        <div *ngIf="messagesState() === 'loading'" class="dashboard-state">
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+          <span>Đang tải lịch sử…</span>
+        </div>
+        <div *ngIf="messagesState() === 'error'" class="dashboard-state dashboard-error" role="alert">
+          <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+          <span>{{ messagesError() }}</span>
+          <button type="button" class="text-action" (click)="loadConversations()">Thử lại</button>
+        </div>
+        <div *ngIf="messagesState() === 'ready' && messages().length === 0" class="dashboard-state">
+          <i class="pi pi-comments" aria-hidden="true"></i>
+          <span>Chưa có tin nhắn trong cuộc hội thoại này.</span>
+        </div>
+
+        <article *ngFor="let message of messages()" class="message-row" [class.is-own]="isOwnMessage(message)">
+          <div class="message-bubble" [class.is-own]="isOwnMessage(message)">
+            <p>{{ message.content }}</p>
+            <time *ngIf="message.timestamp" [attr.datetime]="message.timestamp">
+              {{ message.timestamp | date:'dd/MM/yyyy HH:mm' }}
+            </time>
+          </div>
+        </article>
+      </div>
+
+      <form class="message-composer" (ngSubmit)="sendMessage()">
+        <label class="visually-hidden" for="support-dashboard-message">Phản hồi người gửi</label>
+        <input
+          id="support-dashboard-message"
+          name="supportDashboardMessage"
+          type="text"
+          maxlength="2000"
+          autocomplete="off"
+          [(ngModel)]="newMessage"
+          [disabled]="!canReply || getConversation(selectedId)?.status === 'CLOSED' || isSending()"
+          aria-describedby="dashboard-send-status"
+          placeholder="Viết phản hồi…">
+        <button
+          type="submit"
+          class="send-button"
+          aria-label="Gửi phản hồi"
+          [disabled]="!canReply || getConversation(selectedId)?.status === 'CLOSED' || !newMessage.trim() || isSending()">
+          <i *ngIf="!isSending()" class="pi pi-send" aria-hidden="true"></i>
+          <i *ngIf="isSending()" class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        </button>
+        <p id="dashboard-send-status" class="composer-status" [class.has-error]="sendError()" aria-live="polite">
+          {{ !canReply ? 'Bạn chỉ có quyền xem hội thoại.' : (sendError() || (isSending() ? 'Đang gửi phản hồi…' : '')) }}
+        </p>
+      </form>
+    </ng-container>
+
+    <ng-template #noSelection>
+      <div class="dashboard-state dashboard-welcome">
+        <span class="welcome-icon" aria-hidden="true"><i class="pi pi-comments"></i></span>
+        <h2>Chọn một cuộc hội thoại</h2>
+        <p>Hãy chọn một yêu cầu trong hàng đợi để xem lịch sử và phản hồi.</p>
+      </div>
+    </ng-template>
+  </main>
+</section>

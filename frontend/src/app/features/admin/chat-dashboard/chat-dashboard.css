@@ -1,0 +1,472 @@
+:host {
+  display: block;
+}
+
+.chat-dashboard {
+  display: grid;
+  grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
+  min-height: min(48rem, calc(100dvh - 9rem));
+  overflow: hidden;
+  background: var(--hotel-card-bg);
+  border: 1px solid var(--hotel-border);
+  border-radius: var(--hotel-radius-lg);
+  box-shadow: var(--hotel-shadow-sm);
+}
+
+.conversation-panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  background: var(--hotel-surface-muted);
+  border-right: 1px solid var(--hotel-border);
+}
+
+.conversation-header,
+.message-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--hotel-space-3);
+  padding: var(--hotel-space-5);
+  background: var(--hotel-card-bg);
+  border-bottom: 1px solid var(--hotel-border);
+}
+
+.conversation-header {
+  justify-content: space-between;
+}
+
+.conversation-header h1,
+.conversation-header p,
+.message-header h2,
+.message-header p {
+  margin: 0;
+}
+
+.conversation-header h1,
+.message-header h2 {
+  color: var(--hotel-heading);
+  font-family: var(--hotel-font-heading);
+  font-size: var(--hotel-text-xl);
+  font-weight: 700;
+}
+
+.conversation-header > div > p:last-child,
+.message-header > div > p:last-child {
+  margin-top: 0.2rem;
+  color: var(--hotel-text-muted);
+  font-size: var(--hotel-text-xs);
+}
+
+.eyebrow {
+  color: var(--hotel-primary);
+  font-size: var(--hotel-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.connection-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  padding: 0.35rem 0.55rem;
+  color: var(--hotel-warning);
+  background: var(--hotel-warning-light);
+  border-radius: var(--hotel-radius-pill);
+  font-size: var(--hotel-text-xs);
+  white-space: nowrap;
+}
+
+.connection-pill > span {
+  width: 0.45rem;
+  height: 0.45rem;
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.connection-pill.is-connected {
+  color: var(--hotel-success);
+  background: var(--hotel-success-light);
+}
+
+.dashboard-alert,
+.dashboard-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hotel-space-2);
+  padding: var(--hotel-space-4);
+  color: var(--hotel-text-muted);
+  font-size: var(--hotel-text-sm);
+  text-align: center;
+}
+
+.dashboard-alert {
+  justify-content: space-between;
+  color: var(--hotel-danger);
+  background: var(--hotel-danger-light);
+  font-size: var(--hotel-text-xs);
+}
+
+.dashboard-error {
+  color: var(--hotel-danger);
+}
+
+.dashboard-empty {
+  flex-direction: column;
+  padding: var(--hotel-space-8) var(--hotel-space-5);
+}
+
+.dashboard-empty i {
+  color: var(--hotel-primary);
+  font-size: var(--hotel-text-xl);
+}
+
+.dashboard-empty p,
+.dashboard-empty small {
+  margin: 0;
+}
+
+.conversation-list {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.conversation-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--hotel-space-3);
+  min-height: 4.5rem;
+  padding: var(--hotel-space-3) var(--hotel-space-4);
+  color: var(--hotel-text);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--hotel-border);
+  cursor: pointer;
+  transition: background-color var(--hotel-transition-fast) ease, box-shadow var(--hotel-transition-fast) ease;
+}
+
+.conversation-item:hover,
+.conversation-item:focus-visible {
+  background: var(--hotel-primary-light);
+}
+
+.conversation-item.is-selected {
+  background: var(--hotel-primary-light);
+  box-shadow: inset 0.2rem 0 0 var(--hotel-primary);
+}
+
+.conversation-avatar,
+.selected-avatar,
+.welcome-icon {
+  display: grid;
+  place-items: center;
+  color: var(--hotel-primary);
+  background: var(--hotel-primary-light);
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.conversation-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.conversation-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.conversation-copy strong,
+.conversation-copy small,
+.conversation-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-copy strong {
+  color: var(--hotel-heading);
+  font-size: var(--hotel-text-sm);
+}
+
+.conversation-copy small,
+.conversation-copy span,
+.conversation-item time {
+  color: var(--hotel-text-muted);
+  font-size: var(--hotel-text-xs);
+}
+
+.conversation-item time {
+  align-self: start;
+  margin-top: 0.25rem;
+  white-space: nowrap;
+}
+
+.message-panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  background: var(--hotel-card-bg);
+}
+
+.message-header {
+  align-items: center;
+}
+
+.conversation-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--hotel-space-2);
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.conversation-actions button {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  color: var(--hotel-primary);
+  background: var(--hotel-card-bg);
+  border: 1px solid var(--hotel-primary);
+  border-radius: var(--hotel-radius-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.conversation-actions button.danger { color: var(--hotel-danger); border-color: var(--hotel-danger); }
+.conversation-actions button:disabled { opacity: 0.55; cursor: not-allowed; }
+.conversation-actions small { width: 100%; color: var(--hotel-text-muted); text-align: right; }
+
+.selected-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+}
+
+.message-stream {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: var(--hotel-space-3);
+  padding: var(--hotel-space-6);
+  overflow-y: auto;
+  background: var(--hotel-bg);
+}
+
+.message-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.message-row.is-own {
+  justify-content: flex-end;
+}
+
+.message-bubble {
+  max-width: min(70%, 42rem);
+  padding: var(--hotel-space-3) var(--hotel-space-4);
+  color: var(--hotel-text);
+  background: var(--hotel-card-bg);
+  border: 1px solid var(--hotel-border);
+  border-radius: var(--hotel-radius-md) var(--hotel-radius-md) var(--hotel-radius-md) 0.25rem;
+  box-shadow: var(--hotel-shadow-sm);
+}
+
+.message-bubble.is-own {
+  color: var(--hotel-card-bg);
+  background: var(--hotel-primary);
+  border-color: var(--hotel-primary);
+  border-radius: var(--hotel-radius-md) var(--hotel-radius-md) 0.25rem var(--hotel-radius-md);
+}
+
+.message-bubble p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--hotel-text-sm);
+}
+
+.message-bubble time {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--hotel-text-muted);
+  font-size: var(--hotel-text-xs);
+  text-align: right;
+}
+
+.message-bubble.is-own time {
+  color: color-mix(in srgb, var(--hotel-card-bg) 72%, transparent);
+}
+
+.message-composer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--hotel-space-3);
+  padding: var(--hotel-space-4) var(--hotel-space-6);
+  background: var(--hotel-card-bg);
+  border-top: 1px solid var(--hotel-border);
+}
+
+.message-composer input {
+  min-width: 0;
+  min-height: 2.75rem;
+  flex: 1;
+  padding: 0 var(--hotel-space-4);
+  color: var(--hotel-text);
+  background: var(--hotel-surface-muted);
+  border: 1px solid transparent;
+  border-radius: var(--hotel-radius-pill);
+}
+
+.message-composer input:focus {
+  background: var(--hotel-card-bg);
+  border-color: var(--hotel-primary);
+}
+
+.send-button {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--hotel-card-bg);
+  background: var(--hotel-primary);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color var(--hotel-transition-fast) ease, transform var(--hotel-transition-fast) ease;
+}
+
+.send-button:hover:not(:disabled) {
+  background: var(--hotel-primary-hover);
+  transform: translateY(-1px);
+}
+
+.send-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.composer-status {
+  position: absolute;
+  bottom: -1.25rem;
+  left: var(--hotel-space-6);
+  margin: 0;
+  color: var(--hotel-text-muted);
+  font-size: var(--hotel-text-xs);
+}
+
+.composer-status.has-error,
+.text-action {
+  color: var(--hotel-danger);
+}
+
+.text-action {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.dashboard-welcome {
+  flex: 1;
+  flex-direction: column;
+  padding: var(--hotel-space-8);
+}
+
+.welcome-icon {
+  width: 4.5rem;
+  height: 4.5rem;
+  margin-bottom: var(--hotel-space-3);
+  font-size: var(--hotel-text-xl);
+}
+
+.dashboard-welcome h2,
+.dashboard-welcome p {
+  margin: 0;
+}
+
+.dashboard-welcome h2 {
+  color: var(--hotel-heading);
+  font-family: var(--hotel-font-heading);
+  font-size: var(--hotel-text-xl);
+}
+
+.dashboard-welcome p {
+  max-width: 28rem;
+  margin-top: var(--hotel-space-2);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 48rem) {
+  .chat-dashboard {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .conversation-panel {
+    max-height: 18rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--hotel-border);
+  }
+
+  .conversation-list {
+    min-height: 8rem;
+  }
+
+  .message-panel {
+    min-height: 32rem;
+  }
+
+  .message-bubble {
+    max-width: 82%;
+  }
+}
+
+@media (max-width: 36rem) {
+  .conversation-header,
+  .message-header,
+  .message-composer,
+  .message-stream {
+    padding: var(--hotel-space-4);
+  }
+
+  .conversation-header {
+    flex-wrap: wrap;
+  }
+
+  .conversation-item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .conversation-item time {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conversation-item,
+  .send-button {
+    transition: none;
+  }
+}

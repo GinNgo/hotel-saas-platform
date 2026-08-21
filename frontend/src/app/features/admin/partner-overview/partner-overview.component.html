@@ -1,0 +1,121 @@
+<p-confirmDialog [style]="{ width: 'min(440px, 94vw)' }"></p-confirmDialog>
+
+<section class="partner-page" [attr.aria-busy]="loading">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Quản trị đối tác</p>
+      <h1>{{ title }}</h1>
+      <p class="page-description">{{ config.description }}</p>
+    </div>
+    <button
+      type="button"
+      class="icon-button"
+      title="Tải lại dữ liệu"
+      aria-label="Tải lại dữ liệu"
+      [disabled]="loading"
+      (click)="load()"
+    >
+      <i class="pi pi-refresh" [class.pi-spin]="loading" aria-hidden="true"></i>
+    </button>
+  </header>
+
+  @if (actionFeedback) {
+    <div class="action-feedback" [class.action-feedback--error]="actionFeedback.type === 'error'" role="alert">
+      <i [class]="actionFeedback.type === 'error' ? 'pi pi-exclamation-circle' : 'pi pi-check-circle'" aria-hidden="true"></i>
+      <span>{{ actionFeedback.message }}</span>
+    </div>
+  }
+
+  <div class="data-panel">
+    @if (failure) {
+      <app-feedback-state
+        state="error"
+        [title]="stateTitle()"
+        [message]="stateMessage()"
+        [actionLabel]="stateActionLabel()"
+        (actionTriggered)="handleStateAction()"
+      />
+    } @else if (loading) {
+      <app-feedback-state
+        state="loading"
+        [title]="'Đang tải ' + title.toLocaleLowerCase()"
+        message="Đang đồng bộ dữ liệu mới nhất từ hệ thống."
+      />
+    } @else if (!rows.length) {
+      <app-feedback-state
+        state="empty"
+        [title]="config.emptyTitle"
+        [message]="config.emptyMessage"
+        actionLabel="Tải lại"
+        (actionTriggered)="load()"
+      />
+    } @else {
+      <div class="table-toolbar">
+        <div class="record-count"><strong>{{ rows.length }}</strong> bản ghi</div>
+        @if (config.readOnlyMessage) {
+          <span class="read-only-note"><i class="pi pi-eye" aria-hidden="true"></i>{{ config.readOnlyMessage }}</span>
+        }
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <caption class="sr-only">{{ title }}</caption>
+          <thead>
+            <tr>
+              @for (column of cellColumns; track column.key) {
+                <th scope="col">{{ column.label }}</th>
+              }
+              @if (hasActions) {
+                <th scope="col" class="actions-column">Hành động</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows; track $index) {
+              <tr>
+                @for (column of cellColumns; track column.key) {
+                  <td [class.emphasis]="column.emphasis">
+                    <span
+                      class="cell-value"
+                      [class.cell-value--status]="column.type === 'status'"
+                      [class.cell-value--number]="column.type === 'number' || column.type === 'currency'"
+                    >{{ display(row, column) }}</span>
+                  </td>
+                }
+                @if (hasActions) {
+                  <td class="row-actions">
+                    @for (action of config.actions; track action.key) {
+                      @if (actionVisible(action, row)) {
+                        <button
+                          type="button"
+                          class="row-action"
+                          [class.row-action--success]="action.tone === 'success'"
+                          [class.row-action--danger]="action.tone === 'danger'"
+                          [attr.aria-label]="action.label"
+                          [disabled]="actionDisabled(action, row)"
+                          (click)="runAction(action, row)"
+                        >
+                          <i [class]="actionBusy(action, row) ? 'pi pi-spinner pi-spin' : action.icon" aria-hidden="true"></i>
+                          <span>{{ action.label }}</span>
+                        </button>
+                      }
+                    }
+                    @if (!hasVisibleRowAction(row)) {
+                      <span class="permission-note">{{ rowActionHint() }}</span>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-footer">
+        <span>{{ rows.length }} bản ghi</span>
+        @if (hasActions && !canUseActions) {
+          <span class="permission-note"><i class="pi pi-lock" aria-hidden="true"></i> Tài khoản hiện tại không có quyền thao tác.</span>
+        }
+      </footer>
+    }
+  </div>
+</section>

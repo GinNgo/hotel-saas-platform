@@ -1,0 +1,59 @@
+<div class="sidebar-container" [class.collapsed]="isCollapsed">
+  <a class="brand-container" routerLink="/admin/dashboard" (click)="onNavigate()" aria-label="LuxeStay - Trang quản trị">
+    <img class="brand-logo" src="/assets/brand/luxestay-mark.svg" alt="" aria-hidden="true">
+    <span class="brand-copy sidebar-text">
+      LUXESTAY
+      <small>HOSPITALITY OPERATIONS</small>
+    </span>
+  </a>
+
+  <nav class="sidebar-nav" aria-label="Điều hướng quản trị">
+    @if (isLoading) {
+      <div class="sidebar-state" role="status" aria-live="polite">
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        <span class="sidebar-text">Đang tải menu...</span>
+      </div>
+    } @else if (errorMessage) {
+      <div class="sidebar-state sidebar-error" role="alert">
+        <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+        <span class="sidebar-text">{{ errorMessage }}</span>
+        <button type="button" class="sidebar-retry" (click)="loadMenu()" aria-label="Tải lại menu">
+          <i class="pi pi-refresh" aria-hidden="true"></i>
+          <span class="sidebar-text">Thử lại</span>
+        </button>
+      </div>
+    } @else if (menuItems.length === 0) {
+      <p class="sidebar-state" role="status">
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        <span class="sidebar-text">Chưa có chức năng được cấp.</span>
+      </p>
+    } @else {
+      <ul class="sidebar-list">
+        @for (module of menuItems; track module.id) {
+          <li class="module-group">
+            <h2 class="module-title sidebar-text">{{ module.name }}</h2>
+            <ul class="module-links">
+              @for (func of module.functions; track func.id) {
+                <li>
+                  <a
+                    #activeLink="routerLinkActive"
+                    [routerLink]="func.url"
+                    routerLinkActive="sidebar-active"
+                    [routerLinkActiveOptions]="{ exact: func.url === '/admin/dashboard' }"
+                    [attr.aria-current]="activeLink.isActive ? 'page' : null"
+                    class="sidebar-link"
+                    [attr.title]="isCollapsed ? func.name : null"
+                    (click)="onNavigate()"
+                  >
+                    <i [class]="func.icon + ' sidebar-icon'" aria-hidden="true"></i>
+                    <span class="sidebar-text">{{ func.name }}</span>
+                  </a>
+                </li>
+              }
+            </ul>
+          </li>
+        }
+      </ul>
+    }
+  </nav>
+</div>

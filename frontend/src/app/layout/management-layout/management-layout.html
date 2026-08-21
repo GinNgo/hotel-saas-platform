@@ -1,0 +1,169 @@
+<div
+  class="management-shell"
+  [class.sidebar-collapsed]="isSidebarCollapsed"
+  [class.mobile-nav-open]="isMobileSidebarOpen"
+>
+  <aside
+    #managementNavigation
+    id="management-navigation"
+    class="management-sidebar"
+    aria-label="Điều hướng đối tác"
+    [attr.aria-hidden]="isMobileViewport && !isMobileSidebarOpen"
+    [inert]="isMobileViewport && !isMobileSidebarOpen"
+  >
+    <div class="management-brand">
+      <span class="material-symbols-outlined brand-mark" aria-hidden="true">business</span>
+      <span class="sidebar-copy">
+        <strong>LuxeStay</strong>
+        <small>Cổng đối tác</small>
+      </span>
+    </div>
+
+    <nav class="management-nav" aria-label="Chức năng quản lý">
+      @for (group of navigationGroups; track group.label) {
+        @if (visibleLinks(group.links).length) {
+        <section class="nav-group" [attr.aria-labelledby]="'nav-group-' + $index">
+          <h2 [id]="'nav-group-' + $index" class="sidebar-copy">{{ group.label }}</h2>
+          <ul>
+            @for (link of visibleLinks(group.links); track link.url) {
+              <li>
+                <a
+                  #activeLink="routerLinkActive"
+                  [routerLink]="link.url"
+                  routerLinkActive="active"
+                  [routerLinkActiveOptions]="{ exact: link.url === '/management/dashboard' }"
+                  [queryParams]="activePropertyId ? { propertyId: activePropertyId } : null"
+                  [attr.aria-current]="activeLink.isActive ? 'page' : null"
+                  [attr.title]="isSidebarCollapsed ? link.label : null"
+                  (click)="closeMobileNavigation()"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">{{ link.icon }}</span>
+                  <span class="sidebar-copy">{{ link.label }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        </section>
+        }
+      }
+    </nav>
+  </aside>
+
+  @if (isMobileSidebarOpen) {
+    <button
+      type="button"
+      class="management-backdrop"
+      aria-label="Đóng điều hướng"
+      (click)="closeMobileNavigation()"
+    ></button>
+  }
+
+  <div class="management-workspace">
+    <header class="management-header">
+      <div class="header-leading">
+        <button
+          #navigationToggle
+          type="button"
+          class="management-icon-button"
+          (click)="toggleSidebar()"
+          [attr.aria-expanded]="sidebarExpanded"
+          aria-controls="management-navigation"
+          [attr.aria-label]="isMobileSidebarOpen ? 'Đóng điều hướng' : 'Mở hoặc thu gọn điều hướng'"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+        </button>
+
+        <div class="page-context">
+          <nav aria-label="Đường dẫn trang">
+            <ol class="management-breadcrumbs">
+              <li><a routerLink="/management/dashboard">Đối tác</a></li>
+              <li aria-current="page">{{ pageTitle }}</li>
+            </ol>
+          </nav>
+          <h1>{{ pageTitle }}</h1>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="property-context">
+          <label for="active-property">Cơ sở đang quản lý</label>
+          @if (contextLoading) {
+            <div class="context-state" role="status" aria-live="polite">
+              <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+              Đang tải...
+            </div>
+          } @else if (contextError) {
+            <div class="context-state context-error" role="alert">
+              <span>{{ contextError }}</span>
+              <button type="button" (click)="loadContext()">Thử lại</button>
+            </div>
+          } @else if (properties.length === 0) {
+            <div class="context-state" role="status">Chưa có cơ sở được cấp.</div>
+          } @else {
+            <select
+              #propertySelect
+              id="active-property"
+              [value]="activePropertyId"
+              (change)="selectProperty(propertySelect.value)"
+            >
+              @for (property of properties; track property.id) {
+                <option [value]="property.id">{{ propertyName(property) }}</option>
+              }
+            </select>
+          }
+        </div>
+
+        <div class="user-menu-anchor">
+          <button
+            type="button"
+            class="management-profile-button"
+            (click)="toggleUserMenu()"
+            [attr.aria-expanded]="isUserMenuOpen"
+            aria-controls="management-user-menu"
+            aria-haspopup="menu"
+          >
+            <span class="profile-avatar material-symbols-outlined" aria-hidden="true">person</span>
+            <span class="profile-name">{{ username }}</span>
+            <span class="material-symbols-outlined" aria-hidden="true">arrow_drop_down</span>
+            <span class="visually-hidden">Mở menu tài khoản</span>
+          </button>
+
+          @if (isUserMenuOpen) {
+            <ul id="management-user-menu" class="management-user-menu" role="menu">
+              <li role="none">
+                <a routerLink="/" role="menuitem">
+                  <span class="material-symbols-outlined" aria-hidden="true">home</span>
+                  Về trang chủ
+                </a>
+              </li>
+              <li role="none">
+                <button type="button" role="menuitem" (click)="logout()">
+                  <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+                  Đăng xuất
+                </button>
+              </li>
+            </ul>
+          }
+        </div>
+      </div>
+    </header>
+
+    @if (activeProperty && !activePropertyOperational) {
+      <aside class="property-status-banner" role="alert" aria-live="polite">
+        <span class="material-symbols-outlined" aria-hidden="true">hourglass_top</span>
+        <div>
+          <strong>Chưa thể vận hành {{ propertyName(activeProperty) }}</strong>
+          <span>
+            Duyệt: {{ statusLabel(activeProperty.approvalStatus) }} · Vận hành: {{ statusLabel(activeProperty.operationStatus) }}.
+            Bạn vẫn có thể hoàn thiện hồ sơ cơ sở và quản lý gói phần mềm.
+          </span>
+        </div>
+        <a routerLink="/management/billing" [queryParams]="{ propertyId: activeProperty.id }">Xem gói phần mềm</a>
+      </aside>
+    }
+
+    <main id="management-main-content" class="management-content" tabindex="-1">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

@@ -1,0 +1,67 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<section class="admin-page">
+  <header class="page-header">
+    <div>
+      <h1><i class="pi pi-home"></i> Quản lý phòng</h1>
+      <p>Phòng vật lý, dọn phòng và bảo trì theo từng cơ sở.</p>
+    </div>
+    <div class="header-actions">
+      <button pButton label="Tải lại" icon="pi pi-refresh" class="p-button-outlined" (click)="loadData()" [disabled]="loading"></button>
+      <button *ngIf="canCreate" pButton label="Thêm hàng loạt" icon="pi pi-copy" class="p-button-outlined" (click)="openBulk()"></button>
+      <button *ngIf="canCreate" pButton label="Thêm phòng" icon="pi pi-plus" (click)="openCreate()"></button>
+    </div>
+  </header>
+
+  <div class="filters">
+    <span class="search"><i class="pi pi-search"></i><input pInputText [(ngModel)]="searchText" (ngModelChange)="page=1; updateQuery()" placeholder="Tìm số phòng" /></span>
+    <p-select [options]="properties" optionLabel="name" optionValue="id" [(ngModel)]="propertyFilter" placeholder="Tất cả cơ sở" [showClear]="true"></p-select>
+    <p-select [options]="roomTypes" optionLabel="nameVi" optionValue="id" [(ngModel)]="roomTypeFilter" placeholder="Tất cả loại phòng" [showClear]="true"></p-select>
+    <input pInputText type="number" [(ngModel)]="floorFilter" placeholder="Tầng" />
+    <p-select [options]="roomStatuses" optionLabel="label" optionValue="value" [(ngModel)]="statusFilter" (ngModelChange)="page=1; updateQuery()" placeholder="Trạng thái phòng" [showClear]="true"></p-select>
+    <p-select [options]="housekeepingStatuses" optionLabel="label" optionValue="value" [(ngModel)]="housekeepingFilter" placeholder="Dọn phòng" [showClear]="true"></p-select>
+    <p-select [options]="maintenanceStatuses" optionLabel="label" optionValue="value" [(ngModel)]="maintenanceFilter" placeholder="Bảo trì" [showClear]="true"></p-select>
+    <button pButton icon="pi pi-filter-slash" class="p-button-text" title="Đặt lại" (click)="resetFilters()"></button>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-state"><span>{{errorMessage}}</span><button pButton label="Thử lại" (click)="loadData()"></button></div>
+
+  <div class="table-shell">
+    <p-table [value]="filteredRooms" [loading]="loading" [paginator]="true" [rows]="pageSize" [totalRecords]="totalItems" [rowsPerPageOptions]="[15,30,50]" (onPage)="onPageChange($event)" [rowHover]="true" responsiveLayout="scroll" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header"><tr><th pSortableColumn="roomNumber">Số phòng <p-sortIcon field="roomNumber"></p-sortIcon></th><th>Cơ sở</th><th pSortableColumn="roomTypeNameVi">Loại phòng <p-sortIcon field="roomTypeNameVi"></p-sortIcon></th><th pSortableColumn="floor">Tầng <p-sortIcon field="floor"></p-sortIcon></th><th>Trạng thái phòng</th><th>Dọn phòng</th><th>Bảo trì</th><th>Ghi chú</th><th class="actions">Thao tác</th></tr></ng-template>
+      <ng-template pTemplate="body" let-room><tr><td><b>{{room.roomNumber}}</b></td><td>{{propertyName(room.hotelId)}}</td><td>{{room.roomTypeNameVi}}<small>{{room.roomTypeCode}}</small></td><td>{{room.floor}}</td><td><span class="status" [class.danger]="room.status==='DELETED'">{{room.status==='DELETED' ? 'Đã xóa mềm' : roomStatusLabel(room.status)}}</span></td><td><span class="status secondary">{{housekeepingStatusLabel(room.housekeepingStatus)}}</span></td><td><span class="status" [class.danger]="room.maintenanceStatus!=='NONE'">{{maintenanceStatusLabel(room.maintenanceStatus)}}</span></td><td>{{room.maintenanceReason||room.note||'-'}}</td><td class="actions"><button *ngIf="canUpdate && room.status!=='DELETED'" pButton icon="pi pi-pencil" class="p-button-text" title="Chỉnh sửa" (click)="openEdit(room)"></button><button *ngIf="canExecute && room.status!=='DELETED' && room.maintenanceStatus==='NONE' && room.status!=='OCCUPIED'" pButton icon="pi pi-wrench" class="p-button-text p-button-warning" title="Bắt đầu bảo trì" (click)="setMaintenance(room,true)" [disabled]="stateChangingId!==null"></button><button *ngIf="canDelete && room.status!=='DELETED' && room.status!=='OUT_OF_SERVICE'" pButton icon="pi pi-ban" class="p-button-text p-button-danger" title="Xóa mềm" (click)="deactivate(room)"></button><button *ngIf="canUpdate && room.status==='DELETED'" pButton icon="pi pi-replay" class="p-button-text" title="Khôi phục" (click)="restore(room)"></button></td></tr></ng-template>
+      <ng-template pTemplate="emptymessage"><tr><td colspan="9"><div class="empty-state"><i class="pi pi-inbox"></i><b>Không có dữ liệu phù hợp.</b><span>Hãy thay đổi bộ lọc hoặc thêm phòng mới.</span></div></td></tr></ng-template>
+    </p-table>
+  </div>
+</section>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [draggable]="false" [style]="{width:'min(700px,96vw)'}" [header]="editingId?'Chỉnh sửa phòng':'Thêm phòng'" [closable]="!saving">
+  <div class="form-grid">
+    <label>Cơ sở *<p-select [options]="properties" optionLabel="name" optionValue="id" [(ngModel)]="form.hotelId" (onChange)="onFormPropertyChange()" [disabled]="!!editingId" placeholder="Chọn cơ sở"></p-select></label>
+    <label>Loại phòng *<p-select [options]="availableTypeOptions" optionLabel="nameVi" optionValue="id" [(ngModel)]="form.roomTypeId" placeholder="Chọn loại phòng"></p-select></label>
+    <label>Số phòng *<input pInputText [(ngModel)]="form.roomNumber" /></label>
+    <label>Tầng *<p-select [options]="floorOptions" optionLabel="label" optionValue="value" [(ngModel)]="form.floor" placeholder="Chọn tầng"></p-select></label>
+    <label class="wide">Ghi chú<textarea pInputTextarea rows="3" [(ngModel)]="form.note"></textarea></label>
+  </div>
+  <ng-template pTemplate="footer"><button pButton label="Hủy" class="p-button-text" (click)="dialogVisible=false"></button><button pButton [label]="saving?'Đang lưu...':'Lưu'" icon="pi pi-check" (click)="save()" [disabled]="saving"></button></ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="maintenanceDialogVisible" [modal]="true" [draggable]="false" [style]="{width:'min(520px,94vw)'}" header="Bắt đầu bảo trì" [closable]="stateChangingId===null">
+  <p>Phòng <strong>{{maintenanceRoom?.roomNumber}}</strong> sẽ tạm ngưng bán cho đến khi hoàn tất bảo trì.</p>
+  <label class="wide">Lý do bảo trì *<textarea pInputTextarea rows="4" maxlength="500" [(ngModel)]="maintenanceReason" placeholder="Ví dụ: Điều hòa không làm lạnh"></textarea></label>
+  <p *ngIf="maintenanceError" class="error-state" role="alert">{{maintenanceError}}</p>
+  <ng-template pTemplate="footer"><button pButton label="Hủy" class="p-button-text" (click)="maintenanceDialogVisible=false" [disabled]="stateChangingId!==null"></button><button pButton label="Bắt đầu bảo trì" icon="pi pi-wrench" (click)="startMaintenance()" [disabled]="stateChangingId!==null||maintenanceReason.trim().length<3"></button></ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="bulkVisible" [modal]="true" [draggable]="false" [style]="{width:'min(700px,96vw)'}" header="Thêm phòng hàng loạt" [closable]="!saving">
+  <div class="form-grid">
+    <label>Cơ sở *<p-select [options]="properties" optionLabel="name" optionValue="id" [(ngModel)]="bulk.hotelId" (onChange)="onBulkPropertyChange()" placeholder="Chọn cơ sở"></p-select></label>
+    <label>Loại phòng *<p-select [options]="availableTypeOptions" optionLabel="nameVi" optionValue="id" [(ngModel)]="bulk.roomTypeId" placeholder="Chọn loại phòng"></p-select></label>
+    <label>Tầng *<p-select [options]="floorOptions" optionLabel="label" optionValue="value" [(ngModel)]="bulk.floor" placeholder="Chọn tầng"></p-select></label>
+    <label>Tiền tố<input pInputText [(ngModel)]="bulk.prefix" placeholder="Ví dụ: A" /></label>
+    <label>Số bắt đầu *<input pInputText type="number" [(ngModel)]="bulk.fromNumber" /></label>
+    <label>Số kết thúc *<input pInputText type="number" [(ngModel)]="bulk.toNumber" /></label>
+  </div>
+  <ng-template pTemplate="footer"><button pButton label="Hủy" class="p-button-text" (click)="bulkVisible=false"></button><button pButton [label]="saving?'Đang tạo...':'Tạo phòng'" icon="pi pi-copy" (click)="createBulk()" [disabled]="saving"></button></ng-template>
+</p-dialog>

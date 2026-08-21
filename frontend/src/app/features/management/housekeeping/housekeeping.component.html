@@ -1,0 +1,106 @@
+<section class="housekeeping-page" aria-labelledby="housekeeping-title">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">VẬN HÀNH CƠ SỞ</p>
+      <h2 id="housekeeping-title">Hàng đợi housekeeping</h2>
+      <p class="subtitle">Nhận, dọn, hoàn tất và chỉ mở bán lại phòng khi không còn chặn bảo trì.</p>
+    </div>
+    <div class="toolbar">
+      <label for="housekeeping-search">Tìm nhanh
+        <input id="housekeeping-search" type="search" [(ngModel)]="searchTerm" (ngModelChange)="applyStatusFilter()" placeholder="Phòng, mã booking, nhân viên" autocomplete="off">
+      </label>
+      <label for="housekeeping-property">Cơ sở
+        <select id="housekeeping-property" [(ngModel)]="propertyId" (change)="load()">
+          @for (property of properties; track property.id) { <option [ngValue]="property.id">{{ property.nameVi }}</option> }
+        </select>
+      </label>
+      <label for="housekeeping-status">Trạng thái
+        <select id="housekeeping-status" [(ngModel)]="status" (change)="applyStatusFilter()">
+          <option [ngValue]="undefined">Đang mở</option>
+          <option value="PENDING">Chờ xử lý</option>
+          <option value="CLAIMED">Đã nhận</option>
+          <option value="IN_PROGRESS">Đang dọn</option>
+          <option value="COMPLETED">Hoàn tất</option>
+        </select>
+      </label>
+      <button type="button" class="secondary" (click)="load()" [disabled]="loading">Làm mới</button>
+      <button *ngIf="hasCreatePermission" type="button" (click)="showCreateForm = !showCreateForm">{{ showCreateForm ? 'Đóng' : 'Tạo tác vụ' }}</button>
+    </div>
+  </header>
+
+  @if (showCreateForm) {
+    <form class="create-task-panel" (ngSubmit)="createTask()">
+      <div><p class="eyebrow">CÔNG VIỆC ĐỘT XUẤT</p><h3>Tạo tác vụ housekeeping</h3><small>Giao việc kiểm tra hoặc dọn bổ sung cho một phòng trong cơ sở.</small></div>
+      <label>Phòng<select name="createRoomId" [(ngModel)]="createRoomId" required><option [ngValue]="undefined">Chọn phòng</option>@for (room of rooms; track room.id) { <option [ngValue]="room.id">Phòng {{ room.roomNumber }} · {{ room.status || 'UNKNOWN' }}</option> }</select></label>
+      <label>Loại việc<select name="createTaskType" [(ngModel)]="createTaskType"><option value="INSPECTION">Kiểm tra phòng</option><option value="TOUCH_UP">Dọn bổ sung</option><option value="DEEP_CLEANING">Tổng vệ sinh</option></select></label>
+      <label>Ưu tiên<select name="createPriority" [(ngModel)]="createPriority"><option value="LOW">Thấp</option><option value="NORMAL">Thường</option><option value="HIGH">Cao</option><option value="URGENT">Khẩn cấp</option></select></label>
+      <label class="notes-field">Ghi chú<textarea name="createNotes" [(ngModel)]="createNotes" rows="3" minlength="3" maxlength="500" required placeholder="Mô tả rõ việc cần thực hiện"></textarea><small>{{ createNotes.trim().length }}/500 ký tự</small></label>
+      @if (createError) { <p class="create-error" role="alert">{{ createError }}</p> }
+      <button type="submit" [disabled]="creating || !createRoomId || createNotes.trim().length < 3">{{ creating ? 'Đang tạo...' : 'Tạo tác vụ' }}</button>
+    </form>
+  }
+
+  @if (completionNotice) {
+    <p class="completion-notice" [class.blocked]="completionBlocked" role="status" aria-live="polite">{{ completionNotice }}</p>
+  }
+  <div class="sync-state" aria-live="polite">
+    <span>{{ syncing ? 'Đang đồng bộ thay đổi vận hành...' : (lastSyncedAt ? 'Đồng bộ lúc ' + (lastSyncedAt | date:'HH:mm:ss') : '') }}</span>
+    @if (syncWarning) { <span class="sync-warning">{{ syncWarning }}</span> }
+  </div>
+
+  @if (!loading && summaryTasks.length) {
+    <section class="shift-overview" aria-label="Tổng quan ca housekeeping">
+      <div class="shift-copy"><span>Tiến độ ca</span><strong>{{ completionRate }}%</strong><small>{{ taskCount('COMPLETED') }} / {{ summaryTasks.length }} tác vụ hoàn tất</small></div>
+      <div class="shift-progress"><span [style.width.%]="completionRate"></span></div>
+      <div class="shift-metrics"><button type="button" [class.active]="status === undefined" (click)="setStatus(undefined)"><strong>{{ summaryTasks.length - taskCount('COMPLETED') }}</strong><span>Đang mở</span></button><button type="button" [class.active]="status === 'PENDING'" (click)="setStatus('PENDING')"><strong>{{ taskCount('PENDING') }}</strong><span>Chờ xử lý</span></button><button type="button" [class.active]="status === 'CLAIMED'" (click)="setStatus('CLAIMED')"><strong>{{ taskCount('CLAIMED') }}</strong><span>Đã nhận</span></button><button type="button" [class.active]="status === 'IN_PROGRESS'" (click)="setStatus('IN_PROGRESS')"><strong>{{ taskCount('IN_PROGRESS') }}</strong><span>Đang dọn</span></button><button type="button" [class.active]="status === 'COMPLETED'" (click)="setStatus('COMPLETED')"><strong>{{ taskCount('COMPLETED') }}</strong><span>Hoàn tất</span></button></div>
+    </section>
+  }
+
+  @if (error) { <app-feedback-state state="error" title="Không thể tải hàng đợi" [message]="error" actionLabel="Thử lại" (actionTriggered)="load()" /> }
+  @if (loading) { <app-feedback-state state="loading" title="Đang tải hàng đợi" message="Đang đồng bộ trạng thái dọn phòng của cơ sở." /> }
+  @else if (!tasks.length) { <app-feedback-state state="empty" [title]="searchTerm ? 'Không tìm thấy tác vụ' : 'Không có tác vụ'" [message]="searchTerm ? 'Thử số phòng, mã booking hoặc tên nhân viên khác.' : 'Các phòng chờ dọn sẽ xuất hiện ở đây sau khi khách trả phòng.'" /> }
+  @else {
+    <div class="task-grid" [attr.data-filter]="status || 'OPEN'">
+      @for (task of tasks; track task.id) {
+        <article class="task-card" [class.stale]="task.staleAssignment" [attr.data-status]="task.status">
+          <div class="task-heading"><div><span class="room-label">Phòng {{ task.roomNumber }}</span><small>{{ task.bookingCode || ('Tác vụ #' + task.id) }}</small></div><span class="status" [attr.data-status]="task.status">{{ statusLabel(task.status) }}</span></div>
+          <div class="task-context"><span><i class="pi pi-sparkles" aria-hidden="true"></i>{{ taskTypeLabel(task.taskType) }}</span><span class="priority" [attr.data-priority]="task.priority">{{ priorityLabel(task.priority) }}</span></div>
+          @if (task.note) { <p class="task-note"><i class="pi pi-file-edit" aria-hidden="true"></i>{{ task.note }}</p> }
+          <dl>
+            <div><dt>Người nhận</dt><dd>{{ task.assignedToName || 'Chưa gán' }}</dd></div>
+            <div><dt>Nhận lúc</dt><dd>{{ task.assignedAt ? (task.assignedAt | date:'dd/MM HH:mm') : 'Chưa nhận' }}</dd></div>
+            <div><dt>Bắt đầu</dt><dd>{{ task.startedAt ? (task.startedAt | date:'dd/MM HH:mm') : 'Chưa bắt đầu' }}</dd></div>
+            @if (task.completedAt) { <div><dt>Hoàn tất</dt><dd>{{ task.completedAt | date:'dd/MM HH:mm' }}</dd></div> }
+            <div><dt>Phòng</dt><dd>{{ task.roomStatus }} / {{ task.roomHousekeepingStatus }}</dd></div>
+          </dl>
+          @if (task.staleAssignment) { <p class="warning" role="alert">Phân công đã quá hạn, cần nhận lại.</p> }
+          @if (task.status === 'COMPLETED') {
+            <p class="release-state" [class.blocked]="!task.roomReleased">
+              {{ task.roomReleased ? 'Phòng đã sạch và sẵn sàng mở bán.' : 'Phòng đã sạch nhưng vẫn bị chặn bởi ' + task.roomMaintenanceStatus + '.' }}
+            </p>
+          }
+          <div class="task-actions">
+            @if (hasExecutionPermission && (task.status === 'PENDING' || task.staleAssignment)) { <button type="button" (click)="claim(task)" [disabled]="actionTaskId === task.id">{{ actionTaskId === task.id ? 'Đang nhận...' : 'Nhận tác vụ' }}</button> }
+            @if (assignees.length && task.status !== 'IN_PROGRESS' && task.status !== 'COMPLETED') {
+              <label class="assign-control">Gán cho<select [(ngModel)]="selectedAssignee[task.id]" [name]="'assignee-' + task.id"><option [ngValue]="undefined">Chọn nhân viên</option>@for (assignee of assignees; track assignee.userId) { <option [ngValue]="assignee.userId">{{ assignee.fullName || assignee.username }}</option> }</select></label>
+              <button *ngIf="hasUpdatePermission" type="button" class="secondary" (click)="assign(task)" [disabled]="assigningTaskId === task.id || !selectedAssignee[task.id]">{{ assigningTaskId === task.id ? 'Đang gán...' : 'Gán' }}</button>
+            }
+            @if (hasExecutionPermission && canStart(task)) { <button type="button" (click)="start(task)" [disabled]="actionTaskId === task.id">{{ actionTaskId === task.id ? 'Đang bắt đầu...' : 'Bắt đầu dọn' }}</button> }
+            @if (canComplete(task)) { <button type="button" class="complete" (click)="complete(task)" [disabled]="actionTaskId === task.id">{{ actionTaskId === task.id ? 'Đang hoàn tất...' : 'Hoàn tất và kiểm tra mở bán' }}</button> }
+            @if (hasCancelPermission && !task.reservationId && task.taskType !== 'CheckoutCleaning' && (task.status === 'PENDING' || task.status === 'CLAIMED')) { <button type="button" class="danger-outline" (click)="cancelTask(task)" [disabled]="actionTaskId === task.id">{{ actionTaskId === task.id ? 'Đang hủy...' : 'Hủy tác vụ' }}</button> }
+          </div>
+          @if (cancellingTaskId === task.id) {
+            <form class="cancel-panel" (ngSubmit)="confirmCancellation(task)">
+              <label [for]="'cancel-reason-' + task.id">Lý do hủy
+                <textarea [id]="'cancel-reason-' + task.id" name="cancellationReason" [(ngModel)]="cancellationReason" rows="3" minlength="3" maxlength="500" required placeholder="Ví dụ: Yêu cầu kiểm tra đã được xử lý tại quầy"></textarea>
+                <small>{{ cancellationReason.trim().length }}/500 ký tự</small>
+              </label>
+              @if (cancellationError) { <p role="alert">{{ cancellationError }}</p> }
+              <div><button type="button" class="secondary" (click)="closeCancellation()" [disabled]="actionTaskId === task.id">Giữ tác vụ</button><button type="submit" class="danger-outline" [disabled]="actionTaskId === task.id || cancellationReason.trim().length < 3">{{ actionTaskId === task.id ? 'Đang hủy...' : 'Xác nhận hủy' }}</button></div>
+            </form>
+          }
+        </article>
+      }
+    </div>
+  }
+</section>

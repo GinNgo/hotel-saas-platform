@@ -1,0 +1,70 @@
+<section class="audit-page" aria-labelledby="audit-title">
+  <header class="audit-hero">
+    <div>
+      <p class="eyebrow">Governance / Evidence</p>
+      <h1 id="audit-title">Nhật ký vận hành</h1>
+      <p class="subtitle">Theo dõi thay đổi quản trị theo tenant với trạng thái trước/sau và mã tương quan.</p>
+    </div>
+    <button class="export-button" type="button" [disabled]="exporting || loading" (click)="exportCsv()">
+      <span aria-hidden="true">⇩</span>{{ exporting ? 'Đang xuất...' : 'Xuất CSV' }}
+    </button>
+  </header>
+
+  <form class="filter-panel" (ngSubmit)="applyFilters()">
+    <label *ngIf="isSystemAdmin">Phạm vi
+      <select name="scope" [(ngModel)]="filters.scope">
+        <option [ngValue]="undefined">Tất cả</option>
+        <option value="SYSTEM">Hệ thống</option>
+        <option value="TENANT">Tenant</option>
+      </select>
+    </label>
+    <label>Domain
+      <select name="domain" [(ngModel)]="filters.domain">
+        <option [ngValue]="undefined">Tất cả domain</option>
+        <option *ngFor="let domain of domains" [value]="domain">{{ domain }}</option>
+      </select>
+    </label>
+    <label>Loại sự kiện
+      <input name="eventType" [(ngModel)]="filters.eventType" placeholder="ROOM_UPDATED" />
+    </label>
+    <label>Mã tương quan
+      <input name="correlationId" [(ngModel)]="filters.correlationId" placeholder="corr-..." />
+    </label>
+    <div class="filter-actions">
+      <button class="primary-button" type="submit">Lọc nhật ký</button>
+      <button class="quiet-button" type="button" (click)="clearFilters()">Xóa lọc</button>
+    </div>
+  </form>
+
+  <p *ngIf="error" class="error-banner" role="alert">{{ error }}</p>
+  <div *ngIf="loading" class="loading-state" role="status">Đang tải dữ liệu audit...</div>
+  <div *ngIf="!loading && !error && events.length === 0" class="empty-state" role="status">
+    <span aria-hidden="true">✦</span><strong>Chưa có sự kiện phù hợp</strong><span>Thử đổi bộ lọc hoặc quay lại sau.</span>
+  </div>
+
+  <div *ngIf="!loading && events.length > 0" class="table-shell">
+    <div class="table-meta"><span>{{ totalElements | number }} sự kiện</span><span>Trang {{ page + 1 }} / {{ totalPages }}</span></div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Thời gian</th><th>Domain</th><th>Sự kiện</th><th>Đối tượng</th><th>Actor</th><th>Lý do</th><th></th></tr></thead>
+        <tbody>
+          <ng-container *ngFor="let event of events; trackBy: trackById">
+            <tr [class.expanded]="expandedId === event.id">
+              <td class="time">{{ event.occurredAt | date:'dd/MM/yyyy HH:mm:ss':'UTC' }}</td>
+              <td><span class="domain-pill">{{ event.domain }}</span><small>{{ event.scope }}</small></td>
+              <td><strong>{{ event.eventType }}</strong><small>{{ event.correlationId }}</small></td>
+              <td>{{ event.aggregateType }} #{{ event.aggregateId }}</td>
+              <td>{{ event.actorType }}<small *ngIf="event.actorId">User #{{ event.actorId }}</small></td>
+              <td class="reason">{{ event.reason }}</td>
+              <td><button class="details-button" type="button" (click)="toggle(event)" [attr.aria-expanded]="expandedId === event.id">{{ expandedId === event.id ? 'Thu gọn' : 'Chi tiết' }}</button></td>
+            </tr>
+            <tr *ngIf="expandedId === event.id" class="detail-row">
+              <td colspan="7"><div class="state-grid"><div><h3>Before</h3><pre>{{ state(event.beforeState) }}</pre></div><div><h3>After</h3><pre>{{ state(event.afterState) }}</pre></div></div></td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+    <footer class="pagination"><button type="button" [disabled]="page === 0" (click)="previousPage()">← Trước</button><button type="button" [disabled]="page + 1 >= totalPages" (click)="nextPage()">Sau →</button></footer>
+  </div>
+</section>

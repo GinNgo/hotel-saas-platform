@@ -1,0 +1,587 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+.admin-shell {
+  display: grid;
+  grid-template-columns: 16rem minmax(0, 1fr);
+  min-height: 100dvh;
+  color: var(--hotel-text-primary, #172033);
+  background: var(--hotel-bg, #f4f6f9);
+}
+
+.admin-shell.sidebar-collapsed {
+  grid-template-columns: 4.75rem minmax(0, 1fr);
+}
+
+.admin-sidebar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 100dvh;
+}
+
+.admin-workspace {
+  display: grid;
+  min-width: 0;
+  min-height: 100dvh;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  min-height: 4.9375rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hotel-space-4, 1rem);
+  padding: var(--hotel-space-2, 0.5rem) var(--hotel-space-6, 1.5rem);
+  border-bottom: 1px solid var(--hotel-border, #dce2ea);
+  background: rgb(255 255 255 / 96%);
+  box-shadow: var(--hotel-shadow-sm, 0 1px 3px rgb(15 23 42 / 8%));
+  backdrop-filter: blur(0.5rem);
+}
+
+.header-leading,
+.header-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--hotel-space-3, 0.75rem);
+}
+
+.page-context {
+  min-width: 12rem;
+  min-height: 3.875rem;
+}
+
+.page-context h1 {
+  overflow: hidden;
+  margin: 0;
+  color: var(--hotel-text-primary, #172033);
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--hotel-space-2, 0.5rem);
+  margin: 0 0 0.15rem;
+  padding: 0;
+  color: var(--hotel-text-muted, #64748b);
+  font-size: 0.75rem;
+  list-style: none;
+}
+
+.breadcrumbs li + li::before {
+  margin-right: var(--hotel-space-2, 0.5rem);
+  content: "/";
+}
+
+.breadcrumbs a {
+  color: var(--hotel-primary, #1a56db);
+  text-decoration: none;
+}
+
+.shell-icon-button,
+.profile-button,
+.text-action,
+.user-menu button {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.shell-icon-button {
+  position: relative;
+  display: grid;
+  flex: 0 0 2.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  color: var(--hotel-text-secondary, #334155);
+  border: 1px solid var(--hotel-border, #dce2ea);
+  border-radius: var(--hotel-radius-md, 0.5rem);
+  background: var(--hotel-surface, #fff);
+}
+
+.shell-icon-button:hover,
+.profile-button:hover {
+  background: var(--hotel-surface-muted, #f1f5f9);
+}
+
+.quick-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.quick-search i {
+  position: absolute;
+  left: var(--hotel-space-3, 0.75rem);
+  color: var(--hotel-text-muted, #64748b);
+  pointer-events: none;
+}
+
+.quick-search input {
+  width: min(16rem, 23vw);
+  min-height: 2.75rem;
+  padding: 0 var(--hotel-space-3, 0.75rem) 0 2.25rem;
+  color: var(--hotel-text-primary, #172033);
+  border: 1px solid var(--hotel-border, #dce2ea);
+  border-radius: var(--hotel-radius-lg, 0.75rem);
+  background: var(--hotel-surface-muted, #f8fafc);
+}
+
+.popup-anchor {
+  position: relative;
+}
+
+.profile-anchor {
+  display: flex;
+  min-width: 13rem;
+  justify-content: flex-end;
+}
+
+.notification-count {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  min-width: 1.25rem;
+  padding: 0.1rem 0.3rem;
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: var(--hotel-error, #c62828);
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.notification-connection-dot {
+  position: absolute;
+  bottom: -0.2rem;
+  left: -0.2rem;
+  width: 0.7rem;
+  height: 0.7rem;
+  border: 2px solid var(--hotel-surface, #fff);
+  border-radius: 50%;
+  background: var(--hotel-warning, #d97706);
+}
+
+.notification-connection-dot.is-error {
+  background: var(--hotel-error, #c62828);
+}
+
+.profile-button {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: var(--hotel-space-2, 0.5rem);
+  padding: 0.25rem var(--hotel-space-2, 0.5rem);
+  color: var(--hotel-text-primary, #172033);
+  border-radius: var(--hotel-radius-md, 0.5rem);
+  background: transparent;
+}
+
+.profile-button img {
+  width: 2.25rem;
+  height: 2.25rem;
+  object-fit: cover;
+  border: 1px solid var(--hotel-border, #dce2ea);
+  border-radius: 50%;
+}
+
+.profile-copy {
+  display: grid;
+  max-width: 10rem;
+  text-align: left;
+}
+
+.profile-copy strong,
+.profile-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-copy strong {
+  font-size: 0.875rem;
+}
+
+.profile-copy small {
+  color: var(--hotel-text-muted, #64748b);
+  font-size: 0.75rem;
+}
+
+.shell-popup {
+  position: absolute;
+  top: calc(100% + var(--hotel-space-2, 0.5rem));
+  right: 0;
+  z-index: 50;
+  width: min(22rem, calc(100vw - 2rem));
+  overflow: hidden;
+  color: var(--hotel-text-primary, #172033);
+  border: 1px solid var(--hotel-border, #dce2ea);
+  border-radius: var(--hotel-radius-lg, 0.75rem);
+  background: var(--hotel-surface, #fff);
+  box-shadow: var(--hotel-shadow-lg, 0 12px 28px rgb(15 23 42 / 18%));
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hotel-space-2, 0.5rem);
+  padding: var(--hotel-space-3, 0.75rem) var(--hotel-space-4, 1rem);
+  border-bottom: 1px solid var(--hotel-border, #dce2ea);
+}
+
+.popup-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.status-badge {
+  padding: 0.2rem 0.5rem;
+  color: var(--hotel-primary, #1a56db);
+  border-radius: 999px;
+  background: var(--hotel-primary-soft, #e8f0ff);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.notification-retention {
+  margin: 0;
+  padding: var(--hotel-space-2) var(--hotel-space-4);
+  color: var(--hotel-text-muted);
+  border-bottom: 1px solid var(--hotel-border);
+  font-size: 0.75rem;
+}
+
+.notification-connection-status {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--hotel-space-2, 0.5rem);
+  padding: var(--hotel-space-2, 0.5rem) var(--hotel-space-4, 1rem);
+  color: var(--hotel-warning-text, #854d0e);
+  border-bottom: 1px solid var(--hotel-warning-border, #fde68a);
+  background: var(--hotel-warning-soft, #fffbeb);
+  font-size: 0.78rem;
+}
+
+.notification-connection-status.is-error {
+  color: var(--hotel-error, #c62828);
+  border-bottom-color: color-mix(in srgb, var(--hotel-error, #c62828) 25%, transparent);
+  background: color-mix(in srgb, var(--hotel-error, #c62828) 7%, var(--hotel-surface, #fff));
+}
+
+.notification-connection-status .text-action {
+  white-space: nowrap;
+}
+
+.notification-action-error {
+  padding: var(--hotel-space-2) var(--hotel-space-4);
+  color: var(--hotel-error);
+  border-bottom: 1px solid var(--hotel-border);
+  background: var(--hotel-surface-muted);
+  font-size: 0.8rem;
+}
+
+.notification-list {
+  max-height: min(26rem, calc(100dvh - 7rem));
+  overflow-y: auto;
+}
+
+.popup-state {
+  display: flex;
+  min-height: 7rem;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hotel-space-2, 0.5rem);
+  padding: var(--hotel-space-4, 1rem);
+  color: var(--hotel-text-muted, #64748b);
+  text-align: center;
+}
+
+.popup-error {
+  flex-direction: column;
+  color: var(--hotel-error, #c62828);
+}
+
+.text-action {
+  padding: 0.35rem 0.65rem;
+  color: var(--hotel-primary, #1a56db);
+  border-radius: var(--hotel-radius-sm, 0.35rem);
+  background: transparent;
+  font-weight: 700;
+}
+
+.notification-item {
+  position: relative;
+  display: grid;
+  width: 100%;
+  gap: 0.2rem;
+  padding: var(--hotel-space-3, 0.75rem) 2.25rem var(--hotel-space-3, 0.75rem) var(--hotel-space-4, 1rem);
+  color: inherit;
+  border: 0;
+  border-bottom: 1px solid var(--hotel-border, #dce2ea);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notification-item:hover,
+.notification-item.unread {
+  background: var(--hotel-surface-muted, #f8fafc);
+}
+
+.notification-item:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.notification-load-more {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hotel-space-2);
+  padding: var(--hotel-space-3);
+  color: var(--hotel-primary);
+  border: 0;
+  background: var(--hotel-surface);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notification-load-more:hover:not(:disabled) {
+  background: var(--hotel-surface-muted);
+}
+
+.notification-load-more:disabled {
+  color: var(--hotel-text-muted);
+  cursor: wait;
+}
+
+.notification-title {
+  font-size: 0.875rem;
+  font-weight: 750;
+}
+
+.notification-message {
+  overflow: hidden;
+  color: var(--hotel-text-secondary, #475569);
+  font-size: 0.8125rem;
+  white-space: pre-wrap;
+}
+
+.notification-item time {
+  color: var(--hotel-text-muted, #64748b);
+  font-size: 0.7rem;
+}
+
+.unread-dot {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--hotel-primary, #1a56db);
+  transform: translateY(-50%);
+}
+
+.user-menu {
+  width: 13rem;
+  margin: 0;
+  padding: var(--hotel-space-2, 0.5rem);
+  list-style: none;
+}
+
+.user-menu button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--hotel-space-2, 0.5rem);
+  padding: var(--hotel-space-2, 0.5rem) var(--hotel-space-3, 0.75rem);
+  color: inherit;
+  border-radius: var(--hotel-radius-sm, 0.35rem);
+  background: transparent;
+  text-align: left;
+}
+
+.user-menu button:hover {
+  background: var(--hotel-surface-muted, #f1f5f9);
+}
+
+.user-menu .danger-action {
+  color: var(--hotel-error, #c62828);
+}
+
+.admin-content {
+  min-width: 0;
+  min-height: calc(100vh - 4.9375rem);
+  min-height: calc(100dvh - 4.9375rem);
+  overflow: auto;
+  padding: clamp(1rem, 2.5vw, 2rem);
+}
+
+.admin-footer {
+  padding: var(--hotel-space-3, 0.75rem);
+  color: var(--hotel-text-muted, #64748b);
+  border-top: 1px solid var(--hotel-border, #dce2ea);
+  background: var(--hotel-surface, #fff);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+.shell-icon-button:focus-visible,
+.profile-button:focus-visible,
+.quick-search input:focus-visible,
+.notification-item:focus-visible,
+.notification-load-more:focus-visible,
+.text-action:focus-visible,
+.user-menu button:focus-visible,
+.breadcrumbs a:focus-visible {
+  outline: var(--hotel-focus-width, 3px) solid var(--hotel-focus-ring, #2563eb);
+  outline-offset: 2px;
+}
+
+.nav-backdrop {
+  display: none;
+}
+
+@media (max-width: 991px) {
+  .admin-shell,
+  .admin-shell.sidebar-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 70;
+    transform: translateX(-100%);
+    transition: transform var(--hotel-transition-base, 200ms ease);
+  }
+
+  .admin-sidebar app-sidebar {
+    display: block;
+    height: 100%;
+  }
+
+  .admin-shell.mobile-nav-open .admin-sidebar {
+    transform: translateX(0);
+  }
+
+  .admin-shell.mobile-nav-open .admin-sidebar ::ng-deep .sidebar-container {
+    width: min(18rem, calc(100vw - 3rem));
+  }
+
+  .admin-shell.mobile-nav-open .admin-sidebar ::ng-deep .sidebar-text {
+    display: initial;
+  }
+
+  .nav-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: block;
+    width: 100%;
+    border: 0;
+    background: rgb(15 23 42 / 56%);
+  }
+
+  .quick-search {
+    display: none;
+  }
+
+  .admin-header {
+    padding-inline: var(--hotel-space-3, 0.75rem);
+  }
+
+  .page-context {
+    min-width: 9rem;
+  }
+
+  .profile-anchor {
+    min-width: min(15rem, 40vw);
+  }
+}
+
+@media (min-width: 992px) and (max-width: 1180px) {
+  .quick-search {
+    display: none;
+  }
+
+  .profile-anchor {
+    min-width: 15rem;
+  }
+}
+
+@media (max-width: 575px) {
+  .breadcrumbs,
+  .profile-copy,
+  .profile-button > .pi {
+    display: none;
+  }
+
+  .header-actions,
+  .header-leading {
+    gap: var(--hotel-space-2, 0.5rem);
+  }
+
+  .page-context h1 {
+    max-width: 8rem;
+  }
+
+  .page-context {
+    min-width: 0;
+    min-height: 2.75rem;
+  }
+
+  .profile-anchor {
+    min-width: 0;
+  }
+
+  .admin-content {
+    padding: var(--hotel-space-3, 0.75rem);
+  }
+
+  .notification-panel {
+    position: fixed;
+    top: 4.75rem;
+    right: var(--hotel-space-2, 0.5rem);
+    left: var(--hotel-space-2, 0.5rem);
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-sidebar {
+    transition: none;
+  }
+}
+
+.profile-initials {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  color: #fff;
+  border-radius: 50%;
+  background: var(--hotel-primary);
+  font-size: .8rem;
+  font-weight: 800;
+}

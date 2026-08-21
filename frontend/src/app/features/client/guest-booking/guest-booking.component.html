@@ -1,0 +1,117 @@
+<main class="guest-booking-shell">
+  <a routerLink="/" class="brand-link">LuxeStay <span>Trips</span></a>
+
+  <section *ngIf="loading" class="state-card" aria-live="polite">
+    <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+    <h1>Đang xác minh booking</h1>
+    <p>Chúng tôi đang tải thông tin trực tiếp từ hệ thống đặt phòng.</p>
+  </section>
+
+  <section *ngIf="recoveryRequired" class="state-card recovery-card">
+    <i class="pi pi-key" aria-hidden="true"></i>
+    <p class="eyebrow">Khôi phục chuyến đi</p>
+    <h1>Nhận lại quyền truy cập booking</h1>
+    <p>Nhập đúng email và số điện thoại đã dùng khi đặt phòng. Mã booking đã được lấy từ đường dẫn này.</p>
+    <form (ngSubmit)="recoverAccess()" [attr.aria-busy]="recovering ? 'true' : 'false'">
+      <label for="recovery-code">Mã booking</label>
+      <input id="recovery-code" [value]="bookingCode" readonly>
+      <label for="recovery-email">Email đặt phòng</label>
+      <input id="recovery-email" name="recoveryEmail" [(ngModel)]="recoveryEmail" type="email" autocomplete="email" maxlength="200" required>
+      <label for="recovery-phone">Số điện thoại đặt phòng</label>
+      <input id="recovery-phone" name="recoveryPhone" [(ngModel)]="recoveryPhone" type="tel" autocomplete="tel" maxlength="30" required>
+      <p *ngIf="error" class="recovery-error" role="alert">{{ error }}</p>
+      <button type="submit" [disabled]="recovering || !recoveryEmail.trim() || !recoveryPhone.trim()">
+        {{ recovering ? 'Đang xác minh...' : 'Mở booking của tôi' }}
+      </button>
+    </form>
+  </section>
+
+  <section *ngIf="error" class="state-card state-card--error" role="alert">
+    <i class="pi pi-link-slash" aria-hidden="true"></i>
+    <h1>Không mở được chuyến đi</h1>
+    <p>{{ error }}</p>
+    <div class="actions"><a routerLink="/login">Đăng nhập</a><a routerLink="/support" class="secondary">Liên hệ hỗ trợ</a></div>
+  </section>
+
+  <article *ngIf="booking as trip" class="trip-card">
+    <header>
+      <div><p class="eyebrow">Mã booking</p><h1>{{ trip.bookingCode || trip.id }}</h1></div>
+      <span class="status" [attr.data-status]="trip.status">{{ statusLabel(trip.status) }}</span>
+    </header>
+
+    <section class="property-block">
+      <p class="eyebrow">Nơi lưu trú</p>
+      <h2>{{ trip.property?.name || 'Cơ sở lưu trú' }}</h2>
+      <p>{{ trip.property?.address }}</p>
+    </section>
+
+    <dl class="trip-grid">
+      <div><dt>Nhận phòng</dt><dd>{{ trip.checkInDate | date:'dd/MM/yyyy' }}</dd></div>
+      <div><dt>Trả phòng</dt><dd>{{ trip.checkOutDate | date:'dd/MM/yyyy' }}</dd></div>
+      <div><dt>Khách</dt><dd>{{ trip.adults || trip.guests }} người lớn<span *ngIf="trip.children">, {{ trip.children }} trẻ em</span></dd></div>
+      <div><dt>Số phòng</dt><dd>{{ trip.quantity || 1 }}</dd></div>
+      <div><dt>Thanh toán dự kiến</dt><dd>{{ trip.paymentMethod }}</dd></div>
+      <div><dt>Tổng tiền</dt><dd class="price">{{ formatVnd(trip.totalAmount) }}</dd></div>
+    </dl>
+
+    <aside *ngIf="trip.refunds?.[trip.refunds.length - 1] as refund" class="refund-state" role="status">
+      <i class="pi pi-replay" aria-hidden="true"></i>
+      <div>
+        <strong>Yêu cầu hoàn tiền đã được ghi nhận</strong>
+        <span>Mã {{ refund.publicId }} · {{ formatVnd(refund.amount) }}</span>
+        <small>Trạng thái: {{ refund.status === 'PENDING_APPROVAL' ? 'Đang chờ khách sạn duyệt' : refund.status }}</small>
+      </div>
+    </aside>
+
+    <aside *ngIf="trip.confirmationEmailStatus !== 'SENT'" class="email-state" role="status">
+      <i class="pi pi-envelope" aria-hidden="true"></i>
+      <span *ngIf="trip.confirmationEmailStatus === 'NOT_CONFIGURED'">Email xác nhận chưa được gửi vì hệ thống thư chưa được cấu hình. Hãy giữ mã <strong>{{ trip.bookingCode }}</strong> để tra cứu chuyến đi.</span>
+      <span *ngIf="trip.confirmationEmailStatus === 'FAILED'">Gửi email xác nhận chưa thành công. Bạn có thể thử lại sau.</span>
+      <span *ngIf="trip.confirmationEmailStatus === 'PENDING'">Đang xử lý email xác nhận.</span>
+      <button *ngIf="trip.confirmationEmailStatus === 'FAILED'" type="button" (click)="resendConfirmationEmail()" [disabled]="emailSending">
+        {{ emailSending ? 'Đang gửi...' : 'Gửi lại email' }}
+      </button>
+      <small *ngIf="emailError" class="email-error" role="alert">{{ emailError }}</small>
+    </aside>
+
+    <aside *ngIf="trip.cancellationBlockReason; else cancellationAllowed" class="policy policy--blocked">
+      <i class="pi pi-info-circle" aria-hidden="true"></i><span>{{ trip.cancellationBlockReason }}</span>
+    </aside>
+    <ng-template #cancellationAllowed>
+      <aside class="policy"><i class="pi pi-shield" aria-hidden="true"></i><span>Booking đang nằm trong thời hạn có thể tự hủy.</span></aside>
+    </ng-template>
+
+    <section *ngIf="trip.status === 'PENDING_PAYMENT'" class="payment-resume" aria-labelledby="payment-resume-title">
+      <div><p class="eyebrow">Hoàn tất đặt phòng</p><h2 id="payment-resume-title">Booking đang chờ thanh toán</h2>
+        <p>Tiếp tục phiên VNPay còn hiệu lực hoặc tạo lại phiên thanh toán nếu lần trước chưa bắt đầu.</p></div>
+      <button type="button" [disabled]="paying" (click)="resumePayment()">
+        <i [class]="paying ? 'pi pi-spin pi-spinner' : 'pi pi-credit-card'" aria-hidden="true"></i>
+        {{ paying ? 'Đang mở VNPay...' : 'Thanh toán ngay' }}
+      </button>
+      <p *ngIf="paymentError" class="payment-error" role="alert">{{ paymentError }}</p>
+    </section>
+
+    <section *ngIf="cancelOpen && trip.canSelfCancel" class="cancel-panel" role="dialog" aria-modal="true" aria-labelledby="cancel-title">
+      <div><p class="eyebrow">Xác nhận thao tác</p><h2 id="cancel-title">Bạn muốn hủy booking này?</h2></div>
+      <label for="guest-cancel-reason">Lý do hủy</label>
+      <select id="guest-cancel-reason" [(ngModel)]="cancelReasonCode">
+        <option value="CHANGE_OF_PLAN">Thay đổi kế hoạch</option>
+        <option value="BOOKED_ELSEWHERE">Đã chọn nơi lưu trú khác</option>
+        <option value="DATE_CHANGE">Muốn thay đổi ngày ở</option>
+        <option value="OTHER">Lý do khác</option>
+      </select>
+      <label *ngIf="cancelReasonCode === 'OTHER'" for="guest-cancel-note">Mô tả lý do</label>
+      <textarea *ngIf="cancelReasonCode === 'OTHER'" id="guest-cancel-note" [(ngModel)]="cancelReason" maxlength="500" rows="3"></textarea>
+      <p *ngIf="cancelError" class="cancel-error" role="alert">{{ cancelError }}</p>
+      <div class="cancel-actions">
+        <button type="button" class="danger" [disabled]="cancelling" (click)="submitCancellation()">{{ cancelling ? 'Đang hủy...' : 'Xác nhận hủy booking' }}</button>
+        <button type="button" [disabled]="cancelling" (click)="cancelOpen = false">Giữ booking</button>
+      </div>
+    </section>
+
+    <footer class="actions">
+      <button *ngIf="trip.canSelfCancel && !cancelOpen" type="button" class="cancel-trigger" (click)="cancelOpen = true">Hủy booking</button>
+      <a routerLink="/support">Yêu cầu hỗ trợ</a><a routerLink="/" class="secondary">Về trang chủ</a>
+    </footer>
+  </article>
+</main>

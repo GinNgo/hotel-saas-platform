@@ -1,0 +1,166 @@
+<section class="property-revenue" aria-labelledby="property-revenue-title">
+  <header class="report-hero">
+    <div>
+      <p class="eyebrow"><span class="material-symbols-outlined" aria-hidden="true">monitoring</span> Doanh thu giao dịch</p>
+      <h2 id="property-revenue-title">Doanh thu cơ sở</h2>
+      <p class="hero-copy">Số liệu được lấy từ giao dịch và hóa đơn đã đối soát của <strong>{{ propertyName() }}</strong>.</p>
+    </div>
+    @if (report(); as current) {
+      <div class="watermark" aria-label="Dấu mốc dữ liệu">
+        <span>Đồng bộ đến</span>
+        <strong>{{ current.sourceWatermark }}</strong>
+      </div>
+    }
+  </header>
+
+  <form class="report-filters" (ngSubmit)="applyFilters()" aria-label="Bộ lọc báo cáo doanh thu">
+    <div class="filter-grid">
+      <label>
+        <span>Từ ngày</span>
+        <input type="date" name="fromDate" [(ngModel)]="fromDate" required />
+      </label>
+      <label>
+        <span>Đến ngày</span>
+        <input type="date" name="toDate" [(ngModel)]="toDate" required />
+      </label>
+      <label>
+        <span>Cơ sở</span>
+        <input type="text" [value]="propertyName()" readonly aria-describedby="property-hint" />
+        <small id="property-hint">Đổi cơ sở ở thanh điều hướng bên trên.</small>
+      </label>
+      <label>
+        <span>Cơ sở ghi nhận</span>
+        <select name="basis" [(ngModel)]="basis">
+          <option value="NET">Ròng</option>
+          <option value="CASH_COLLECTED">Tiền đã thu</option>
+          <option value="INVOICED">Đã xuất hóa đơn</option>
+        </select>
+      </label>
+      <label>
+        <span>Nhà cung cấp</span>
+        <select name="provider" [(ngModel)]="provider">
+          <option value="">Tất cả</option>
+          @for (option of providerOptions(); track option) { <option [value]="option">{{ option }}</option> }
+        </select>
+      </label>
+      <label>
+        <span>Phương thức</span>
+        <select name="method" [(ngModel)]="method">
+          <option value="">Tất cả</option>
+          @for (option of methodOptions(); track option) { <option [value]="option">{{ option }}</option> }
+        </select>
+      </label>
+      <label>
+        <span>Loại giao dịch</span>
+        <select name="transactionType" [(ngModel)]="transactionType">
+          <option value="">Tất cả</option>
+          @for (option of transactionTypeOptions(); track option) { <option [value]="option">{{ option }}</option> }
+        </select>
+      </label>
+      <label>
+        <span>Loại phòng</span>
+        <select name="roomType" [(ngModel)]="roomType">
+          <option value="">Tất cả</option>
+          @for (option of roomTypeOptions(); track option) { <option [value]="option">{{ option }}</option> }
+        </select>
+      </label>
+    </div>
+    <div class="filter-actions">
+      <span class="filter-note" role="status" aria-live="polite">{{ loading() ? 'Đang đồng bộ dữ liệu...' : 'Báo cáo chỉ hiển thị dữ liệu trong phạm vi cơ sở.' }}</span>
+      <button class="button button-secondary" type="button" (click)="resetFilters()" [disabled]="loading()">Đặt lại</button>
+      <button class="button button-primary" type="submit" [disabled]="loading() || contextLoading()" [attr.aria-busy]="loading()">
+        <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+        Cập nhật báo cáo
+      </button>
+    </div>
+  </form>
+
+  @if (errorMessage()) {
+    <app-feedback-state state="error" title="Không thể tải báo cáo" [message]="errorMessage()" actionLabel="Thử lại" (actionTriggered)="applyFilters()" />
+  } @else if (contextLoading() && !report()) {
+    <app-feedback-state state="loading" title="Đang tải cơ sở" message="Đang xác định cơ sở quản lý và phạm vi dữ liệu." />
+  } @else if (loading() && !report()) {
+    <app-feedback-state state="loading" title="Đang tải báo cáo" message="Đang đối soát giao dịch, hóa đơn và hoàn tiền." />
+  } @else if (report(); as current) {
+    <div class="metric-grid" aria-label="Tổng quan doanh thu">
+      <article class="metric-card metric-card--primary">
+        <span class="metric-icon material-symbols-outlined" aria-hidden="true">payments</span>
+        <div><span class="metric-label">Doanh thu ròng</span><strong>{{ formatMoney(current.totals.netRevenue) }}</strong></div>
+        <small>{{ current.totals.successfulTransactionCount }} giao dịch thành công</small>
+      </article>
+      <article class="metric-card">
+        <span class="metric-icon material-symbols-outlined" aria-hidden="true">trending_up</span>
+        <div><span class="metric-label">Tổng doanh thu</span><strong>{{ formatMoney(current.totals.grossRevenue) }}</strong></div>
+        <small>Theo cơ sở {{ current.basis }}</small>
+      </article>
+      <article class="metric-card metric-card--danger">
+        <span class="metric-icon material-symbols-outlined" aria-hidden="true">currency_exchange</span>
+        <div><span class="metric-label">Hoàn / ghi có</span><strong>{{ formatMoney(current.totals.refunds + current.totals.credits) }}</strong></div>
+        <small>Hoàn {{ formatMoney(current.totals.refunds) }} · Ghi có {{ formatMoney(current.totals.credits) }}</small>
+      </article>
+      <article class="metric-card metric-card--warning">
+        <span class="metric-icon material-symbols-outlined" aria-hidden="true">pending_actions</span>
+        <div><span class="metric-label">Chưa thu / đang giữ</span><strong>{{ formatMoney(current.totals.unpaidBalance + current.totals.heldDeposits) }}</strong></div>
+        <small>Chưa thu {{ formatMoney(current.totals.unpaidBalance) }} · Giữ cọc {{ formatMoney(current.totals.heldDeposits) }}</small>
+      </article>
+    </div>
+
+    <div class="report-grid">
+      <section class="panel chart-panel" aria-labelledby="revenue-chart-title">
+        <div class="panel-heading">
+          <div><p class="eyebrow">Phân bổ</p><h3 id="revenue-chart-title">{{ chartTitle() }}</h3></div>
+          <span class="panel-meta">{{ current.breakdowns.length }} nhóm</span>
+        </div>
+        @if (breakdownsForChart().length) {
+          <div class="bar-chart" role="list" aria-label="Biểu đồ doanh thu theo nhóm">
+            @for (item of breakdownsForChart(); track trackBreakdown($index, item)) {
+              <div class="bar-row" role="listitem">
+                <div class="bar-label"><span>{{ item.label || item.code }}</span><strong>{{ formatMoney(chartValue(item)) }}</strong></div>
+                <div class="bar-track"><span class="bar-fill" [style.width.%]="chartWidth(item)"></span></div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="inline-empty">Chưa có nhóm doanh thu trong khoảng thời gian này.</p>
+        }
+      </section>
+
+      <section class="panel reconciliation-panel" aria-labelledby="reconciliation-title">
+        <div class="panel-heading">
+          <div><p class="eyebrow">Kiểm soát</p><h3 id="reconciliation-title">Trạng thái đối soát</h3></div>
+          <span class="status-pill" [class.status-pill--danger]="current.reconciliationIssues.length > 0" [class.status-pill--success]="current.reconciliationIssues.length === 0">
+            <span class="material-symbols-outlined" aria-hidden="true">{{ current.reconciliationIssues.length ? 'warning' : 'verified' }}</span>
+            {{ current.reconciliationIssues.length ? current.reconciliationIssues.length + ' cảnh báo' : 'Khớp dữ liệu' }}
+          </span>
+        </div>
+        @if (current.reconciliationIssues.length) {
+          <ul class="issue-list">
+            @for (issue of current.reconciliationIssues.slice(0, 5); track issue.code + issue.sourceId) {
+              <li><span class="material-symbols-outlined" aria-hidden="true">error_outline</span><div><strong>{{ issue.code }}</strong><p>{{ issue.message }}</p><small>{{ issue.sourceType }} · {{ issue.sourceId }} · lệch {{ formatMoney(issue.deltaAmount) }}</small></div></li>
+            }
+          </ul>
+        } @else {
+          <div class="reconciled-state"><span class="material-symbols-outlined" aria-hidden="true">fact_check</span><p>Tổng tiền, phân bổ hóa đơn và chứng từ hoàn tiền đang khớp trong phạm vi báo cáo.</p></div>
+        }
+      </section>
+    </div>
+
+    <section class="panel breakdown-panel" aria-labelledby="breakdown-title">
+      <div class="panel-heading"><div><p class="eyebrow">Chi tiết</p><h3 id="breakdown-title">Các nhóm doanh thu</h3></div><span class="panel-meta">{{ current.totalRowCount }} dòng nguồn</span></div>
+      @if (current.breakdowns.length) {
+        <div class="table-scroll"><table><thead><tr><th>Nhóm</th><th>Mã</th><th>Số giao dịch</th><th class="number">Tổng</th><th class="number">Hoàn / ghi có</th><th class="number">Ròng</th></tr></thead><tbody>
+          @for (item of current.breakdowns; track trackBreakdown($index, item)) { <tr><td><span class="dimension-tag">{{ item.dimension }}</span></td><td>{{ item.label || item.code }}</td><td>{{ item.transactionCount }}</td><td class="number">{{ formatMoney(item.grossRevenue) }}</td><td class="number">{{ formatMoney(item.refunds + item.credits) }}</td><td class="number emphasis">{{ formatMoney(item.netRevenue) }}</td></tr> }
+        </tbody></table></div>
+      } @else { <p class="inline-empty">Chưa có dữ liệu phân bổ.</p> }
+    </section>
+
+    <section class="panel transactions-panel" aria-labelledby="transactions-title">
+      <div class="panel-heading"><div><p class="eyebrow">Sổ giao dịch</p><h3 id="transactions-title">Dòng dữ liệu đã chuẩn hóa</h3></div><span class="panel-meta">Hiển thị {{ visibleRows().length }} / {{ current.totalRowCount }}</span></div>
+      @if (visibleRows().length) {
+        <div class="table-scroll"><table><thead><tr><th>Thời gian</th><th>Mã chứng từ</th><th>Loại</th><th>Phương thức</th><th class="number">Ròng</th><th>Đối soát</th></tr></thead><tbody>
+          @for (row of visibleRows(); track trackRow($index, row)) { <tr><td>{{ formatDateTime(row.occurredAt) }}</td><td><code>{{ row.publicId }}</code></td><td>{{ row.transactionType }}</td><td>{{ row.method || row.provider || '—' }}</td><td class="number emphasis">{{ formatMoney(row.netAmount) }}</td><td><span class="status-pill" [class.status-pill--danger]="row.reconciliationStatus !== 'RECONCILED'" [class.status-pill--success]="row.reconciliationStatus === 'RECONCILED'">{{ statusLabel(row.reconciliationStatus) }}</span></td></tr> }
+        </tbody></table></div>
+      } @else { <p class="inline-empty">Không có giao dịch phù hợp với bộ lọc. Hãy thử mở rộng khoảng ngày.</p> }
+    </section>
+  }
+</section>

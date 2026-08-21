@@ -1,0 +1,66 @@
+<p-toast></p-toast>
+<section class="surface-ground px-4 py-5 md:px-6 lg:px-8">
+  <header class="mb-5 flex justify-content-between align-items-start gap-4 flex-wrap">
+    <div>
+    <p class="text-primary font-semibold mb-2">{{ isSystemAdministrator ? 'Danh mục hệ thống' : 'Gói dành cho chủ cơ sở' }}</p>
+    <h1 class="text-900 text-4xl font-bold mb-2">Danh sách gói dịch vụ</h1>
+    <p class="text-700 text-lg m-0">{{ isSystemAdministrator ? 'Theo dõi toàn bộ gói đang bán và đã ngừng bán trên nền tảng.' : 'Chọn gói phù hợp để mở rộng giới hạn vận hành.' }}</p>
+    </div>
+    <button *ngIf="isSystemAdministrator" pButton type="button" icon="pi pi-plus" label="Thêm gói" (click)="openCreate()"></button>
+  </header>
+
+  <div *ngIf="loading" class="p-5 text-center text-600" role="status">Đang tải danh sách gói...</div>
+  <div *ngIf="!loading && errorMessage" class="p-4 border-round bg-red-50 text-red-700" role="alert">
+    {{ errorMessage }}
+    <button pButton type="button" label="Thử lại" class="p-button-text" (click)="loadPlans()"></button>
+  </div>
+  <div *ngIf="!loading && !errorMessage && plans.length === 0" class="p-5 text-center text-600">Chưa có gói dịch vụ nào.</div>
+
+  <div class="grid" *ngIf="!loading && !errorMessage">
+    <div class="col-12 lg:col-4 p-3" *ngFor="let plan of plans">
+      <p-card styleClass="plan-card shadow-2">
+        <ng-template pTemplate="title">
+          <div class="flex justify-content-between align-items-start gap-3">
+            <div><div class="text-900 text-2xl font-bold">{{ plan.nameVi }}</div><small class="text-500">{{ plan.code }}</small></div>
+            <p-tag [severity]="plan.status === 'ACTIVE' ? 'success' : 'secondary'" [value]="plan.status === 'ACTIVE' ? 'Đang bán' : 'Ngừng bán'"></p-tag>
+          </div>
+          <div class="plan-price">{{ plan.price | currency:'VND':'symbol':'1.0-0' }} <span class="text-sm font-normal text-600">/ {{ billingLabel(plan) }}</span></div>
+        </ng-template>
+        <div class="plan-features mt-4 mb-4">
+          <div class="feature-item" *ngFor="let feature of plan.features"><i class="pi pi-check-circle"></i><span>{{ feature.nameVi || feature.nameEn || feature.code }}: {{ feature.limit === -1 ? 'Không giới hạn' : feature.limit }}</span></div>
+          <div class="feature-item" *ngIf="!plan.features.length">Chưa công bố quyền lợi.</div>
+        </div>
+        <ng-template pTemplate="footer" *ngIf="!isSystemAdministrator">
+          <span class="p-button p-component w-full" *ngIf="isCurrentPlan(plan)">Đang sử dụng</span>
+          <a class="p-button p-component p-button-outlined w-full" *ngIf="!isCurrentPlan(plan)" href="/management/billing">Xem và mua gói</a>
+        </ng-template>
+        <ng-template pTemplate="footer" *ngIf="isSystemAdministrator">
+          <div class="flex gap-2">
+            <button pButton type="button" icon="pi pi-pencil" label="Chỉnh sửa" class="p-button-outlined flex-1" (click)="openEdit(plan)"></button>
+            <button pButton type="button" [icon]="plan.status === 'ACTIVE' ? 'pi pi-ban' : 'pi pi-refresh'" [label]="plan.status === 'ACTIVE' ? 'Ngừng bán' : 'Bán lại'" [severity]="plan.status === 'ACTIVE' ? 'danger' : 'success'" class="flex-1" (click)="toggleSelling(plan)"></button>
+          </div>
+        </ng-template>
+      </p-card>
+    </div>
+  </div>
+</section>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [draggable]="false" [resizable]="false" [closable]="!saving" [style]="{width:'min(620px, 96vw)'}" [header]="editingId ? 'Chỉnh sửa gói dịch vụ' : 'Thêm gói dịch vụ'">
+  <div class="grid pt-2">
+    <label class="col-12 md:col-6"><span class="block font-semibold mb-2">Mã gói *</span><input pInputText class="w-full" [(ngModel)]="form.code" [disabled]="saving" placeholder="Ví dụ: PRO_MONTHLY" /></label>
+    <label class="col-12 md:col-6"><span class="block font-semibold mb-2">Chu kỳ *</span><p-select class="w-full" styleClass="w-full" [options]="billingOptions" optionLabel="label" optionValue="value" [(ngModel)]="form.billingType" [disabled]="saving"></p-select></label>
+    <label class="col-12"><span class="block font-semibold mb-2">Tên gói tiếng Việt *</span><input pInputText class="w-full" [(ngModel)]="form.nameVi" [disabled]="saving" /></label>
+    <label class="col-12"><span class="block font-semibold mb-2">Tên gói tiếng Anh</span><input pInputText class="w-full" [(ngModel)]="form.nameEn" [disabled]="saving" /></label>
+    <label class="col-12"><span class="block font-semibold mb-2">Giá bán (VND) *</span><p-inputNumber styleClass="w-full" inputStyleClass="w-full" [(ngModel)]="form.price" [min]="0" [minFractionDigits]="0" [maxFractionDigits]="0" [disabled]="saving"></p-inputNumber></label>
+    <label class="col-12 flex align-items-center gap-2"><input type="checkbox" [(ngModel)]="form.isLifetime" [disabled]="saving || form.billingType === 'ONCE'" /><span>Gói sử dụng vĩnh viễn</span></label>
+    <div class="col-12"><div class="font-semibold mb-1">Giới hạn quyền lợi</div><small class="text-600">Nhập -1 để đặt quyền lợi không giới hạn.</small></div>
+    <label class="col-12 md:col-6" *ngFor="let feature of form.features; let index = index">
+      <span class="block font-semibold mb-2">{{ featureCatalog[index].label }}</span>
+      <p-inputNumber styleClass="w-full" inputStyleClass="w-full" [(ngModel)]="feature.limit" [min]="-1" [minFractionDigits]="0" [maxFractionDigits]="0" [disabled]="saving"></p-inputNumber>
+    </label>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Hủy" class="p-button-text" [disabled]="saving" (click)="dialogVisible=false"></button>
+    <button pButton type="button" icon="pi pi-check" label="Lưu gói" [loading]="saving" [disabled]="!form.code.trim() || !form.nameVi.trim() || form.price < 0" (click)="savePlan()"></button>
+  </ng-template>
+</p-dialog>

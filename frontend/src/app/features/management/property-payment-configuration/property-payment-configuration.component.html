@@ -1,0 +1,383 @@
+<section class="payment-config-page" aria-labelledby="payment-config-title">
+  <header class="page-intro">
+    <div>
+      <span class="eyebrow">{{ 'PROPERTY_PAYMENT_CONFIG.EYEBROW' | translate }}</span>
+      <h2 id="payment-config-title">{{ 'PROPERTY_PAYMENT_CONFIG.TITLE' | translate }}</h2>
+      <p>{{ 'PROPERTY_PAYMENT_CONFIG.DESCRIPTION' | translate }}</p>
+    </div>
+    @if (configuration()) {
+      <div class="version-chip" [attr.aria-label]="'PROPERTY_PAYMENT_CONFIG.VERSION' | translate">
+        <span class="material-symbols-outlined" aria-hidden="true">history</span>
+        {{ 'PROPERTY_PAYMENT_CONFIG.VERSION' | translate }} {{ configuration()?.version }}
+      </div>
+    }
+  </header>
+
+  @if (!propertyId()) {
+    <div class="state-panel empty-state" role="status">
+      <span class="material-symbols-outlined" aria-hidden="true">domain_disabled</span>
+      <div>
+        <h3>{{ 'PROPERTY_PAYMENT_CONFIG.STATES.SELECT_PROPERTY_TITLE' | translate }}</h3>
+        <p>{{ 'PROPERTY_PAYMENT_CONFIG.STATES.SELECT_PROPERTY_BODY' | translate }}</p>
+      </div>
+    </div>
+  } @else if (loading()) {
+    <div class="state-panel loading-state" role="status" aria-live="polite">
+      <span class="loading-ring" aria-hidden="true"></span>
+      <div>
+        <h3>{{ 'PROPERTY_PAYMENT_CONFIG.STATES.LOADING_TITLE' | translate }}</h3>
+        <p>{{ 'PROPERTY_PAYMENT_CONFIG.STATES.LOADING_BODY' | translate }}</p>
+      </div>
+    </div>
+  } @else if (errorMessage() && !configuration()) {
+    <div class="state-panel error-state" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">cloud_off</span>
+      <div>
+        <h3>{{ 'PROPERTY_PAYMENT_CONFIG.STATES.LOAD_ERROR_TITLE' | translate }}</h3>
+        <p>{{ errorMessage() | translate }}</p>
+      </div>
+      <button type="button" class="secondary-button" (click)="retry()">
+        <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+        {{ 'PROPERTY_PAYMENT_CONFIG.ACTIONS.RETRY' | translate }}
+      </button>
+    </div>
+  } @else {
+    @if (!canManage) {
+      <div class="notice read-only-notice" role="status">
+        <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+        <div>
+          <strong>{{ 'PROPERTY_PAYMENT_CONFIG.READ_ONLY.TITLE' | translate }}</strong>
+          <span>{{ 'PROPERTY_PAYMENT_CONFIG.READ_ONLY.BODY' | translate }}</span>
+        </div>
+      </div>
+    }
+
+    @if (errorMessage()) {
+      <div class="notice error-notice" role="alert">
+        <span class="material-symbols-outlined" aria-hidden="true">error</span>
+        <div>
+          <strong>{{ 'PROPERTY_PAYMENT_CONFIG.MESSAGES.ERROR_TITLE' | translate }}</strong>
+          <span>{{ errorMessage() | translate }}</span>
+        </div>
+      </div>
+    }
+
+    @if (successMessage()) {
+      <div class="notice success-notice" role="status" aria-live="polite">
+        <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+        <span>{{ successMessage() | translate }}</span>
+      </div>
+    }
+
+    <div class="config-layout">
+      <form class="configuration-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <section class="form-section activation-section" aria-labelledby="activation-title">
+          <div class="section-heading">
+            <span class="section-icon material-symbols-outlined" aria-hidden="true">power_settings_new</span>
+            <div>
+              <h3 id="activation-title">{{ 'PROPERTY_PAYMENT_CONFIG.SECTIONS.ACTIVATION' | translate }}</h3>
+              <p>{{ 'PROPERTY_PAYMENT_CONFIG.SECTIONS.ACTIVATION_HELP' | translate }}</p>
+            </div>
+          </div>
+
+          <label class="activation-toggle">
+            <input type="checkbox" formControlName="enabled" />
+            <span class="toggle-track" aria-hidden="true"><span></span></span>
+            <span>
+              <strong>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.ENABLED' | translate }}</strong>
+              <small>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.ENABLED_HELP' | translate }}</small>
+            </span>
+          </label>
+
+          <fieldset class="environment-fieldset">
+            <legend>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.ENVIRONMENT' | translate }}</legend>
+            <div class="environment-grid">
+              @for (environment of ['SIMULATOR', 'SANDBOX', 'PRODUCTION']; track environment) {
+                <label class="environment-option" [class.selected]="form.controls.environment.value === environment">
+                  <input
+                    type="radio"
+                    formControlName="environment"
+                    [value]="environment"
+                  />
+                  <span class="material-symbols-outlined" aria-hidden="true">
+                    {{ environment === 'SIMULATOR' ? 'science' : environment === 'SANDBOX' ? 'verified_user' : 'lock' }}
+                  </span>
+                  <strong>{{ environmentLabelKey($any(environment)) | translate }}</strong>
+                  <small>{{ environmentHelpKey($any(environment)) | translate }}</small>
+                </label>
+              }
+            </div>
+          </fieldset>
+
+          @if (form.controls.environment.value === 'PRODUCTION') {
+            <div class="production-gate" role="alert">
+              <span class="material-symbols-outlined" aria-hidden="true">gpp_maybe</span>
+              <p>{{ 'PROPERTY_PAYMENT_CONFIG.PRODUCTION_GATE' | translate }}</p>
+            </div>
+          }
+        </section>
+
+        <section class="form-section" aria-labelledby="methods-title">
+          <div class="section-heading">
+            <span class="section-icon material-symbols-outlined" aria-hidden="true">payments</span>
+            <div>
+              <h3 id="methods-title">{{ 'PROPERTY_PAYMENT_CONFIG.SECTIONS.METHODS' | translate }}</h3>
+              <p>{{ 'PROPERTY_PAYMENT_CONFIG.SECTIONS.METHODS_HELP' | translate }}</p>
+            </div>
+          </div>
+
+          <div class="method-grid" formArrayName="methods">
+            @for (methodForm of methodForms.controls; track trackMethod($index, methodForm)) {
+              @let methodCode = methodForm.controls.method.value;
+              @let definition = methodDefinition(methodCode);
+              @let methodStatus = methodReadiness(methodCode);
+              <article class="method-card" [class.enabled]="methodForm.controls.enabled.value" [formGroupName]="$index">
+                <div class="method-card-header">
+                  <span class="method-icon material-symbols-outlined" aria-hidden="true">{{ definition.icon }}</span>
+                  <div>
+                    <h4>{{ methodLabelKey(methodCode) | translate }}</h4>
+                    <span class="method-status" [class.ready]="methodStatus?.ready" [class.blocked]="methodStatus && !methodStatus.ready">
+                      <span class="status-dot" aria-hidden="true"></span>
+                      @if (!methodForm.controls.enabled.value) {
+                        {{ 'PROPERTY_PAYMENT_CONFIG.STATUS.DISABLED' | translate }}
+                      } @else if (methodStatus?.ready) {
+                        {{ 'PROPERTY_PAYMENT_CONFIG.STATUS.READY' | translate }}
+                      } @else {
+                        {{ 'PROPERTY_PAYMENT_CONFIG.STATUS.NEEDS_ATTENTION' | translate }}
+                      }
+                    </span>
+                  </div>
+                  <label class="compact-toggle">
+                    <span class="visually-hidden">{{ methodLabelKey(methodCode) | translate }}</span>
+                    <input type="checkbox" formControlName="enabled" />
+                    <span aria-hidden="true"></span>
+                  </label>
+                </div>
+
+                @if (methodForm.controls.enabled.value) {
+                  <div class="method-fields">
+                    <label>
+                      <span>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.PROVIDER' | translate }}</span>
+                      <input type="text" formControlName="provider" autocomplete="off" />
+                    </label>
+                    @if (definition.merchantBased && form.controls.environment.value !== 'SIMULATOR') {
+                      <label>
+                        <span>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.MERCHANT_REFERENCE' | translate }}</span>
+                        @if (merchantReferencesMasked()[methodCode]) {
+                          <small class="masked-value">
+                            {{ 'PROPERTY_PAYMENT_CONFIG.FORM.CURRENT_MASKED' | translate }}
+                            <strong>{{ merchantReferencesMasked()[methodCode] }}</strong>
+                          </small>
+                        }
+                        <input
+                          type="password"
+                          formControlName="merchantReference"
+                          autocomplete="new-password"
+                          [placeholder]="'PROPERTY_PAYMENT_CONFIG.FORM.SECRET_PLACEHOLDER' | translate"
+                        />
+                      </label>
+                    }
+                    @if (methodStatus && !methodStatus.ready) {
+                      <ul class="inline-blockers" role="list">
+                        @for (blocker of methodStatus.blockers; track blocker) {
+                          <li>{{ blockerLabelKey(blocker) | translate }}</li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        </section>
+
+        @if (hasEnabledBankMethod()) {
+          <section class="form-section" aria-labelledby="bank-title">
+            <div class="section-heading">
+              <span class="section-icon material-symbols-outlined" aria-hidden="true">account_balance</span>
+              <div>
+                <h3 id="bank-title">{{ 'PROPERTY_PAYMENT_CONFIG.SECTIONS.BANK' | translate }}</h3>
+                <p>{{ 'PROPERTY_PAYMENT_CONFIG.SECTIONS.BANK_HELP' | translate }}</p>
+              </div>
+            </div>
+
+            <div class="field-grid two-columns">
+              <label>
+                <span>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.BANK_NAME' | translate }}</span>
+                <input type="text" formControlName="bankName" autocomplete="organization" />
+              </label>
+              <label>
+                <span>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.BANK_CODE' | translate }}</span>
+                <input type="text" formControlName="bankCode" autocomplete="off" />
+              </label>
+              <label>
+                <span>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.ACCOUNT_NAME' | translate }}</span>
+                <input type="text" formControlName="accountName" autocomplete="name" />
+              </label>
+              <label>
+                <span>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.ACCOUNT_NUMBER' | translate }}</span>
+                @if (accountNumberMasked()) {
+                  <small class="masked-value">
+                    {{ 'PROPERTY_PAYMENT_CONFIG.FORM.CURRENT_MASKED' | translate }}
+                    <strong data-testid="masked-account">{{ accountNumberMasked() }}</strong>
+                  </small>
+                }
+                <input
+                  type="password"
+                  formControlName="accountNumber"
+                  inputmode="numeric"
+                  autocomplete="new-password"
+                  [placeholder]="'PROPERTY_PAYMENT_CONFIG.FORM.SECRET_PLACEHOLDER' | translate"
+                />
+              </label>
+              <label>
+                <span>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.QR_PROVIDER' | translate }}</span>
+                <input type="text" formControlName="qrProvider" autocomplete="off" />
+              </label>
+            </div>
+          </section>
+        }
+
+        <section class="form-section" aria-labelledby="deposit-title">
+          <div class="section-heading">
+            <span class="section-icon material-symbols-outlined" aria-hidden="true">savings</span>
+            <div>
+              <h3 id="deposit-title">{{ 'PROPERTY_PAYMENT_CONFIG.SECTIONS.DEPOSIT' | translate }}</h3>
+              <p>{{ 'PROPERTY_PAYMENT_CONFIG.SECTIONS.DEPOSIT_HELP' | translate }}</p>
+            </div>
+          </div>
+
+          <div class="field-grid three-columns">
+            <label>
+              <span>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.DEPOSIT_POLICY' | translate }}</span>
+              <select formControlName="depositPolicyType">
+                <option value="NONE">{{ 'PROPERTY_PAYMENT_CONFIG.DEPOSIT.NONE' | translate }}</option>
+                <option value="FIXED">{{ 'PROPERTY_PAYMENT_CONFIG.DEPOSIT.FIXED' | translate }}</option>
+                <option value="PERCENTAGE">{{ 'PROPERTY_PAYMENT_CONFIG.DEPOSIT.PERCENTAGE' | translate }}</option>
+              </select>
+            </label>
+            @if (showDepositValue()) {
+              <label>
+                <span>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.DEPOSIT_VALUE' | translate }}</span>
+                <span class="input-with-suffix">
+                  <input type="number" min="1" step="1" formControlName="depositValue" inputmode="numeric" />
+                  <b>{{ depositValueSuffixKey() | translate }}</b>
+                </span>
+              </label>
+            }
+            <label>
+              <span>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.EXPIRY' | translate }}</span>
+              <span class="input-with-suffix">
+                <input type="number" min="1" max="10080" step="1" formControlName="paymentExpiryMinutes" inputmode="numeric" />
+                <b>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.MINUTES' | translate }}</b>
+              </span>
+            </label>
+          </div>
+        </section>
+
+        <section class="form-section" aria-labelledby="instructions-title">
+          <div class="section-heading">
+            <span class="section-icon material-symbols-outlined" aria-hidden="true">translate</span>
+            <div>
+              <h3 id="instructions-title">{{ 'PROPERTY_PAYMENT_CONFIG.SECTIONS.INSTRUCTIONS' | translate }}</h3>
+              <p>{{ 'PROPERTY_PAYMENT_CONFIG.SECTIONS.INSTRUCTIONS_HELP' | translate }}</p>
+            </div>
+          </div>
+
+          <label class="full-field">
+            <span>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.TRANSFER_TEMPLATE' | translate }}</span>
+            <input type="text" formControlName="transferTemplate" autocomplete="off" />
+            <small>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.TRANSFER_TEMPLATE_HELP' | translate }}</small>
+          </label>
+
+          <div class="field-grid two-columns instruction-grid">
+            <label>
+              <span>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.INSTRUCTIONS_VI' | translate }}</span>
+              <textarea rows="5" formControlName="instructionsVi"></textarea>
+            </label>
+            <label>
+              <span>{{ 'PROPERTY_PAYMENT_CONFIG.FORM.INSTRUCTIONS_EN' | translate }}</span>
+              <textarea rows="5" formControlName="instructionsEn"></textarea>
+            </label>
+          </div>
+        </section>
+
+        @if (validationBlockers().length > 0) {
+          <section class="validation-summary" role="alert" aria-labelledby="validation-summary-title">
+            <span class="material-symbols-outlined" aria-hidden="true">rule</span>
+            <div>
+              <h3 id="validation-summary-title">{{ 'PROPERTY_PAYMENT_CONFIG.VALIDATION.TITLE' | translate }}</h3>
+              <ul>
+                @for (blocker of validationBlockers(); track blocker) {
+                  <li>{{ blockerLabelKey(blocker) | translate }}</li>
+                }
+              </ul>
+            </div>
+          </section>
+        }
+
+        @if (canManage) {
+          <footer class="form-actions">
+            <p>{{ 'PROPERTY_PAYMENT_CONFIG.ACTIONS.SAFETY_NOTE' | translate }}</p>
+            <div>
+              <button type="button" class="secondary-button" [disabled]="busy()" (click)="validateConfiguration()">
+                <span class="material-symbols-outlined" aria-hidden="true">fact_check</span>
+                {{ (validating() ? 'PROPERTY_PAYMENT_CONFIG.ACTIONS.VALIDATING' : 'PROPERTY_PAYMENT_CONFIG.ACTIONS.VALIDATE') | translate }}
+              </button>
+              <button type="submit" class="primary-button" [disabled]="busy()">
+                <span class="material-symbols-outlined" aria-hidden="true">save</span>
+                {{ (saving() ? 'PROPERTY_PAYMENT_CONFIG.ACTIONS.SAVING' : 'PROPERTY_PAYMENT_CONFIG.ACTIONS.SAVE') | translate }}
+              </button>
+            </div>
+          </footer>
+        }
+      </form>
+
+      <aside class="readiness-panel" aria-labelledby="readiness-title">
+        <div class="readiness-hero" [class.ready]="readiness()?.ready" [class.blocked]="readiness() && !readiness()?.ready">
+          <span class="readiness-icon material-symbols-outlined" aria-hidden="true">
+            {{ readiness()?.ready ? 'verified' : 'shield_lock' }}
+          </span>
+          <span class="eyebrow">{{ 'PROPERTY_PAYMENT_CONFIG.READINESS.EYEBROW' | translate }}</span>
+          <h3 id="readiness-title">
+            {{ (readiness()?.ready ? 'PROPERTY_PAYMENT_CONFIG.READINESS.READY_TITLE' : 'PROPERTY_PAYMENT_CONFIG.READINESS.BLOCKED_TITLE') | translate }}
+          </h3>
+          <p>
+            {{ (readiness()?.ready ? 'PROPERTY_PAYMENT_CONFIG.READINESS.READY_BODY' : 'PROPERTY_PAYMENT_CONFIG.READINESS.BLOCKED_BODY') | translate }}
+          </p>
+          <span class="environment-badge">
+            {{ environmentLabelKey(form.controls.environment.value) | translate }}
+          </span>
+        </div>
+
+        <div class="readiness-details">
+          <h4>{{ 'PROPERTY_PAYMENT_CONFIG.READINESS.CHECKLIST' | translate }}</h4>
+          @if (readiness()?.blockers?.length) {
+            <ul class="readiness-list blocked-list">
+              @for (blocker of readiness()?.blockers; track blocker) {
+                <li>
+                  <span class="material-symbols-outlined" aria-hidden="true">cancel</span>
+                  {{ blockerLabelKey(blocker) | translate }}
+                </li>
+              }
+            </ul>
+          } @else {
+            <ul class="readiness-list">
+              <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>{{ 'PROPERTY_PAYMENT_CONFIG.READINESS.METHODS_OK' | translate }}</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>{{ 'PROPERTY_PAYMENT_CONFIG.READINESS.INSTRUCTIONS_OK' | translate }}</li>
+              <li><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>{{ 'PROPERTY_PAYMENT_CONFIG.READINESS.RECEIVER_OK' | translate }}</li>
+            </ul>
+          }
+        </div>
+
+        <div class="privacy-card">
+          <span class="material-symbols-outlined" aria-hidden="true">encrypted</span>
+          <div>
+            <strong>{{ 'PROPERTY_PAYMENT_CONFIG.PRIVACY.TITLE' | translate }}</strong>
+            <p>{{ 'PROPERTY_PAYMENT_CONFIG.PRIVACY.BODY' | translate }}</p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  }
+</section>

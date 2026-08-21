@@ -1,0 +1,104 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="card border-0 shadow-sm m-3">
+  <div class="card-header bg-white border-0 py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+      <h5 class="mb-1 fw-bold text-primary"><i class="pi pi-id-card me-2"></i>Quản lý vai trò</h5>
+      <div class="text-muted small">Tạo vai trò và gán quyền truy cập theo trang.</div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <button pButton label="Tải lại" icon="pi pi-refresh" class="p-button-sm p-button-outlined p-button-secondary" (click)="loadRoles()" [disabled]="loading || saving"></button>
+      <button *ngIf="canCreate" pButton label="Thêm vai trò" icon="pi pi-plus" class="p-button-sm p-button-primary" (click)="openNew()" [disabled]="loading || saving"></button>
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger m-3 d-flex align-items-center justify-content-between gap-3">
+    <span><i class="pi pi-exclamation-circle me-2"></i>{{ errorMessage }}</span>
+    <button pButton label="Thử lại" icon="pi pi-refresh" class="p-button-sm p-button-danger p-button-outlined" (click)="loadRoles()" [disabled]="loading"></button>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 px-3 pb-3">
+    <span class="p-input-icon-left flex-grow-1"><i class="pi pi-search" aria-hidden="true"></i><input pInputText [(ngModel)]="searchText" class="w-100" aria-label="Tìm vai trò" placeholder="Tìm theo mã hoặc tên vai trò" /></span>
+    <p-select [options]="statusOptions" optionLabel="label" optionValue="value" [(ngModel)]="statusFilter" placeholder="Tất cả trạng thái" [showClear]="true"></p-select>
+  </div>
+
+  <div class="card-body p-0">
+    <p-table
+      [value]="filteredRoles"
+      [paginator]="true"
+      [rows]="10"
+      [loading]="loading"
+      [rowHover]="true"
+      responsiveLayout="scroll"
+      styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="id" style="width: 10%">ID <p-sortIcon field="id"></p-sortIcon></th>
+          <th pSortableColumn="code" style="width: 20%">Mã <p-sortIcon field="code"></p-sortIcon></th>
+          <th pSortableColumn="name" style="width: 25%">Tên vai trò <p-sortIcon field="name"></p-sortIcon></th>
+          <th>Mô tả</th><th>Loại</th><th>Người dùng</th><th>Trạng thái</th><th>Ngày cập nhật</th>
+          <th class="text-center">Thao tác</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-role>
+        <tr class="tree-table-row">
+          <td class="text-muted fw-bold" data-label="ID">#{{ role.id }}</td>
+          <td class="text-dark fw-bold" data-label="Mã"><span class="badge bg-secondary">{{ role.code }}</span></td>
+          <td class="text-dark fw-bold" data-label="Tên vai trò">{{ role.name }}</td>
+          <td class="text-muted" data-label="Mô tả">{{ role.description || '-' }}</td>
+          <td data-label="Loại">{{ role.systemRole ? 'Hệ thống' : 'Tùy chỉnh' }}</td><td data-label="Người dùng">{{ role.userCount || 0 }}</td><td data-label="Trạng thái"><span class="badge" [class.bg-success]="role.status !== 'INACTIVE'" [class.bg-secondary]="role.status === 'INACTIVE'">{{ role.status === 'INACTIVE' ? 'Ngừng hoạt động' : 'Đang hoạt động' }}</span></td><td data-label="Ngày cập nhật">{{ role.updatedAt ? (role.updatedAt | date:'dd/MM/yyyy HH:mm') : '-' }}</td>
+          <td class="text-center" data-label="Thao tác">
+            <div class="d-flex flex-wrap gap-1 justify-content-center">
+              <button pButton icon="pi pi-shield" class="p-button-text p-button-info p-button-sm" [attr.aria-label]="'Phân quyền cho ' + role.name" (click)="openPermissions(role)"></button>
+              <button *ngIf="canUpdate" pButton icon="pi pi-pencil" class="p-button-text p-button-secondary p-button-sm" [attr.aria-label]="'Sửa vai trò ' + role.name" (click)="editRole(role)" [disabled]="saving"></button>
+              <button *ngIf="canRemoveRole(role)" pButton icon="pi pi-ban" class="p-button-text p-button-danger p-button-sm" [attr.aria-label]="'Ngừng sử dụng vai trò ' + role.name" (click)="deleteRole(role)" [disabled]="saving"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="9" class="text-center p-4 text-muted">Không có dữ liệu phù hợp.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog
+  [visible]="displayDialog"
+  (visibleChange)="onDialogVisibilityChange($event)"
+  [style]="{width: '560px'}"
+  [header]="roleDialogMode === 'create' ? 'Thêm vai trò' : 'Cập nhật vai trò'"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!saving"
+  appendTo="body"
+  styleClass="p-fluid">
+  <div class="d-flex flex-column gap-3 p-2">
+    <div class="field">
+      <label for="code" class="fw-bold mb-1">Mã vai trò <span class="text-danger">*</span></label>
+      <input type="text" pInputText id="code" [(ngModel)]="roleForm.code" required autofocus maxlength="50" placeholder="VD: ACCOUNTANT" class="w-100 text-uppercase" [disabled]="saving || roleDialogMode === 'edit'" [attr.aria-invalid]="!!codeError" aria-describedby="role-code-help" />
+      <small id="role-code-help" [class.text-danger]="codeError">{{ codeError || (roleDialogMode === 'edit' ? 'Mã vai trò không thể thay đổi sau khi tạo.' : 'Dùng chữ in hoa, số và dấu gạch dưới.') }}</small>
+    </div>
+    <div class="field">
+      <label for="name" class="fw-bold mb-1">Tên vai trò <span class="text-danger">*</span></label>
+      <input type="text" pInputText id="name" [(ngModel)]="roleForm.name" required maxlength="100" placeholder="VD: Kế toán" class="w-100" [disabled]="saving" [attr.aria-invalid]="!!nameError" aria-describedby="role-name-help" />
+      <small *ngIf="nameError" id="role-name-help" class="text-danger">{{ nameError }}</small>
+    </div>
+    <div class="field">
+      <label for="description" class="fw-bold mb-1">Mô tả</label>
+      <textarea pInputTextarea id="description" [(ngModel)]="roleForm.description" rows="3" maxlength="500" class="w-100" [disabled]="saving" aria-describedby="role-description-help"></textarea>
+      <small id="role-description-help" [class.text-danger]="(roleForm.description || '').length > 500">{{ (roleForm.description || '').length }}/500 ký tự</small>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button pButton label="Hủy" icon="pi pi-times" class="p-button-text" (click)="requestCloseDialog()" [disabled]="saving"></button>
+    <button pButton [label]="saving ? 'Đang lưu...' : 'Lưu'" [icon]="saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'" class="p-button-primary" (click)="saveRole()" [disabled]="saving || !roleFormValid"></button>
+  </ng-template>
+</p-dialog>

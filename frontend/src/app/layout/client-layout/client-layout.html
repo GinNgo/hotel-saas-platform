@@ -1,0 +1,114 @@
+<header class="public-header" [class.account-menu-open]="accountMenuOpen" [class.header-hidden]="layoutState.hideMainHeader()" [attr.aria-hidden]="layoutState.hideMainHeader() ? 'true' : null">
+  <div class="header-inner">
+    <a routerLink="/" class="brand" [attr.aria-label]="'LAYOUT.HOME_LABEL' | translate">
+      <img class="brand-mark" src="/assets/brand/luxestay-mark.svg" alt="" aria-hidden="true">
+      <span><strong>LuxeStay</strong><small>Hotels</small></span>
+    </a>
+    <nav class="desktop-nav" [attr.aria-label]="'LAYOUT.PRIMARY_NAV' | translate">
+      <a routerLink="/search">{{ 'LAYOUT.ALL_STAYS' | translate }}</a><a routerLink="/" fragment="destinations">{{ 'LAYOUT.DESTINATIONS' | translate }}</a>
+      <a routerLink="/" fragment="featured">{{ 'LAYOUT.FEATURED' | translate }}</a><a routerLink="/" fragment="partner">{{ 'LAYOUT.PARTNERS' | translate }}</a>
+    </nav>
+    <div class="header-actions">
+      <button
+        type="button"
+        class="locale-status locale-button"
+        (click)="toggleLocale()"
+        [attr.aria-label]="(localeService.locale() === 'vi' ? 'LOCALE.SWITCH_TO_ENGLISH' : 'LOCALE.SWITCH_TO_VIETNAMESE') | translate"
+      >
+        <span aria-hidden="true">{{ localeService.locale() | uppercase }}</span><small aria-hidden="true">VND</small>
+      </button>
+      <a *ngIf="!isLoggedIn" routerLink="/login" class="login-button">{{ 'LAYOUT.LOGIN' | translate }}</a>
+      <div *ngIf="isLoggedIn" class="account-area">
+        <button type="button" class="account-trigger" (click)="toggleAccountMenu($event)" [attr.aria-expanded]="accountMenuOpen" aria-haspopup="menu">
+          <span class="avatar"><img *ngIf="avatarUrl" [src]="avatarUrl" [alt]="'LAYOUT.AVATAR_ALT' | translate" (error)="handleAvatarError()"><span *ngIf="!avatarUrl">{{ initials }}</span></span>
+          <span class="account-copy"><strong>{{ fullName || username }}</strong><small>{{ (isPropertyOwner ? 'LAYOUT.OWNER' : 'LAYOUT.CUSTOMER') | translate }}</small></span>
+          <i class="pi" [ngClass]="accountMenuOpen ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+        </button>
+        <section *ngIf="accountMenuOpen" class="account-menu" role="menu" [attr.aria-label]="'LAYOUT.ACCOUNT_MENU' | translate">
+          <header>
+            <span class="avatar large"><img *ngIf="avatarUrl" [src]="avatarUrl" [alt]="'LAYOUT.AVATAR_ALT' | translate" (error)="handleAvatarError()"><span *ngIf="!avatarUrl">{{ initials }}</span></span>
+            <span><strong>{{ fullName || username }}</strong><small>{{ userContext?.email || username }}</small></span>
+            <button type="button" class="menu-close" (click)="closeAccountMenu()" [attr.aria-label]="'LAYOUT.CLOSE' | translate" [title]="'LAYOUT.CLOSE' | translate"><i class="pi pi-times" aria-hidden="true"></i></button>
+          </header>
+          <section class="account-rewards" aria-labelledby="account-rewards-title">
+            <div class="account-rewards-heading">
+              <span class="account-rewards-icon"><i class="pi pi-star" aria-hidden="true"></i></span>
+              <span><strong id="account-rewards-title">{{ 'HOME.MEMBER_KICKER' | translate }}</strong><small>{{ 'HOME.MEMBER_TITLE' | translate }}</small></span>
+            </div>
+            <div class="account-rewards-value"><strong>{{ (userContext?.points || 0) | number }}</strong><small>{{ 'HOME.MEMBER_POINTS' | translate }}</small></div>
+            <small class="account-rewards-tier">{{ 'LAYOUT.MEMBER_TIER_PENDING' | translate }}</small>
+          </section>
+          <nav>
+            <a routerLink="/profile" [queryParams]="{tab: 'profile'}" (click)="closeAccountMenu()" role="menuitem"><i class="pi pi-user" aria-hidden="true"></i><span>{{ 'LAYOUT.PROFILE' | translate }}</span></a>
+            <a routerLink="/booking-history" (click)="closeAccountMenu()" role="menuitem"><i class="pi pi-briefcase" aria-hidden="true"></i><span>{{ 'LAYOUT.MY_TRIPS' | translate }}</span><b *ngIf="userContext?.pendingBookingCount">{{ userContext.pendingBookingCount }}</b></a>
+            <a routerLink="/my-invoices" (click)="closeAccountMenu()" role="menuitem"><i class="pi pi-file" aria-hidden="true"></i><span>{{ 'LAYOUT.MY_INVOICES' | translate }}</span></a>
+            <a routerLink="/favorites" (click)="closeAccountMenu()" role="menuitem"><i class="pi pi-heart" aria-hidden="true"></i><span><ng-container *ngIf="localeService.locale() === 'vi'">&#272;&#227; l&#432;u</ng-container><ng-container *ngIf="localeService.locale() !== 'vi'">Saved stays</ng-container></span></a>
+            <div class="menu-divider"></div>
+            <button type="button" (click)="navigatePartner()" role="menuitem" [disabled]="partnerLabel === 'Tài khoản bị khóa'"><i class="pi pi-building" aria-hidden="true"></i><span>{{ partnerLabel }}</span></button>
+            <ng-container *ngIf="isPropertyOwner">
+              <a routerLink="/management/dashboard" (click)="closeAccountMenu()" role="menuitem"><i class="pi pi-chart-bar" aria-hidden="true"></i><span>{{ 'LAYOUT.MANAGEMENT' | translate }}</span></a>
+              <a routerLink="/management/room-types" (click)="closeAccountMenu()" role="menuitem"><i class="pi pi-th-large" aria-hidden="true"></i><span>{{ 'LAYOUT.ROOMS' | translate }}</span></a>
+              <a routerLink="/management/subscription" (click)="closeAccountMenu()" role="menuitem"><i class="pi pi-credit-card" aria-hidden="true"></i><span>{{ 'LAYOUT.SUBSCRIPTION' | translate }}</span><small>{{ userContext?.plan || ('LAYOUT.NO_PLAN' | translate) }}</small></a>
+            </ng-container>
+            <a *ngIf="isAdmin" routerLink="/admin/dashboard" (click)="closeAccountMenu()" role="menuitem"><i class="pi pi-shield" aria-hidden="true"></i><span>{{ 'LAYOUT.ADMIN' | translate }}</span></a>
+            <div class="menu-divider"></div>
+            <button type="button" class="menu-setting locale-menu-item" (click)="toggleLocale()" role="menuitem"><i class="pi pi-language" aria-hidden="true"></i><span>{{ 'LAYOUT.LANGUAGE' | translate }}</span><small>{{ (localeService.locale() === 'vi' ? 'LOCALE.CURRENT_VI' : 'LOCALE.CURRENT_EN') | translate }}</small></button>
+            <div class="menu-setting"><i class="pi pi-wallet" aria-hidden="true"></i><span>{{ 'LAYOUT.CURRENCY' | translate }}</span><small>VND</small></div>
+            <a routerLink="/settings" (click)="closeAccountMenu()" role="menuitem"><i class="pi pi-cog" aria-hidden="true"></i><span>{{ 'LAYOUT.SETTINGS' | translate }}</span></a>
+            <button type="button" class="logout-item" (click)="logout()" role="menuitem"><i class="pi pi-sign-out" aria-hidden="true"></i><span>{{ 'LAYOUT.LOGOUT' | translate }}</span></button>
+          </nav>
+        </section>
+      </div>
+      <button type="button" class="mobile-toggle" (click)="toggleMobileMenu()" [attr.aria-label]="(isMobileMenuOpen ? 'LAYOUT.CLOSE_MENU' : 'LAYOUT.OPEN_MENU') | translate"><i class="pi" [ngClass]="isMobileMenuOpen ? 'pi-times' : 'pi-bars'"></i></button>
+    </div>
+  </div>
+  <nav *ngIf="isMobileMenuOpen" class="mobile-nav">
+    <a routerLink="/search" (click)="closeMobileMenu()">{{ 'LAYOUT.ALL_STAYS' | translate }}</a><a routerLink="/" fragment="destinations" (click)="closeMobileMenu()">{{ 'LAYOUT.DESTINATIONS' | translate }}</a>
+    <a routerLink="/" fragment="featured" (click)="closeMobileMenu()">{{ 'LAYOUT.FEATURED' | translate }}</a>
+  </nav>
+</header>
+<main class="public-main"><router-outlet></router-outlet></main>
+<button *ngIf="showScrollTop" type="button" class="scroll-top" (click)="scrollToTop()" aria-label="Cuộn lên đầu trang" title="Lên đầu trang"><i class="pi pi-arrow-up" aria-hidden="true"></i></button>
+<footer class="public-footer" aria-labelledby="footer-brand-title">
+  <div class="footer-inner">
+    <div class="footer-brand-panel">
+      <a routerLink="/" class="footer-brand" [attr.aria-label]="'LAYOUT.HOME_LABEL' | translate">
+        <img class="brand-mark footer-mark" src="/assets/brand/luxestay-mark.svg" alt="" aria-hidden="true">
+        <span><strong id="footer-brand-title">LuxeStay</strong><small>Hotels</small></span>
+      </a>
+      <p>{{ 'LAYOUT.FOOTER_DESCRIPTION' | translate }}</p>
+      <div class="footer-contact-list">
+        <a href="tel:+842873006886"><i class="pi pi-phone" aria-hidden="true"></i><span>028 7300 6886</span></a>
+        <a href="mailto:luxestay8386@gmail.com"><i class="pi pi-envelope" aria-hidden="true"></i><span>luxestay8386&#64;gmail.com</span></a>
+      </div>
+    </div>
+
+    <nav class="footer-nav" [attr.aria-label]="'LAYOUT.FOOTER_NAV' | translate">
+      <div class="footer-column">
+        <strong>{{ 'LAYOUT.DISCOVER' | translate }}</strong>
+        <a routerLink="/search">{{ 'LAYOUT.ALL_STAYS' | translate }}</a>
+        <a routerLink="/" fragment="destinations">{{ 'LAYOUT.POPULAR_DESTINATIONS' | translate }}</a>
+        <a routerLink="/" fragment="featured">{{ 'LAYOUT.FEATURED' | translate }}</a>
+      </div>
+      <div class="footer-column">
+        <strong>{{ 'LAYOUT.PARTNER' | translate }}</strong>
+        <button type="button" (click)="navigatePartner()">{{ partnerLabel }}</button>
+        <a routerLink="/partner/registration-status">{{ 'LAYOUT.PARTNER_STATUS' | translate }}</a>
+        <a routerLink="/management/dashboard">{{ 'LAYOUT.MANAGEMENT_AREA' | translate }}</a>
+      </div>
+      <div class="footer-column">
+        <strong>{{ 'LAYOUT.SUPPORT' | translate }}</strong>
+        <a routerLink="/profile" [queryParams]="{tab: 'bookings'}">{{ 'LAYOUT.TRIP_MANAGEMENT' | translate }}</a>
+        <a routerLink="/support">{{ 'LAYOUT.SUPPORT_CENTER' | translate }}</a>
+        <a routerLink="/privacy">{{ 'LAYOUT.PRIVACY' | translate }}</a>
+        <a routerLink="/terms">{{ 'LAYOUT.TERMS' | translate }}</a>
+      </div>
+    </nav>
+  </div>
+
+  <div class="footer-bottom">
+    <small>{{ 'LAYOUT.COPYRIGHT' | translate }}</small>
+    <span>{{ (localeService.locale() === 'vi' ? 'LOCALE.CURRENT_VI' : 'LOCALE.CURRENT_EN') | translate }} <i aria-hidden="true"></i> VND</span>
+  </div>
+</footer>
+<app-chat-widget></app-chat-widget>

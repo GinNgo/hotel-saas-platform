@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">LuxeStay royal mark</title>
+  <desc id="desc">A champagne gold crown and laurel surrounding the LuxeStay monogram</desc>
+  <defs>
+    <linearGradient id="bg" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#08172d"/><stop offset="1" stop-color="#020713"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="13" y1="10" x2="50" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffe9a6"/><stop offset=".48" stop-color="#d5a746"/><stop offset="1" stop-color="#8e5c1c"/>
+    </linearGradient>
+  </defs>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="18" fill="url(#bg)" stroke="#d5a746" stroke-width="1.5"/>
+  <g fill="none" stroke="url(#gold)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19 49c-7-7-9-16-6-25" stroke-width="1.5"/>
+    <path d="M45 49c7-7 9-16 6-25" stroke-width="1.5"/>
+    <path d="M14 42l-5-2M13 35l-5-3M13 28l-4-4M16 22l-3-5M50 42l5-2M51 35l5-3M51 28l4-4M48 22l3-5" stroke-width="2.2"/>
+  </g>
+  <path d="M22 17l5 6 5-9 5 9 5-6-2 10H24l-2-10Z" fill="url(#gold)" stroke="#ffe9a6" stroke-width=".8" stroke-linejoin="round"/>
+  <circle cx="22" cy="17" r="1.4" fill="#ffe9a6"/><circle cx="32" cy="14" r="1.4" fill="#ffe9a6"/><circle cx="42" cy="17" r="1.4" fill="#ffe9a6"/>
+  <text x="32" y="43" text-anchor="middle" fill="#fff8df" font-family="Georgia,serif" font-size="22" font-weight="700" letter-spacing="-2">LS</text>
+  <path d="M24 47h16" stroke="#d5a746" stroke-width="1"/>
+</svg>

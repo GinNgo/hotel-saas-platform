@@ -1,0 +1,208 @@
+<main class="invoice-management-page">
+  <header class="page-heading">
+    <div>
+      <span class="eyebrow">{{ copy('Chứng từ đã chốt', 'Finalized documents') }}</span>
+      <h1>{{ copy('Quản lý hóa đơn', 'Invoice management') }}</h1>
+      <p>{{ copy('In, tải và gửi cùng một bản chụp hóa đơn bất biến.', 'Print, download and email the same immutable invoice snapshot.') }}</p>
+    </div>
+    <button type="button" class="refresh-button" [disabled]="loading()" (click)="loadInvoices()">
+      <i [class]="loading() ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'" aria-hidden="true"></i>
+      {{ copy('Làm mới', 'Refresh') }}
+    </button>
+  </header>
+
+  <section *ngIf="loading()" class="state-card" aria-live="polite">
+    <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+    <span>{{ copy('Đang tải hóa đơn...', 'Loading finalized invoices...') }}</span>
+  </section>
+
+  <section *ngIf="loadError() as error" class="state-card error" role="alert">
+    <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+    <strong>{{ error }}</strong>
+    <button type="button" (click)="loadInvoices()">{{ copy('Thử lại', 'Retry') }}</button>
+  </section>
+
+  <section *ngIf="!loading() && !loadError() && !invoices().length" class="state-card">
+    <i class="pi pi-file" aria-hidden="true"></i>
+    <strong>{{ copy('Chưa có hóa đơn đã chốt.', 'No finalized invoices yet.') }}</strong>
+    <span>{{ copy('Hóa đơn xuất hiện sau khi checkout hoàn tất.', 'Invoices appear after checkout is completed.') }}</span>
+  </section>
+
+  <p-card *ngIf="!loading() && !loadError() && invoices().length" styleClass="invoice-table-card">
+    <p-table
+      [value]="invoices()"
+      [paginator]="true"
+      [rows]="10"
+      [rowHover]="true"
+      responsiveLayout="scroll"
+      styleClass="p-datatable-striped p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>{{ copy('Hóa đơn', 'Invoice') }}</th>
+          <th>{{ copy('Khách hàng', 'Customer') }}</th>
+          <th>{{ copy('Khách sạn', 'Property') }}</th>
+          <th>{{ copy('Ngày chốt', 'Finalized') }}</th>
+          <th class="amount-column">{{ copy('Tổng tiền', 'Total') }}</th>
+          <th class="action-column">{{ copy('Thao tác', 'Action') }}</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-invoice>
+        <tr>
+          <td>
+            <strong>{{ invoice.invoiceNumber }}</strong>
+            <small>RES-{{ invoice.reservationId }}</small>
+          </td>
+          <td>{{ customerName(invoice) }}</td>
+          <td>{{ propertyName(invoice) }}</td>
+          <td>{{ invoice.finalizedAt | date: 'HH:mm dd/MM/yyyy' }}</td>
+          <td class="amount-column"><strong>{{ formatVnd(invoice.totalAmount) }}</strong></td>
+          <td class="action-column">
+            <p-button
+              icon="pi pi-eye"
+              [label]="copy('Xem và in', 'View & print')"
+              styleClass="p-button-sm p-button-outlined"
+              [loading]="detailLoadingId() === invoice.id"
+              [disabled]="detailLoadingId() !== null"
+              (onClick)="showInvoice(invoice, $event)"
+            />
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+  <div *ngIf="detailError()" class="inline-error" role="alert">
+    <i class="pi pi-exclamation-circle" aria-hidden="true"></i>{{ detailError() }}
+  </div>
+</main>
+
+<p-dialog
+  [header]="copy('Hóa đơn đã chốt', 'Finalized invoice')"
+  [closeAriaLabel]="copy('Đóng hóa đơn', 'Close invoice')"
+  [(visible)]="displayInvoiceDialog"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: 'min(76rem, 96vw)' }"
+  styleClass="canonical-invoice-dialog"
+  (onHide)="restoreInvoiceDialogFocus()"
+>
+  <ng-container *ngIf="currentInvoice() as invoice">
+    <div class="action-feedback success" *ngIf="actionMessage()" aria-live="polite">
+      <i class="pi pi-check-circle" aria-hidden="true"></i>{{ actionMessage() }}
+    </div>
+    <div class="action-feedback error" *ngIf="actionError()" role="alert">
+      <i class="pi pi-exclamation-circle" aria-hidden="true"></i>{{ actionError() }}
+    </div>
+
+    <article id="invoice-print-area" class="invoice-document">
+      <header class="document-header">
+        <div>
+          <span class="eyebrow">LuxeStay</span>
+          <h2>{{ propertyName(invoice) }}</h2>
+          <p>{{ snapshotValue(propertySnapshot(invoice), 'address') }}<ng-container *ngIf="snapshotValue(propertySnapshot(invoice), 'city')">, {{ snapshotValue(propertySnapshot(invoice), 'city') }}</ng-container></p>
+        </div>
+        <div class="invoice-identity">
+          <span>{{ copy('Hóa đơn', 'Invoice') }}</span>
+          <strong>{{ invoice.invoiceNumber }}</strong>
+          <small>{{ invoice.finalizedAt | date: 'HH:mm dd/MM/yyyy' }} · {{ invoice.currency }}</small>
+        </div>
+      </header>
+
+      <section class="identity-grid">
+        <div>
+          <span>{{ copy('Khách hàng', 'Bill to') }}</span>
+          <strong>{{ customerName(invoice) }}</strong>
+          <small>{{ snapshotValue(customerSnapshot(invoice), 'email') }}</small>
+          <small>{{ snapshotValue(customerSnapshot(invoice), 'phone') }}</small>
+        </div>
+        <div>
+          <span>{{ copy('Đặt phòng', 'Reservation') }}</span>
+          <strong>RES-{{ invoice.reservationId }}</strong>
+          <small>{{ copy('Trạng thái', 'Status') }}: {{ invoice.status }}</small>
+        </div>
+      </section>
+
+      <section class="document-section">
+        <div class="section-heading">
+          <h3>{{ copy('Chi tiết phát sinh', 'Itemized charges') }}</h3>
+          <span>{{ invoice.lines.length }}</span>
+        </div>
+        <div class="table-scroll">
+          <table class="invoice-lines-table">
+            <thead>
+              <tr>
+                <th>{{ copy('Loại', 'Type') }}</th>
+                <th>{{ copy('Nội dung', 'Description') }}</th>
+                <th class="numeric">{{ copy('SL', 'Qty') }}</th>
+                <th class="numeric">{{ copy('Đơn giá', 'Unit price') }}</th>
+                <th class="numeric">{{ copy('Thuế', 'Tax') }}</th>
+                <th class="numeric">{{ copy('Giảm', 'Discount') }}</th>
+                <th class="numeric">{{ copy('Thành tiền', 'Total') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let line of invoice.lines; trackBy: trackLine">
+                <td><span class="line-type">{{ lineTypeLabel(line.lineType) }}</span></td>
+                <td><strong>{{ line.name }}</strong><small *ngIf="line.description">{{ line.description }}</small></td>
+                <td class="numeric">{{ line.quantity }}</td>
+                <td class="numeric">{{ formatVnd(line.unitPrice) }}</td>
+                <td class="numeric">{{ formatVnd(line.taxAmount) }}</td>
+                <td class="numeric">{{ formatVnd(line.discountAmount) }}</td>
+                <td class="numeric"><strong>{{ formatVnd(line.totalAmount) }}</strong></td>
+              </tr>
+              <tr *ngIf="!invoice.lines.length"><td colspan="7" class="empty-row">{{ copy('Không có dòng chi tiết.', 'No itemized lines.') }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="settlement-grid">
+        <div class="document-section payments">
+          <div class="section-heading">
+            <h3>{{ copy('Thanh toán', 'Payments') }}</h3>
+            <span>{{ invoice.allocations.length }}</span>
+          </div>
+          <div class="payment-row" *ngFor="let allocation of invoice.allocations; trackBy: trackLine">
+            <div><strong>{{ allocation.method }}</strong><small>{{ allocation.provider }} · {{ allocation.occurredAt | date: 'HH:mm dd/MM/yyyy' }}</small></div>
+            <span>{{ formatVnd(allocation.allocatedAmount) }}</span>
+          </div>
+          <p *ngIf="!invoice.allocations.length" class="empty-row">{{ copy('Không có phân bổ thanh toán.', 'No payment allocations.') }}</p>
+        </div>
+
+        <dl class="totals-card">
+          <div><dt>{{ copy('Tạm tính', 'Subtotal') }}</dt><dd>{{ formatVnd(invoice.subtotal) }}</dd></div>
+          <div><dt>{{ copy('Thuế', 'Tax') }}</dt><dd>{{ formatVnd(invoice.taxAmount) }}</dd></div>
+          <div><dt>{{ copy('Phí / phụ thu', 'Fees / surcharges') }}</dt><dd>{{ formatVnd(invoice.feeAmount) }}</dd></div>
+          <div><dt>{{ copy('Giảm giá', 'Discount') }}</dt><dd>-{{ formatVnd(invoice.discountAmount) }}</dd></div>
+          <div class="grand-total"><dt>{{ copy('Tổng cộng', 'Total') }}</dt><dd>{{ formatVnd(invoice.totalAmount) }}</dd></div>
+          <div><dt>{{ copy('Đã thanh toán', 'Paid') }}</dt><dd>{{ formatVnd(invoice.paidAmount) }}</dd></div>
+          <div><dt>{{ copy('Đã hoàn / ghi có', 'Refunded / credited') }}</dt><dd>{{ formatVnd(invoice.refundedAmount) }}</dd></div>
+          <div class="balance"><dt>{{ copy('Còn lại', 'Balance') }}</dt><dd>{{ formatVnd(invoice.balanceAmount) }}</dd></div>
+        </dl>
+      </section>
+
+      <section class="document-section" *ngIf="invoice.creditNotes.length">
+        <div class="section-heading"><h3>{{ copy('Phiếu điều chỉnh', 'Credit notes') }}</h3><span>{{ invoice.creditNotes.length }}</span></div>
+        <div class="credit-note-row" *ngFor="let note of invoice.creditNotes; trackBy: trackLine">
+          <div><strong>{{ note.creditNoteNumber }}</strong><small>{{ note.reason }}</small></div>
+          <span>-{{ formatVnd(note.amount) }}</span>
+        </div>
+      </section>
+
+      <footer class="document-footer">
+        {{ copy('Hóa đơn này được in từ bản chụp đã chốt; thay đổi catalog sau checkout không làm thay đổi nội dung.', 'This document is printed from the finalized snapshot; later catalog changes do not alter it.') }}
+      </footer>
+    </article>
+
+    <ng-template pTemplate="footer">
+      <div class="dialog-actions">
+        <p-button icon="pi pi-times" [label]="copy('Đóng', 'Close')" styleClass="p-button-text" [disabled]="downloadingInvoiceId() !== null || emailingInvoiceId() !== null" (onClick)="closeInvoice()" />
+        <p-button icon="pi pi-envelope" [label]="copy('Gửi email', 'Email')" severity="secondary" [loading]="emailingInvoiceId() === invoice.id" [disabled]="downloadingInvoiceId() !== null" (onClick)="emailInvoice(invoice)" />
+        <p-button icon="pi pi-download" [label]="copy('Tải PDF', 'Download PDF')" severity="secondary" [loading]="downloadingInvoiceId() === invoice.id" [disabled]="emailingInvoiceId() !== null" (onClick)="downloadPdf(invoice)" />
+        <p-button icon="pi pi-print" [label]="copy('In hóa đơn', 'Print invoice')" [disabled]="downloadingInvoiceId() !== null || emailingInvoiceId() !== null" (onClick)="printInvoice()" />
+      </div>
+    </ng-template>
+  </ng-container>
+</p-dialog>

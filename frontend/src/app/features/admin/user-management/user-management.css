@@ -1,0 +1,46 @@
+.lifecycle-note {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  padding: 1rem;
+  border: 1px solid var(--hotel-border);
+  border-radius: var(--hotel-radius-lg);
+  background: linear-gradient(135deg, var(--hotel-primary-light) 0%, var(--hotel-bg) 100%);
+  color: var(--hotel-heading);
+}
+
+.lifecycle-note > .pi {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: 0 0 auto;
+  border-radius: var(--hotel-radius-md);
+  background: var(--hotel-primary);
+  color: var(--hotel-card-bg);
+}
+
+.lifecycle-note strong,
+.lifecycle-note span {
+  display: block;
+}
+
+:host ::ng-deep .p-button{min-height:44px}
+:host ::ng-deep .p-inputtext,:host ::ng-deep .p-select,:host ::ng-deep .p-multiselect{min-height:44px}
+.field small{font-size:12px}
+@media(max-width:767px){
+  .card.m-3{margin:.75rem!important}
+  :host ::ng-deep .p-datatable-table,:host ::ng-deep .p-datatable-tbody,:host ::ng-deep .p-datatable-tbody>tr,:host ::ng-deep .p-datatable-tbody>tr>td{display:block!important;width:100%!important}
+  :host ::ng-deep .p-datatable-thead{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important}
+  :host ::ng-deep .p-datatable-tbody{display:grid!important;gap:12px;padding:12px;background:var(--hotel-surface-muted)}
+  :host ::ng-deep .p-datatable-tbody>tr{padding:14px;border:1px solid var(--hotel-border);border-radius:12px;background:var(--hotel-card-bg);box-shadow:0 4px 14px rgb(15 23 42 / .06)}
+  :host ::ng-deep .p-datatable-tbody>tr>td{display:grid!important;grid-template-columns:minmax(106px,.45fr) minmax(0,1fr);align-items:start;gap:10px;padding:7px 0!important;border:0!important;text-align:left!important;overflow-wrap:anywhere}
+  :host ::ng-deep .p-datatable-tbody>tr>td:before{content:attr(data-label);color:var(--hotel-text-muted);font-size:12px;font-weight:800;text-transform:uppercase}
+  :host ::ng-deep .p-datatable-tbody>tr>td[data-label="Thao tác"]>div{justify-content:flex-start!important}
+}
+
+.lifecycle-note span {
+  margin-top: 0.25rem;
+  color: var(--hotel-text-muted);
+  line-height: 1.45;
+}

@@ -1,0 +1,272 @@
+.ai-widget-container {
+    position: fixed;
+    right: calc(var(--hotel-space-6) + 3.75rem);
+    bottom: var(--hotel-space-6);
+    z-index: 1050;
+    font-family: var(--hotel-font-body);
+}
+
+.ai-fab,
+.ai-icon-button,
+.ai-send-button,
+.ai-retry-button {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.ai-fab {
+    width: 60px;
+    height: 60px;
+    border: 0;
+    border-radius: var(--hotel-radius-pill);
+    background: linear-gradient(135deg, var(--hotel-primary), var(--hotel-secondary));
+    color: var(--hotel-card-bg);
+    box-shadow: var(--hotel-shadow-lg);
+    display: grid;
+    place-items: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: transform var(--hotel-transition-base), background-color var(--hotel-transition-base);
+}
+
+.ai-fab:hover {
+    transform: translateY(-2px) scale(1.03);
+}
+
+.ai-fab.open {
+    background: var(--hotel-primary-hover);
+}
+
+.ai-fab:focus-visible,
+.ai-icon-button:focus-visible,
+.ai-send-button:focus-visible,
+.ai-retry-button:focus-visible,
+.form-control:focus-visible {
+    outline: none;
+    box-shadow: var(--hotel-focus-ring);
+}
+
+.ai-chat-window {
+    position: absolute;
+    right: 0;
+    bottom: 76px;
+    width: min(24rem, calc(100vw - 2rem));
+    height: min(36rem, calc(100vh - 8rem));
+    border: 1px solid var(--hotel-border);
+    border-radius: var(--hotel-radius-lg);
+    background: var(--hotel-card-bg);
+    box-shadow: var(--hotel-shadow-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: ai-slide-up var(--hotel-transition-base) ease-out;
+}
+
+@keyframes ai-slide-up {
+    from { opacity: 0; transform: translateY(var(--hotel-space-5)); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.ai-header {
+    background: linear-gradient(135deg, var(--hotel-primary-hover), var(--hotel-secondary));
+    color: var(--hotel-card-bg);
+}
+
+.ai-header-icon {
+    color: var(--hotel-gold-light);
+}
+
+.ai-title {
+    margin: 0;
+    color: inherit;
+    font-family: var(--hotel-font-body);
+    font-size: var(--hotel-text-base);
+    font-weight: 700;
+}
+
+.ai-subtitle {
+    margin: var(--hotel-space-1) 0 0;
+    color: var(--hotel-primary-light);
+    font-size: var(--hotel-text-xs);
+}
+
+.ai-online-dot {
+    display: inline-block;
+    width: 0.45rem;
+    height: 0.45rem;
+    margin-right: 0.3rem;
+    border-radius: 50%;
+    background: #b9fbc0;
+    box-shadow: 0 0 0 3px rgba(185, 251, 192, 0.18);
+}
+
+.ai-icon-button {
+    border: 0;
+    border-radius: var(--hotel-radius-pill);
+    background: transparent;
+    color: inherit;
+    display: grid;
+    place-items: center;
+}
+
+.ai-icon-button:hover {
+    background: color-mix(in srgb, var(--hotel-card-bg) 16%, transparent);
+}
+
+.ai-body {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--hotel-bg);
+}
+
+.ai-avatar {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    border-radius: var(--hotel-radius-pill);
+    background: var(--hotel-primary-hover);
+    color: var(--hotel-gold-light);
+    display: grid;
+    place-items: center;
+    font-size: var(--hotel-text-sm);
+}
+
+.msg-bubble {
+    max-width: 82%;
+    border-radius: var(--hotel-radius-lg);
+}
+
+.msg-user {
+    background: var(--hotel-primary);
+    color: var(--hotel-card-bg);
+    border-bottom-right-radius: var(--hotel-radius-sm);
+}
+
+.msg-ai {
+    border: 1px solid var(--hotel-border);
+    border-bottom-left-radius: var(--hotel-radius-sm);
+    background: var(--hotel-card-bg);
+    color: var(--hotel-text);
+}
+
+.msg-text {
+    white-space: pre-wrap;
+    font-size: var(--hotel-text-sm);
+    line-height: 1.55;
+}
+
+.msg-time {
+    color: currentColor;
+    font-size: var(--hotel-text-xs);
+    opacity: 0.72;
+}
+
+.ai-retry-button {
+    width: 100%;
+    margin-top: var(--hotel-space-3);
+    border: 1px solid var(--hotel-danger);
+    border-radius: var(--hotel-radius-md);
+    background: var(--hotel-danger-light);
+    color: var(--hotel-danger);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--hotel-space-2);
+    font-weight: 600;
+}
+
+.ai-footer {
+    border-color: var(--hotel-border) !important;
+    background: var(--hotel-card-bg);
+}
+
+.ai-disclaimer {
+    margin: 0 0 0.5rem;
+    color: var(--hotel-text-muted);
+    font-size: 0.72rem;
+    line-height: 1.35;
+    text-align: center;
+}
+
+.form-control {
+    min-height: 44px;
+    border: 1px solid var(--hotel-border);
+    border-radius: var(--hotel-radius-pill) 0 0 var(--hotel-radius-pill);
+    color: var(--hotel-text);
+}
+
+.form-control:focus {
+    border-color: var(--hotel-primary);
+    box-shadow: none;
+}
+
+.ai-send-button {
+    border: 1px solid var(--hotel-primary);
+    border-radius: 0 var(--hotel-radius-pill) var(--hotel-radius-pill) 0;
+    background: var(--hotel-primary);
+    color: var(--hotel-card-bg);
+}
+
+.ai-send-button:hover:not(:disabled) {
+    border-color: var(--hotel-primary-hover);
+    background: var(--hotel-primary-hover);
+}
+
+.ai-send-button:disabled,
+.ai-retry-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+}
+
+.typing-dot {
+    width: 6px;
+    height: 6px;
+    margin: 0 3px;
+    border-radius: var(--hotel-radius-pill);
+    background: var(--hotel-border-strong);
+    animation: ai-typing 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes ai-typing {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+
+.ai-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ai-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ai-body::-webkit-scrollbar-thumb {
+    border-radius: var(--hotel-radius-pill);
+    background: var(--hotel-border);
+}
+
+@media (max-width: 575px) {
+    .ai-widget-container {
+        right: calc(var(--hotel-space-4) + 3.5rem);
+        bottom: var(--hotel-space-4);
+    }
+
+    .ai-chat-window {
+        width: calc(100vw - 2rem);
+        height: min(34rem, calc(100vh - 7rem));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ai-chat-window,
+    .typing-dot {
+        animation: none;
+    }
+
+    .ai-fab {
+        transition: none;
+    }
+}

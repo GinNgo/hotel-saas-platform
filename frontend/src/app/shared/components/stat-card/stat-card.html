@@ -1,0 +1,32 @@
+<div class="card shadow-sm border-0 rounded-4 overflow-hidden h-100" [ngStyle]="{'border-left': borderColor ? '4px solid ' + borderColor : 'none'}">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h6 class="text-muted fw-medium mb-1" style="font-size: 0.9rem;">{{ title }}</h6>
+        <h3 class="fw-bold mb-0 text-dark">{{ value }}</h3>
+      </div>
+      <div class="d-flex align-items-center justify-content-center rounded-3 p-3" 
+           [ngStyle]="{'background-color': iconBgColor, 'color': iconColor}">
+        <i [class]="icon" style="font-size: 1.5rem;"></i>
+      </div>
+    </div>
+    
+    <div *ngIf="percentage !== null" class="d-flex align-items-center mt-2" style="font-size: 0.85rem;">
+      <span class="fw-medium me-2" 
+            [ngClass]="{
+              'text-success': trend === 'up', 
+              'text-danger': trend === 'down', 
+              'text-secondary': trend === 'neutral'
+            }">
+        <i class="pi" 
+           [ngClass]="{
+             'pi-arrow-up': trend === 'up', 
+             'pi-arrow-down': trend === 'down', 
+             'pi-minus': trend === 'neutral'
+           }" style="font-size: 0.75rem;"></i>
+        {{ percentage | number:'1.0-2' }}%
+      </span>
+      <span class="text-muted">so với tháng trước</span>
+    </div>
+  </div>
+</div>

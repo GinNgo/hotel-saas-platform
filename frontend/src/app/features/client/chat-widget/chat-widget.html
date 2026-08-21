@@ -1,0 +1,182 @@
+<div class="support-widget">
+  <section
+    *ngIf="isOpen()"
+    id="support-chat-panel"
+    class="support-panel"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="support-chat-title"
+    aria-describedby="support-chat-description">
+    <header class="support-header">
+      <div class="support-brand-mark" aria-hidden="true">
+        <i class="pi pi-headphones"></i>
+      </div>
+      <div class="support-heading">
+        <h2 id="support-chat-title">LuxeStay Care</h2>
+        <p id="support-chat-description">{{ i18n.text('PUBLIC.SUPPORT.DESCRIPTION') }}</p>
+        <span class="connection-status" [class.is-connected]="connectionState() === 'connected'">
+          <span class="connection-dot" aria-hidden="true"></span>
+          {{ connectionLabel() }}
+        </span>
+      </div>
+      <button type="button" class="icon-button close-button" [attr.aria-label]="i18n.text('PUBLIC.SUPPORT.CLOSE')" (click)="closeChat()">
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <div *ngIf="isLoggedIn()" class="support-mode-switch" role="tablist" aria-label="Chọn hình thức hỗ trợ">
+      <button type="button" role="tab" [attr.aria-selected]="mode() === 'ai'" [class.active]="mode() === 'ai'" (click)="switchMode('ai')">
+        <i class="pi pi-sparkles" aria-hidden="true"></i> AI tư vấn
+      </button>
+      <button type="button" role="tab" [attr.aria-selected]="mode() === 'human'" [class.active]="mode() === 'human'" (click)="switchMode('human')">
+        <i class="pi pi-headphones" aria-hidden="true"></i> Gặp nhân viên
+      </button>
+    </div>
+
+    <div class="support-body" #scrollMe role="log" aria-live="polite" aria-relevant="additions">
+      <div *ngIf="!isLoggedIn()" class="support-state support-state-centered">
+        <span class="state-icon" aria-hidden="true"><i class="pi pi-lock"></i></span>
+        <h3>{{ i18n.text('PUBLIC.SUPPORT.LOGIN_TITLE') }}</h3>
+        <p>{{ i18n.text('PUBLIC.SUPPORT.LOGIN_BODY') }}</p>
+        <a routerLink="/login" class="support-primary-link">{{ i18n.text('PUBLIC.SUPPORT.LOGIN') }}</a>
+      </div>
+
+      <ng-container *ngIf="isLoggedIn() && mode() === 'ai'">
+        <div class="ai-suggestions" *ngIf="aiMessages().length <= 1">
+          <button type="button" (click)="useSuggestion('Tư vấn giúp tôi chọn điểm đến phù hợp')">Chọn điểm đến</button>
+          <button type="button" (click)="useSuggestion('Tìm khu vực lưu trú thuận tiện cho tôi')">Tìm khu vực lưu trú</button>
+          <button type="button" (click)="useSuggestion('Tư vấn loại phòng phù hợp cho gia đình')">Chọn loại phòng</button>
+        </div>
+
+        <article *ngFor="let message of aiMessages()" class="message-row" [class.is-own]="message.sender === 'user'">
+          <div class="message-bubble" [class.is-own]="message.sender === 'user'" [class.is-ai]="message.sender === 'ai'">
+            <a
+              *ngIf="message.sender === 'ai' && message.searchParams"
+              class="ai-search-action"
+              routerLink="/search"
+              [queryParams]="message.searchParams"
+              (click)="closeChat()">
+              <i class="pi pi-search" aria-hidden="true"></i>
+              Xem phòng phù hợp với yêu cầu
+            </a>
+            <div
+              *ngIf="message.sender === 'ai'; else userMessage"
+              class="ai-formatted-message"
+              [innerHTML]="formatAiMessage(message.text)"></div>
+            <ng-template #userMessage><p>{{ message.text }}</p></ng-template>
+            <div *ngIf="message.sender === 'ai' && message.suggestedProperties?.length" class="ai-property-list">
+              <a
+                *ngFor="let property of message.suggestedProperties"
+                class="ai-property-card"
+                [routerLink]="['/hotel', property.id]"
+                [queryParams]="message.searchParams"
+                fragment="rooms"
+                (click)="closeChat()">
+                <img
+                  [src]="propertyImage(property)"
+                  [alt]="property.imageAltText || property.name"
+                  loading="lazy"
+                  (error)="handlePropertyImageError($event, property)">
+                <span class="ai-property-copy">
+                  <strong>{{ property.name }}</strong>
+                  <small>{{ property.lowestRoomType?.name || property.propertyType || 'Nơi lưu trú' }}</small>
+                  <b *ngIf="propertyPrice(property) as price">Từ {{ price | currency:'VND':'symbol':'1.0-0' }}/đêm</b>
+                </span>
+                <i class="pi pi-arrow-up-right" aria-hidden="true"></i>
+              </a>
+            </div>
+            <time>{{ message.time | date:'HH:mm' }}</time>
+          </div>
+        </article>
+
+        <div *ngIf="aiTyping()" class="ai-thinking" role="status" aria-label="AI đang chuẩn bị tư vấn">
+          <span class="ai-thinking-icon" aria-hidden="true"><i class="pi pi-sparkles"></i></span>
+          <span class="ai-thinking-bubble" aria-hidden="true">
+            <span class="ai-typing-dot"></span>
+            <span class="ai-typing-dot"></span>
+            <span class="ai-typing-dot"></span>
+          </span>
+        </div>
+        <div *ngIf="aiError()" class="connection-alert" role="alert">
+          <span>{{ aiError() }}</span>
+          <button type="button" class="text-action" (click)="switchMode('human')">Gặp nhân viên</button>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="isLoggedIn() && mode() === 'human'">
+        <div *ngIf="historyState() === 'loading'" class="support-state" [attr.aria-label]="i18n.text('PUBLIC.SUPPORT.LOADING_HISTORY')">
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+          <span>{{ i18n.text('PUBLIC.SUPPORT.LOADING_HISTORY_TEXT') }}</span>
+        </div>
+
+        <div *ngIf="historyState() === 'error'" class="support-state support-error" role="alert">
+          <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+          <span>{{ historyError() }}</span>
+          <button type="button" class="text-action" (click)="loadHistory()">{{ i18n.text('PUBLIC.SUPPORT.RETRY') }}</button>
+        </div>
+
+        <div *ngIf="connectionError()" class="connection-alert" role="status">
+          <span>{{ connectionError() }}</span>
+          <button type="button" class="text-action" (click)="retryConnection()">{{ i18n.text('PUBLIC.SUPPORT.RECONNECT') }}</button>
+        </div>
+
+        <div *ngIf="historyState() === 'ready' && messages().length === 0" class="support-state support-state-centered empty-state">
+          <span class="state-icon" aria-hidden="true"><i class="pi pi-comments"></i></span>
+          <h3>{{ i18n.text('PUBLIC.SUPPORT.EMPTY_TITLE') }}</h3>
+          <p>{{ i18n.text('PUBLIC.SUPPORT.EMPTY_BODY') }}</p>
+        </div>
+
+        <article
+          *ngFor="let message of messages()"
+          class="message-row"
+          [class.is-own]="isOwnMessage(message)">
+          <div class="message-bubble" [class.is-own]="isOwnMessage(message)">
+            <p>{{ message.content }}</p>
+            <time *ngIf="message.timestamp" [attr.datetime]="message.timestamp">
+              {{ message.timestamp | date:'HH:mm' }}
+            </time>
+          </div>
+        </article>
+      </ng-container>
+    </div>
+
+    <form *ngIf="isLoggedIn()" class="support-composer" (ngSubmit)="sendMessage()">
+      <label class="visually-hidden" for="support-message">{{ i18n.text('PUBLIC.SUPPORT.MESSAGE_LABEL') }}</label>
+      <input
+        #messageInput
+        id="support-message"
+        name="supportMessage"
+        type="text"
+        maxlength="2000"
+        autocomplete="off"
+        [(ngModel)]="newMessage"
+        [disabled]="(mode() === 'human' && isSending()) || (mode() === 'ai' && aiTyping())"
+        aria-describedby="support-send-status"
+        [placeholder]="mode() === 'ai' ? 'Hỏi về điểm đến, khách sạn, loại phòng...' : i18n.text('PUBLIC.SUPPORT.MESSAGE_PLACEHOLDER')">
+      <button
+        type="submit"
+        class="send-button"
+        [attr.aria-label]="i18n.text('PUBLIC.SUPPORT.SEND')"
+        [disabled]="!newMessage.trim() || (mode() === 'human' && (isSending() || connectionState() !== 'connected')) || (mode() === 'ai' && aiTyping())">
+        <i *ngIf="(mode() === 'human' && !isSending()) || (mode() === 'ai' && !aiTyping())" class="pi pi-send" aria-hidden="true"></i>
+        <i *ngIf="(mode() === 'human' && isSending()) || (mode() === 'ai' && aiTyping())" class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+      </button>
+      <p id="support-send-status" class="composer-status" [class.has-error]="sendError()" aria-live="polite">
+        {{ mode() === 'ai' ? aiError() : (sendError() || (isSending() ? i18n.text('PUBLIC.SUPPORT.WAITING_ACK') : '')) }}
+      </p>
+    </form>
+  </section>
+
+  <button
+    *ngIf="!isOpen()"
+    #triggerButton
+    type="button"
+    class="support-trigger"
+    [attr.aria-label]="i18n.text('PUBLIC.SUPPORT.OPEN')"
+    [attr.aria-expanded]="isOpen()"
+    aria-controls="support-chat-panel"
+    (click)="toggleChat()">
+    <i class="pi pi-comments" aria-hidden="true"></i>
+    <span>{{ i18n.text('LAYOUT.SUPPORT') }}</span>
+  </button>
+</div>

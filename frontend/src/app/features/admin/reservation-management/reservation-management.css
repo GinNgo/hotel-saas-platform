@@ -1,0 +1,110 @@
+:host {
+  display: block;
+}
+
+.financial-cell {
+  display: flex;
+  min-width: 150px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.financial-cell small {
+  color: var(--hotel-text-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lifecycle-chip {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: var(--hotel-radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lifecycle-chip.success {
+  background: var(--hotel-success-light);
+  color: var(--hotel-success);
+}
+
+.lifecycle-chip.warning {
+  background: var(--hotel-warning-light);
+  color: var(--hotel-warning);
+}
+
+.lifecycle-chip.danger {
+  background: var(--hotel-danger-light);
+  color: var(--hotel-danger);
+}
+
+.lifecycle-chip.info {
+  background: var(--hotel-info-light);
+  color: var(--hotel-info);
+}
+
+.lifecycle-chip.neutral {
+  background: var(--hotel-surface-muted);
+  color: var(--hotel-text-muted);
+}
+
+:host ::ng-deep .action-button.p-button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+:host ::ng-deep .checkout-dialog .p-dialog-content {
+  padding: 0;
+  overflow: auto;
+  border-radius: var(--hotel-radius-lg);
+}
+
+@media (max-width: 768px) {
+  .financial-cell {
+    min-width: 135px;
+  }
+
+  :host ::ng-deep .checkout-dialog {
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  :host ::ng-deep .checkout-dialog .p-dialog-content {
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+}
+
+.guest-cell{display:grid;gap:3px}.guest-cell small,.payment-preference{color:#64748b;font-size:11px}.payment-preference{font-weight:700}
+.frontdesk-sync{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:#64748b;font-size:11px;white-space:nowrap}.frontdesk-sync-warning{margin:-5px 0 14px;color:#946200;font-size:12px}
+.room-assignment{display:inline-flex;align-items:center;gap:5px;width:max-content;margin-top:3px;padding:4px 7px;color:#116149;background:#eaf8f2;border-radius:999px;font-size:10px;font-weight:800}.room-assignment.pending{color:#8a5800;background:#fff5d8}
+
+.frontdesk-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 18px}.frontdesk-overview article{display:grid;grid-template-columns:auto 1fr;gap:4px 11px;padding:16px 18px;background:#fff;border:1px solid #dedbd7;border-radius:13px;box-shadow:0 6px 18px rgb(28 25 23 / .05)}.frontdesk-overview i{grid-row:1/3;display:grid;width:44px;height:44px;place-items:center;color:#0f766e;background:#edf8f5;border-radius:11px}.frontdesk-overview span{color:#57534e;font-size:12px}.frontdesk-overview strong{color:#1c1917;font-size:23px;line-height:1}.frontdesk-filters{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.frontdesk-filters label{position:relative;display:block;flex:1}.frontdesk-filters label i{position:absolute;top:50%;left:13px;color:#78716c;transform:translateY(-50%)}.frontdesk-filters input,.frontdesk-filters select{width:100%;min-height:44px;color:#334155;background:#fff;border:1px solid #d6d3d1;border-radius:10px;font:inherit;font-size:13px}.frontdesk-filters input{padding:0 14px 0 40px}.frontdesk-filters select{width:220px;padding:0 11px}.frontdesk-filters input:focus,.frontdesk-filters select:focus{outline:3px solid var(--hotel-focus);outline-offset:1px;border-color:#0f766e}
+@media(max-width:900px){.frontdesk-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.frontdesk-overview{grid-template-columns:1fr}.frontdesk-filters{align-items:stretch;flex-direction:column}.frontdesk-filters select{width:100%}.frontdesk-sync{width:100%}.frontdesk-sync-warning{margin-top:-5px}}
+
+@media(max-width:768px){
+  :host ::ng-deep .m-3{margin:.75rem!important}
+  :host ::ng-deep .m-3>.d-flex:first-child{align-items:stretch!important;flex-direction:column;gap:12px}
+  :host ::ng-deep .m-3>.d-flex:first-child>.d-flex{display:grid!important;grid-template-columns:1fr 1fr}
+  :host ::ng-deep .m-3>.d-flex:first-child .p-button{min-height:44px}
+  :host ::ng-deep .p-card-body,:host ::ng-deep .p-card-content{padding:0}
+  :host ::ng-deep .p-datatable-table-container{overflow:visible}
+  :host ::ng-deep .p-datatable-table{display:block!important;width:100%!important;min-width:0!important}
+  :host ::ng-deep .p-datatable-thead{position:absolute;display:block!important;width:1px!important;height:1px!important;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  :host ::ng-deep .p-datatable-tbody{display:grid!important;gap:12px;padding:12px;background:#f7f7f6}
+  :host ::ng-deep .p-datatable-tbody>tr{display:grid!important;width:100%;padding:14px;background:#fff;border:1px solid #d6d3d1;border-radius:14px;box-shadow:0 8px 20px rgb(28 25 23 / .06)}
+  :host ::ng-deep .p-datatable-tbody>tr>td{display:flex!important;min-width:0;align-items:flex-start;justify-content:space-between;gap:14px;padding:10px 0!important;text-align:right!important;border:0;border-bottom:1px solid #e7e5e4}
+  :host ::ng-deep .p-datatable-tbody>tr>td:last-child{align-items:center;padding-bottom:0!important;border-bottom:0}
+  :host ::ng-deep .p-datatable-tbody>tr>td::before{flex:0 0 42%;color:#57534e;content:attr(data-label);font-size:12px;font-weight:750;text-align:left}
+  :host ::ng-deep .financial-cell{min-width:0;align-items:flex-end;text-align:right}
+  :host ::ng-deep .p-datatable-tbody>tr>td:last-child>div{flex:1;justify-content:flex-end!important}
+  :host ::ng-deep .p-paginator{flex-wrap:wrap}
+}
+@media(max-width:430px){:host ::ng-deep .m-3>.d-flex:first-child>.d-flex{grid-template-columns:1fr}:host ::ng-deep .p-datatable-tbody>tr>td{flex-direction:column;gap:5px;text-align:left!important}:host ::ng-deep .p-datatable-tbody>tr>td::before{flex-basis:auto}:host ::ng-deep .financial-cell{align-items:flex-start;text-align:left}}

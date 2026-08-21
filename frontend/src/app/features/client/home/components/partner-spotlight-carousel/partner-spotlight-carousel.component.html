@@ -1,0 +1,82 @@
+@if (loading()) {
+  <section class="spotlight-section" aria-labelledby="partner-spotlights-title" aria-busy="true">
+    <header class="section-intro">
+      <div>
+        <span class="eyebrow">{{ i18n.text('PUBLIC.HOME_SPOTLIGHTS.KICKER') }}</span>
+        <h2 id="partner-spotlights-title">{{ i18n.text('PUBLIC.HOME_SPOTLIGHTS.TITLE') }}</h2>
+        <p>{{ i18n.text('PUBLIC.HOME_SPOTLIGHTS.DESCRIPTION') }}</p>
+      </div>
+    </header>
+    <div class="spotlight-track skeleton-track" [attr.aria-label]="i18n.text('PUBLIC.HOME_SPOTLIGHTS.LOADING')">
+      @for (item of [1, 2, 3]; track item) {
+        <div class="spotlight-skeleton" aria-hidden="true"><span></span><b></b><i></i></div>
+      }
+    </div>
+  </section>
+} @else if (failed()) {
+  <section class="spotlight-section" aria-labelledby="partner-spotlights-error-title">
+    <div class="feedback-state" role="alert">
+      <span class="feedback-icon" aria-hidden="true"><i class="pi pi-megaphone"></i></span>
+      <div>
+        <strong id="partner-spotlights-error-title">{{ i18n.text('PUBLIC.HOME_SPOTLIGHTS.ERROR_TITLE') }}</strong>
+        <p>{{ i18n.text('PUBLIC.HOME_SPOTLIGHTS.ERROR_BODY') }}</p>
+      </div>
+      <button type="button" (click)="retry()">{{ i18n.text('PUBLIC.HOME_SPOTLIGHTS.RETRY') }}</button>
+    </div>
+  </section>
+} @else if (spotlights().length) {
+  <section class="spotlight-section" aria-labelledby="partner-spotlights-title">
+    <header class="section-intro">
+      <div>
+        <span class="eyebrow">{{ i18n.text('PUBLIC.HOME_SPOTLIGHTS.KICKER') }}</span>
+        <h2 id="partner-spotlights-title">{{ i18n.text('PUBLIC.HOME_SPOTLIGHTS.TITLE') }}</h2>
+        <p>{{ i18n.text('PUBLIC.HOME_SPOTLIGHTS.DESCRIPTION') }}</p>
+      </div>
+      @if (spotlights().length > 1) {
+        <div class="carousel-controls" [attr.aria-label]="i18n.text('PUBLIC.HOME_SPOTLIGHTS.CONTROLS')">
+          <button type="button" (click)="scroll(-1)" [attr.aria-label]="i18n.text('PUBLIC.HOME_SPOTLIGHTS.PREVIOUS')">
+            <i class="pi pi-arrow-left" aria-hidden="true"></i>
+          </button>
+          <button type="button" (click)="scroll(1)" [attr.aria-label]="i18n.text('PUBLIC.HOME_SPOTLIGHTS.NEXT')">
+            <i class="pi pi-arrow-right" aria-hidden="true"></i>
+          </button>
+        </div>
+      }
+    </header>
+
+    <div #track class="spotlight-track">
+      @for (spotlight of spotlights(); track spotlight.id) {
+        <a
+          class="spotlight-card"
+          [routerLink]="routerLink(spotlight)"
+          [queryParams]="queryParams(spotlight)"
+          [attr.data-placement-kind]="spotlight.kind"
+          [attr.data-sponsored]="spotlight.kind === 'SPONSORED' ? 'true' : null">
+          <span class="spotlight-media">
+            <img
+              [src]="spotlight.imageUrl"
+              [alt]="spotlight.imageAlt"
+              loading="lazy"
+              width="960"
+              height="576"
+              (error)="handleImageError($event)">
+            <span class="media-scrim" aria-hidden="true"></span>
+          </span>
+          <span class="spotlight-copy">
+            <span class="disclosure" [class.sponsored]="spotlight.kind === 'SPONSORED'">
+              <i class="pi" [class.pi-megaphone]="spotlight.kind === 'SPONSORED'" [class.pi-compass]="spotlight.kind === 'EDITORIAL'" aria-hidden="true"></i>
+              {{ disclosure(spotlight) }}
+            </span>
+            <strong>{{ spotlight.title }}</strong>
+            @if (spotlight.description) { <span class="description">{{ spotlight.description }}</span> }
+            <span class="spotlight-action">
+              {{ actionLabel(spotlight) }}
+              <i class="pi pi-arrow-up-right" aria-hidden="true"></i>
+            </span>
+          </span>
+        </a>
+      }
+    </div>
+  </section>
+}
+

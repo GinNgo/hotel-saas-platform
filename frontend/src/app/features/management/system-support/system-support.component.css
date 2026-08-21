@@ -1,0 +1,27 @@
+:host { display: block; }
+.support-page { display: grid; grid-template-rows: auto minmax(24rem, 1fr) auto; min-height: min(48rem, calc(100dvh - 10rem)); overflow: hidden; border: 1px solid var(--hotel-border); border-radius: var(--hotel-radius-lg); background: var(--hotel-card-bg); box-shadow: var(--hotel-shadow-sm); }
+.support-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.5rem; color: white; background: linear-gradient(125deg, #087f72, #0d9488 58%, #136f68); }
+.support-header h2 { margin: .2rem 0 .35rem; font-size: 1.65rem; }
+.support-header p { margin: 0; opacity: .88; }
+.eyebrow { font-size: .72rem; font-weight: 800; letter-spacing: .12em; }
+.connection { flex: none; padding: .4rem .7rem; border: 1px solid rgb(255 255 255 / .35); border-radius: 999px; font-size: .8rem; }
+.connection.connected { background: rgb(255 255 255 / .16); }
+.message-stream { overflow-y: auto; padding: 1.5rem; background: linear-gradient(180deg, #f7fbfa, #eef5f4); }
+.state { display: grid; place-items: center; gap: .5rem; min-height: 12rem; color: #58706e; text-align: center; }
+.state.empty .material-symbols-outlined { display: grid; place-items: center; width: 4rem; height: 4rem; border-radius: 50%; color: #087f72; background: #c9f7ef; font-size: 2rem; }
+.state.error, .inline-error { color: #a53434; }
+.state button { border: 0; color: #087f72; background: transparent; font-weight: 700; }
+.message { display: flex; margin-bottom: .85rem; }
+.message.own { justify-content: flex-end; }
+.message > div { max-width: min(75%, 42rem); padding: .8rem 1rem; border: 1px solid #d8e5e3; border-radius: 1rem 1rem 1rem .25rem; background: white; }
+.message.own > div { color: white; border-color: #087f72; border-radius: 1rem 1rem .25rem 1rem; background: #087f72; }
+.message p { margin: 0; white-space: pre-wrap; }
+.message time { display: block; margin-top: .35rem; font-size: .72rem; opacity: .72; }
+.composer { padding: 1rem 1.25rem; border-top: 1px solid var(--hotel-border); background: white; }
+.composer > label { display: block; margin-bottom: .45rem; font-weight: 700; color: #24413e; }
+.composer > div { display: flex; gap: .75rem; align-items: flex-end; }
+.composer textarea { width: 100%; resize: vertical; min-height: 4rem; padding: .8rem; border: 1px solid #cbdad8; border-radius: .75rem; }
+.composer button { display: inline-flex; align-items: center; gap: .35rem; min-height: 3rem; padding: 0 1rem; border: 0; border-radius: .75rem; color: white; background: #087f72; font-weight: 800; white-space: nowrap; }
+.composer button:disabled { cursor: not-allowed; opacity: .5; }
+.inline-error { margin: .5rem 0 0; font-size: .85rem; }
+@media (max-width: 42rem) { .support-header { flex-direction: column; } .composer > div { flex-direction: column; align-items: stretch; } .message > div { max-width: 88%; } }

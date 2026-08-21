@@ -1,0 +1,121 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<p-card header="Dịch vụ lưu trú" styleClass="service-card shadow-sm mt-3">
+  <p class="catalog-intro">Khai báo các dịch vụ bán cho khách như bữa sáng, spa, đón tiễn sân bay hoặc giặt ủi. Đây không phải gói phần mềm của LuxeStay.</p>
+  <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+    <div class="property-context-note" *ngIf="selectedPropertyId">
+      <i class="pi pi-building" aria-hidden="true"></i>
+      Dữ liệu đang hiển thị theo cơ sở đã chọn trên header.
+    </div>
+    <div class="catalog-actions">
+    <p-button *ngIf="canCreate" label="Thêm dịch vụ" icon="pi pi-plus" styleClass="p-button-success" (click)="openCreate()" [disabled]="saving || !selectedPropertyId"></p-button>
+    <p-button label="Tải lại" icon="pi pi-refresh" styleClass="p-button-outlined p-button-secondary" (click)="loadServices()" [disabled]="loading"></p-button>
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center justify-content-between gap-3 mb-3">
+    <span><i class="pi pi-exclamation-circle me-2"></i>{{ errorMessage }}</span>
+    <button pButton label="Thử lại" icon="pi pi-refresh" class="p-button-sm p-button-danger p-button-outlined" (click)="loadServices()" [disabled]="loading"></button>
+  </div>
+
+  <p-table
+    [value]="services"
+    [paginator]="true"
+    [rows]="10"
+    [loading]="loading"
+    [rowHover]="true"
+    responsiveLayout="scroll"
+    styleClass="p-datatable-striped"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="code">Mã dịch vụ <p-sortIcon field="code"></p-sortIcon></th>
+        <th pSortableColumn="nameVi">Tên dịch vụ <p-sortIcon field="nameVi"></p-sortIcon></th>
+        <th pSortableColumn="price">Giá <p-sortIcon field="price"></p-sortIcon></th>
+        <th pSortableColumn="status">Trạng thái <p-sortIcon field="status"></p-sortIcon></th>
+        <th>Mô tả</th>
+        <th>Thao tác</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-service>
+      <tr>
+        <td><strong>{{ service.code }}</strong></td>
+        <td>{{ service.nameVi }}</td>
+        <td>{{ service.price | currency:'VND' }}</td>
+        <td>
+          <span class="badge" [ngClass]="{'bg-success': service.status === 'ACTIVE', 'bg-danger': service.status === 'INACTIVE'}">
+            {{ statusLabel(service.status) }}
+          </span>
+        </td>
+        <td>{{ service.descriptionVi }}</td>
+        <td>
+          <p-button *ngIf="!service.systemService && canUpdate" icon="pi pi-pencil" ariaLabel="Sửa dịch vụ" styleClass="p-button-rounded p-button-text p-button-info mr-2" (click)="openEdit(service)" [disabled]="saving"></p-button>
+          <p-button *ngIf="!service.systemService && canDelete" icon="pi pi-trash" ariaLabel="Xóa dịch vụ" styleClass="p-button-rounded p-button-text p-button-danger" (click)="confirmDelete(service)" [disabled]="saving"></p-button>
+          <small *ngIf="service.systemService" class="text-muted">Mẫu hệ thống, chỉ đọc</small>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="6" class="text-center p-4">
+          <div class="empty-services-state">
+            <i class="pi pi-inbox" aria-hidden="true"></i>
+            <strong>Cơ sở này chưa khai báo dịch vụ lưu trú.</strong>
+            <span>Bấm “Thêm dịch vụ” để tạo dịch vụ đầu tiên.</span>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</p-card>
+
+<p-dialog
+  [(visible)]="dialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!saving"
+  [style]="{ width: 'min(760px, 96vw)' }"
+  [header]="editingId ? 'Chỉnh sửa dịch vụ' : 'Thêm dịch vụ lưu trú'"
+>
+  <form id="service-form" class="service-form" (ngSubmit)="save()">
+    <label>
+      <span>Mã dịch vụ *</span>
+      <input pInputText [(ngModel)]="form.code" name="code" maxlength="40" placeholder="BREAKFAST" [disabled]="saving" required />
+    </label>
+    <label>
+      <span>Giá (VND) *</span>
+      <input pInputText [(ngModel)]="form.price" name="price" type="number" min="0" step="1" [disabled]="saving" required />
+    </label>
+    <label>
+      <span>Tên tiếng Việt *</span>
+      <input pInputText [(ngModel)]="form.nameVi" name="nameVi" maxlength="255" placeholder="Bữa sáng buffet" [disabled]="saving" required />
+    </label>
+    <label>
+      <span>Tên tiếng Anh</span>
+      <input pInputText [(ngModel)]="form.nameEn" name="nameEn" maxlength="255" placeholder="Buffet breakfast" [disabled]="saving" />
+    </label>
+    <label class="wide">
+      <span>Mô tả tiếng Việt</span>
+      <textarea pInputTextarea [(ngModel)]="form.descriptionVi" name="descriptionVi" rows="3" maxlength="2000" [disabled]="saving"></textarea>
+    </label>
+    <label class="wide">
+      <span>Mô tả tiếng Anh</span>
+      <textarea pInputTextarea [(ngModel)]="form.descriptionEn" name="descriptionEn" rows="3" maxlength="2000" [disabled]="saving"></textarea>
+    </label>
+    <label class="wide">
+      <span>Trạng thái</span>
+      <select class="form-select" [(ngModel)]="form.status" name="status" [disabled]="saving">
+        <option value="ACTIVE">Đang cung cấp</option>
+        <option value="INACTIVE">Tạm ngừng</option>
+      </select>
+    </label>
+  </form>
+  <ng-template pTemplate="footer">
+    <p-button label="Hủy" styleClass="p-button-text" (click)="dialogVisible = false" [disabled]="saving"></p-button>
+    <p-button [label]="saving ? 'Đang lưu...' : 'Lưu dịch vụ'" icon="pi pi-check" (click)="save()" [disabled]="saving"></p-button>
+  </ng-template>
+</p-dialog>

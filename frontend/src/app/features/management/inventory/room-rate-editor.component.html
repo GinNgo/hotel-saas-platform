@@ -1,0 +1,23 @@
+<section class="rate-editor" aria-labelledby="rate-editor-title">
+  <header class="rate-header">
+    <div><span class="eyebrow">Rate plan</span><h2 id="rate-editor-title">Giá theo giai đoạn</h2><p>Đặt giá cuối tuần, mùa cao điểm hoặc sự kiện. Mức ưu tiên cao hơn sẽ được áp dụng trước.</p></div>
+    <div class="rate-actions"><label for="rate-room-type">Loại phòng<span class="sr-only"> cần xem giá</span></label><select id="rate-room-type" [(ngModel)]="selectedRoomTypeId" (change)="load()">@for (roomType of roomTypes; track roomType.id) { <option [value]="roomType.id">{{ roomType.nameVi || roomType.code }}</option> }</select>@if (canCreate) { <button type="button" (click)="openCreate()"><i class="pi pi-plus"></i> Thêm mức giá</button> }</div>
+  </header>
+
+  @if (error) { <p class="rate-error" role="alert">{{ error }}</p> }
+  @if (showForm) {
+    <form class="rate-form" (ngSubmit)="save()">
+      <label>Ngày bắt đầu<input type="date" name="startDate" [(ngModel)]="form.startDate" required></label>
+      <label>Ngày kết thúc<input type="date" name="endDate" [(ngModel)]="form.endDate" required></label>
+      <label>Giá mỗi đêm (VND)<input type="number" name="nightlyPrice" [(ngModel)]="form.nightlyPrice" min="1" step="1000" required></label>
+      <label>Ưu tiên<input type="number" name="priority" [(ngModel)]="form.priority" min="0" max="1000"><small>0 là mặc định; số lớn hơn được chọn trước.</small></label>
+      <label class="active-toggle"><input type="checkbox" name="isActive" [(ngModel)]="form.isActive"><span>Kích hoạt mức giá này</span></label>
+      @if (form.startDate && form.endDate && form.startDate > form.endDate) { <p class="field-error" role="alert">Ngày kết thúc phải từ ngày bắt đầu trở đi.</p> }
+      <div class="form-actions"><button type="button" class="secondary" (click)="showForm=false">Hủy</button><button type="submit" [disabled]="saving || !validForm">{{ saving ? 'Đang lưu...' : (editingId ? 'Cập nhật' : 'Tạo mức giá') }}</button></div>
+    </form>
+  }
+
+  @if (loading) { <div class="rate-state" aria-live="polite"><i class="pi pi-spin pi-spinner"></i> Đang tải bảng giá...</div> }
+  @else if (!rates.length) { <div class="rate-state"><i class="pi pi-calendar"></i><strong>Chưa có giá riêng</strong><span>Giá cơ bản của loại phòng sẽ áp dụng cho mọi ngày.</span></div> }
+  @else { <div class="rate-list">@for (rate of rates; track rate.id) { <article class="rate-card" [class.inactive]="!rate.isActive"><div class="rate-dates"><i class="pi pi-calendar"></i><div><strong>{{ formatDate(rate.startDate) }} – {{ formatDate(rate.endDate) }}</strong><span>{{ rate.isActive ? 'Đang áp dụng' : 'Tạm dừng' }}</span></div></div><div class="rate-price"><strong>{{ formatMoney(rate.nightlyPrice) }}</strong><span>/ đêm · ưu tiên {{ rate.priority }}</span></div><div class="card-actions">@if (canUpdate) { <button type="button" class="icon-button" (click)="openEdit(rate)" aria-label="Sửa mức giá"><i class="pi pi-pencil"></i></button> }@if (canDelete) { <button type="button" class="icon-button danger" (click)="remove(rate)" aria-label="Xóa mức giá"><i class="pi pi-trash"></i></button> }</div></article> }</div> }
+</section>

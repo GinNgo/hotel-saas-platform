@@ -1,0 +1,54 @@
+<section class="refund-management" aria-labelledby="refund-management-title">
+  <div class="management-heading">
+    <div>
+      <span class="eyebrow">VẬN HÀNH TÀI CHÍNH</span>
+      <h2 id="refund-management-title">Duyệt hoàn tiền</h2>
+      <p>Kiểm tra yêu cầu trước khi chuyển sang cổng thanh toán. Số dư do máy chủ khóa và tính lại.</p>
+    </div>
+    <span class="security-pill"><i class="pi pi-lock"></i> Cần quyền duyệt hoàn tiền</span>
+  </div>
+  <div class="refund-toolbar">
+    <label>
+      <span>Cơ sở</span>
+      <select [(ngModel)]="selectedPropertyId" (change)="loadRefunds()" [disabled]="loading || !!approvingId || !!dispatchingId">
+        <option [ngValue]="null">Chọn cơ sở</option>
+        <option *ngFor="let property of properties" [ngValue]="property.id">{{ property.nameVi }}</option>
+      </select>
+    </label>
+    <button type="button" class="reload-button" (click)="loadRefunds()" [disabled]="loading || !selectedPropertyId">
+      <i [class]="loading ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'"></i> Tải lại
+    </button>
+    <label><span>Trạng thái</span><select [(ngModel)]="statusFilter" (change)="loadRefunds()"><option value="">Tất cả</option><option value="PENDING_APPROVAL">Chờ duyệt</option><option value="PENDING_PROVIDER">Chờ cổng</option><option value="SUCCEEDED">Đã hoàn</option><option value="FAILED">Thất bại</option><option value="CANCELLED">Đã hủy</option></select></label>
+    <label><span>Cổng thanh toán</span><input [(ngModel)]="providerFilter" (keyup.enter)="loadRefunds()" placeholder="SIMULATOR" /></label>
+    <label><span>Từ ngày</span><input type="date" [(ngModel)]="fromDate" (change)="loadRefunds()" /></label>
+    <label><span>Đến ngày</span><input type="date" [(ngModel)]="toDate" (change)="loadRefunds()" /></label>
+    <label><span>Số tiền từ</span><input type="number" min="0" [(ngModel)]="minAmount" (keyup.enter)="loadRefunds()" /></label>
+    <label><span>Số tiền đến</span><input type="number" min="0" [(ngModel)]="maxAmount" (keyup.enter)="loadRefunds()" /></label>
+    <button type="button" class="reload-button" (click)="sortDirection = sortDirection === 'DESC' ? 'ASC' : 'DESC'; loadRefunds()" [disabled]="loading || !selectedPropertyId">{{ sortDirection === 'DESC' ? 'Mới nhất' : 'Cũ nhất' }}</button>
+  </div>
+  <div *ngIf="error" class="feedback error" role="alert">{{ error }}</div>
+  <div *ngIf="success" class="feedback success" role="status">{{ success }}</div>
+  <div *ngIf="!loading && !refunds.length" class="empty-state"><i class="pi pi-inbox"></i><strong>Chưa có yêu cầu hoàn tiền</strong><span>Yêu cầu tự động xuất hiện khi khách hủy booking đã thanh toán.</span></div>
+  <div *ngIf="refunds.length" class="refund-table" role="table">
+    <div class="refund-row refund-header" role="row"><span>Yêu cầu</span><span>Số tiền</span><span>Trạng thái</span><span>Thao tác</span></div>
+    <div class="refund-row" role="row" *ngFor="let refund of refunds" [attr.data-refund-id]="refund.publicId">
+      <div><strong>{{ refund.publicId }}</strong><small>{{ refund.originalTransactionPublicId }}</small><small *ngIf="refund.reason">{{ refund.reason }}</small><small *ngIf="refund.failureCode" class="failure-code">Lỗi: {{ refund.failureCode }}</small></div>
+      <strong>{{ refund.requestedAmount | number }} {{ refund.currency }}</strong>
+      <span class="status-chip" [class]="statusTone(refund.status)">{{ statusLabel(refund.status) }}</span>
+      <div class="row-actions">
+      <button *ngIf="canApprove(refund.status)" type="button" (click)="approve(refund)" [disabled]="approvingId === refund.publicId || dispatchingId !== null">
+        <i [class]="approvingId === refund.publicId ? 'pi pi-spin pi-spinner' : 'pi pi-check'"></i>
+        {{ approvingId === refund.publicId ? 'Đang duyệt' : 'Duyệt' }}
+      </button>
+      <button *ngIf="canDispatch(refund.status)" type="button" (click)="dispatch(refund)" [disabled]="dispatchingId === refund.publicId || approvingId !== null">
+        <i [class]="dispatchingId === refund.publicId ? 'pi pi-spin pi-spinner' : 'pi pi-send'"></i>
+        {{ dispatchingId === refund.publicId ? 'Đang gửi' : 'Gửi sang cổng' }}
+      </button>
+      <button *ngIf="canRetry(refund.status)" type="button" (click)="retry(refund)" [disabled]="retryingId === refund.publicId || dispatchingId !== null || approvingId !== null">
+        <i [class]="retryingId === refund.publicId ? 'pi pi-spin pi-spinner' : 'pi pi-replay'"></i>
+        {{ retryingId === refund.publicId ? 'Đang thử lại' : 'Thử lại' }}
+      </button>
+      </div>
+    </div>
+  </div>
+</section>

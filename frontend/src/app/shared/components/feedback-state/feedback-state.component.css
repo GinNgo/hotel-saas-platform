@@ -1,0 +1,91 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.feedback-state {
+  display: grid;
+  justify-items: center;
+  gap: var(--hotel-space-3);
+  width: min(100%, 42rem);
+  margin-inline: auto;
+  padding: clamp(var(--hotel-space-6), 6vw, var(--hotel-space-12));
+  overflow-wrap: anywhere;
+  text-align: center;
+  color: var(--hotel-text);
+  background: var(--hotel-card-bg);
+  border: 1px solid var(--hotel-border);
+  border-radius: var(--hotel-radius-lg);
+  box-shadow: var(--hotel-shadow-sm);
+}
+
+.feedback-state__icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.5rem;
+  color: var(--hotel-info);
+  background: var(--hotel-info-light);
+  border-radius: var(--hotel-radius-pill);
+}
+
+.feedback-state__title {
+  margin: 0;
+  font-family: var(--hotel-font-body);
+  font-size: clamp(var(--hotel-text-lg), 3vw, var(--hotel-text-xl));
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.feedback-state__message {
+  max-width: 55ch;
+  margin: 0;
+  color: var(--hotel-text-muted);
+}
+
+.feedback-state__action {
+  min-height: 2.75rem;
+  margin-top: var(--hotel-space-2);
+  padding: var(--hotel-space-2) var(--hotel-space-5);
+  font: inherit;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  background: var(--hotel-primary);
+  border: 1px solid var(--hotel-primary);
+  border-radius: var(--hotel-radius-md);
+  transition:
+    background-color var(--hotel-transition-fast) ease,
+    border-color var(--hotel-transition-fast) ease;
+}
+
+.feedback-state__action:hover {
+  background: var(--hotel-primary-hover);
+  border-color: var(--hotel-primary-hover);
+}
+
+.feedback-state--error .feedback-state__icon {
+  color: var(--hotel-danger);
+  background: var(--hotel-danger-light);
+}
+
+.feedback-state--success .feedback-state__icon {
+  color: var(--hotel-success);
+  background: var(--hotel-success-light);
+}
+
+.feedback-state--confirmation .feedback-state__icon {
+  color: var(--hotel-warning);
+  background: var(--hotel-warning-light);
+}
+
+@media (max-width: 36rem) {
+  .feedback-state {
+    padding: var(--hotel-space-6) var(--hotel-space-4);
+  }
+
+  .feedback-state__action {
+    width: 100%;
+  }
+}

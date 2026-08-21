@@ -1,0 +1,114 @@
+<div class="partner-register-container">
+  <div class="register-card">
+    <div class="header">
+      <h2>Đăng ký trở thành Đối tác</h2>
+      <p>Cùng hợp tác để tiếp cận hàng triệu khách hàng và tăng doanh thu.</p>
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+      <div class="form-section">
+        <h3>Thông tin cá nhân</h3>
+        <div class="account-notice" *ngIf="isAuthenticatedRegistration" role="status">
+          Hồ sơ này sẽ được đăng ký bằng tài khoản Google bạn đang đăng nhập. Bạn không cần tạo mật khẩu mới.
+        </div>
+        <div class="form-group">
+          <label for="fullName">Họ và tên *</label>
+          <input type="text" id="fullName" formControlName="fullName" placeholder="Nhập họ và tên"
+            [class.invalid]="registerForm.get('fullName')?.invalid && registerForm.get('fullName')?.touched">
+          <div class="error-msg" *ngIf="registerForm.get('fullName')?.invalid && registerForm.get('fullName')?.touched">
+            Họ và tên là bắt buộc.
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="email">Email đăng nhập *</label>
+            <input type="email" id="email" formControlName="email" placeholder="example@email.com"
+              [readOnly]="isAuthenticatedRegistration"
+              [class.invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+            <div class="error-msg" *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+              Email không hợp lệ.
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="phone">Số điện thoại *</label>
+            <input type="text" id="phone" formControlName="phone" placeholder="Nhập SĐT"
+              [class.invalid]="registerForm.get('phone')?.invalid && registerForm.get('phone')?.touched">
+            <div class="error-msg" *ngIf="registerForm.get('phone')?.invalid && registerForm.get('phone')?.touched">
+              Số điện thoại là bắt buộc.
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" *ngIf="!isAuthenticatedRegistration">
+          <label for="password">Mật khẩu *</label>
+          <input type="password" id="password" formControlName="password" placeholder="Tối thiểu 6 ký tự"
+            [class.invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+          <div class="error-msg" *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+            Mật khẩu bắt buộc và tối thiểu 6 ký tự.
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>Thông tin cơ sở lưu trú</h3>
+        <div class="form-group">
+          <label for="propertyName">Tên cơ sở lưu trú *</label>
+          <input type="text" id="propertyName" formControlName="propertyName" placeholder="Ví dụ: Khách sạn Mường Thanh"
+            [class.invalid]="registerForm.get('propertyName')?.invalid && registerForm.get('propertyName')?.touched">
+          <div class="error-msg" *ngIf="registerForm.get('propertyName')?.invalid && registerForm.get('propertyName')?.touched">
+            Tên cơ sở lưu trú là bắt buộc.
+          </div>
+        </div>
+
+        <div class="form-row location-row">
+          <div class="form-group">
+            <label for="provinceId">Tỉnh/Thành phố *</label>
+            <p-select inputId="provinceId" [options]="provinces" optionLabel="nameVi" optionValue="id"
+              formControlName="provinceId" placeholder="Chọn tỉnh/thành phố" [loading]="provincesLoading"
+              [filter]="true" filterBy="nameVi,nameEn" [filterMatchMode]="$any('locationFuzzy')"
+              filterPlaceholder="Nhập tên tỉnh/thành phố" emptyFilterMessage="Không tìm thấy tỉnh/thành phố"
+              (onChange)="onProvinceChange()"></p-select>
+            <div class="error-msg" *ngIf="registerForm.get('provinceId')?.invalid && registerForm.get('provinceId')?.touched">
+              Vui lòng chọn tỉnh/thành phố.
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="wardId">Phường/Xã <span class="text-muted">(không bắt buộc)</span></label>
+            <p-select inputId="wardId" [options]="wards" optionLabel="displayName" optionValue="id"
+              formControlName="wardId" [loading]="wardsLoading"
+              [disabled]="!registerForm.get('provinceId')?.value"
+              [filter]="true" filterBy="displayName,nameVi,legacyParentName" [filterMatchMode]="$any('locationFuzzy')"
+              filterPlaceholder="Nhập tên phường/xã hoặc quận/huyện" emptyFilterMessage="Không tìm thấy phường/xã"
+              [placeholder]="registerForm.get('provinceId')?.value ? 'Chọn phường/xã' : 'Chọn tỉnh/thành phố trước'"></p-select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="propertyAddress">Số nhà, tên đường *</label>
+          <input type="text" id="propertyAddress" formControlName="propertyAddress" autocomplete="street-address" placeholder="Ví dụ: 123 Đường Nguyễn Huệ"
+            [class.invalid]="registerForm.get('propertyAddress')?.invalid && registerForm.get('propertyAddress')?.touched">
+          <div class="error-msg" *ngIf="registerForm.get('propertyAddress')?.invalid && registerForm.get('propertyAddress')?.touched">
+            Vui lòng nhập số nhà và tên đường.
+          </div>
+        </div>
+      </div>
+
+      <div class="error-banner" *ngIf="errorMessage" role="alert" aria-live="assertive">
+        <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <button type="submit" class="submit-btn" [disabled]="isLoading || profileLoading">
+        <span *ngIf="!isLoading">Đăng ký ngay</span>
+        <span *ngIf="isLoading" class="spinner"></span>
+      </button>
+
+      <p class="login-link">
+        Đã có tài khoản? <a routerLink="/login">Đăng nhập</a>
+      </p>
+    </form>
+  </div>
+</div>

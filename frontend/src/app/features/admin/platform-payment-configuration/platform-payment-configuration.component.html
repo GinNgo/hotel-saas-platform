@@ -1,0 +1,49 @@
+<div class="platform-config-page">
+  <header class="page-hero">
+    <div>
+      <p class="eyebrow">System Admin / Payment Readiness</p>
+      <h1>Platform merchant control room</h1>
+      <p>Platform Billing is isolated from each property's guest-payment configuration. Only masked metadata is shown.</p>
+    </div>
+    <span class="safe-badge"><span></span> Production fail-closed</span>
+  </header>
+
+  <app-feedback-state *ngIf="error && !loading" state="error" title="Configuration unavailable" [message]="error" actionLabel="Retry" (actionTriggered)="loadConfigurations()" />
+  <div class="layout" *ngIf="!loading && !error">
+    <aside class="config-list" aria-label="Platform configurations">
+      <div class="list-heading"><span>Providers</span><strong>{{ configurations.length }}</strong></div>
+      <button type="button" class="config-row" *ngFor="let configuration of configurations; trackBy: trackByConfiguration" [class.selected]="selected === configuration" (click)="select(configuration)">
+        <span class="provider-mark">{{ configuration.provider.slice(0, 2) }}</span>
+        <span class="row-copy"><strong>{{ configuration.provider }}</strong><small>{{ configuration.environment }} · {{ configuration.enabled ? 'Enabled' : 'Disabled' }}</small></span>
+        <span class="ready-dot" [class.ready]="configuration.ready"></span>
+      </button>
+      <p class="empty-list" *ngIf="!configurations.length">No platform configuration exists yet.</p>
+    </aside>
+
+    <main class="config-panel">
+      <div class="panel-heading"><div><p class="eyebrow">System-owned merchant</p><h2>{{ selected?.provider || form.provider }} / {{ selected?.environment || form.environment }}</h2></div><span class="status-badge" [class.ready]="selected?.ready">{{ selected?.ready ? 'READY' : 'NEEDS REVIEW' }}</span></div>
+      <div class="masked-summary" *ngIf="selected">
+        <div><span>Merchant</span><strong>{{ selected.merchantReferenceMasked || 'Not configured' }}</strong></div>
+        <div><span>Secret</span><strong>{{ selected.secretConfigured ? 'Configured (masked)' : 'Missing' }}</strong></div>
+        <div><span>Environment</span><strong>{{ selected.environment }}</strong></div>
+      </div>
+
+      <form (ngSubmit)="save()" #configurationForm="ngForm">
+        <div class="form-grid">
+          <label>Provider<input name="provider" [(ngModel)]="form.provider" required /></label>
+          <label>Environment<select name="environment" [(ngModel)]="form.environment" required><option *ngFor="let environment of environments" [value]="environment">{{ environment }}</option></select></label>
+          <label class="wide">Secret reference <span class="hint">write-only</span><input name="secretReference" type="password" autocomplete="new-password" [(ngModel)]="form.secretReference" placeholder="env:PLATFORM_PROVIDER" /></label>
+          <label>Masked bank name<input name="bankName" [(ngModel)]="form.bankName" /></label>
+          <label>Masked account<input name="bankAccountMasked" [(ngModel)]="form.bankAccountMasked" /></label>
+          <label class="wide">HTTPS callback URL<input name="callbackUrl" type="url" [(ngModel)]="form.callbackUrl" placeholder="https://..." /></label>
+        </div>
+        <label class="toggle"><input name="enabled" type="checkbox" [(ngModel)]="form.enabled" /><span>Enable this environment</span></label>
+        <div class="actions"><button *ngIf="canValidate" class="btn secondary" type="button" [disabled]="validating" (click)="validate()">{{ validating ? 'Checking...' : 'Validate readiness' }}</button><button *ngIf="canApprove && selected?.environment === 'PRODUCTION' && !selected.productionApproved" class="btn secondary" type="button" [disabled]="approving" (click)="approveProduction()">{{ approving ? 'Approving...' : 'Approve production' }}</button><button *ngIf="canUpdate" class="btn primary" type="submit" [disabled]="configurationForm.invalid || saving">{{ saving ? 'Saving...' : 'Save masked configuration' }}</button></div>
+      </form>
+
+      <div class="readiness" *ngIf="readiness" [class.ready]="readiness.ready"><strong>{{ readiness.ready ? 'Ready for ' + readiness.mode : 'Not ready' }}</strong><span>{{ readiness.maskedMerchant || 'No merchant identity' }}</span><small *ngIf="readiness.blockers.length">{{ readiness.blockers.join(' · ') }}</small></div>
+      <p class="success" *ngIf="message">{{ message }}</p>
+      <p class="warning">Production credentials, merchant identity and real-money operations remain disabled until a separate readiness approval.</p>
+    </main>
+  </div>
+</div>

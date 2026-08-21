@@ -1,0 +1,14 @@
+:host{display:block}
+:host ::ng-deep .p-button{min-height:44px}
+:host ::ng-deep .p-inputtext,:host ::ng-deep .p-select{min-height:44px}
+.field small{display:block;margin-top:5px;color:var(--hotel-text-muted,#64748b);font-size:12px}
+@media(max-width:767px){
+  .card.m-3{margin:.75rem!important}
+  :host ::ng-deep .p-datatable-table,:host ::ng-deep .p-datatable-tbody,:host ::ng-deep .p-datatable-tbody>tr,:host ::ng-deep .p-datatable-tbody>tr>td{display:block!important;width:100%!important}
+  :host ::ng-deep .p-datatable-thead{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important}
+  :host ::ng-deep .p-datatable-tbody{display:grid!important;gap:12px;padding:12px;background:var(--hotel-surface-muted,#f8fafc)}
+  :host ::ng-deep .p-datatable-tbody>tr{padding:14px;border:1px solid var(--hotel-border,#e2e8f0);border-radius:12px;background:var(--hotel-card-bg,#fff);box-shadow:0 4px 14px rgb(15 23 42 / .06)}
+  :host ::ng-deep .p-datatable-tbody>tr>td{display:grid!important;grid-template-columns:minmax(96px,.45fr) minmax(0,1fr);align-items:start;gap:10px;padding:7px 0!important;border:0!important;text-align:left!important;overflow-wrap:anywhere}
+  :host ::ng-deep .p-datatable-tbody>tr>td:before{content:attr(data-label);color:var(--hotel-text-muted,#64748b);font-size:12px;font-weight:800;text-transform:uppercase}
+  :host ::ng-deep .p-datatable-tbody>tr>td[data-label="Thao tác"]>div{justify-content:flex-start!important}
+}

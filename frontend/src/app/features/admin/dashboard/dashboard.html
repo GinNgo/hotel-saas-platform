@@ -1,0 +1,177 @@
+<div class="px-4 py-4 space-y-6">
+  <!-- BEGIN: Phase 1 Onboarding Setup -->
+  <section class="bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden" *ngIf="isPhase1 && showOnboarding">
+    <p *ngIf="onboardingError" class="alert alert-danger m-3" role="alert">{{ onboardingError }}</p>
+    <p *ngIf="onboardingMessage" class="alert alert-success m-3" role="status">{{ onboardingMessage }}</p>
+    <div class="p-6 border-b border-outline-variant bg-surface-container-low">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-[20px] font-bold text-primary mb-1">Chào mừng đến với LuxeStay!</h2>
+          <p class="text-[14px] text-on-surface-variant m-0">Hãy hoàn tất thiết lập khách sạn của bạn để bắt đầu nhận đặt phòng.</p>
+        </div>
+        <div class="text-right">
+          <div class="text-[24px] font-bold text-primary">{{progressPercentage}}%</div>
+          <div class="text-[12px] text-on-surface-variant">Đã hoàn thành</div>
+        </div>
+      </div>
+      <div class="w-full bg-surface-container-highest rounded-full h-2.5 mt-4">
+        <div class="bg-primary h-2.5 rounded-full transition-all duration-500" [style.width.%]="progressPercentage"></div>
+      </div>
+    </div>
+    
+    <div class="p-0">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-outline-variant">
+        
+        <!-- Step 1: Profile -->
+        <div class="p-6 flex flex-col h-full" [ngClass]="{'bg-success/5': onboardingProgress.profileCompleted}">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" [ngClass]="onboardingProgress.profileCompleted ? 'bg-success text-white' : 'bg-surface-container-high text-on-surface-variant'">
+              <span class="material-symbols-outlined">{{onboardingProgress.profileCompleted ? 'check' : 'storefront'}}</span>
+            </div>
+            <span class="text-[12px] font-bold uppercase tracking-wider" [ngClass]="onboardingProgress.profileCompleted ? 'text-success' : 'text-on-surface-variant'">Bước 1</span>
+          </div>
+          <h3 class="text-[16px] font-bold text-on-surface mb-2">Thông tin Khách sạn</h3>
+          <p class="text-[13px] text-on-surface-variant mb-4 flex-1">Cập nhật hình ảnh, mô tả và địa chỉ để thu hút khách hàng.</p>
+          <button type="button" class="w-full py-2 rounded-md font-bold text-[13px] transition-colors" (click)="navigateTo('/admin/properties')" [ngClass]="onboardingProgress.profileCompleted ? 'bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high' : 'bg-primary text-white hover:bg-primary-dark'">
+            {{onboardingProgress.profileCompleted ? 'Chỉnh sửa' : 'Cập nhật ngay'}}
+          </button>
+        </div>
+
+        <!-- Step 2: Rooms -->
+        <div class="p-6 flex flex-col h-full" [ngClass]="{'bg-success/5': onboardingProgress.roomsCompleted}">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" [ngClass]="onboardingProgress.roomsCompleted ? 'bg-success text-white' : 'bg-surface-container-high text-on-surface-variant'">
+              <span class="material-symbols-outlined">{{onboardingProgress.roomsCompleted ? 'check' : 'bed'}}</span>
+            </div>
+            <span class="text-[12px] font-bold uppercase tracking-wider" [ngClass]="onboardingProgress.roomsCompleted ? 'text-success' : 'text-on-surface-variant'">Bước 2</span>
+          </div>
+          <h3 class="text-[16px] font-bold text-on-surface mb-2">Loại phòng & Phòng</h3>
+          <p class="text-[13px] text-on-surface-variant mb-4 flex-1">Thêm các hạng phòng, tải ảnh và thiết lập giá cơ bản.</p>
+          <button class="w-full py-2 rounded-md font-bold text-[13px] transition-colors" (click)="navigateTo('/admin/room-types')" [ngClass]="onboardingProgress.roomsCompleted ? 'bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high' : 'bg-primary text-white hover:bg-primary-dark'">
+            {{onboardingProgress.roomsCompleted ? 'Quản lý phòng' : 'Thiết lập ngay'}}
+          </button>
+        </div>
+
+        <!-- Step 3: Services -->
+        <div class="p-6 flex flex-col h-full" [ngClass]="{'bg-success/5': onboardingProgress.servicesCompleted}">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" [ngClass]="onboardingProgress.servicesCompleted ? 'bg-success text-white' : 'bg-surface-container-high text-on-surface-variant'">
+              <span class="material-symbols-outlined">{{onboardingProgress.servicesCompleted ? 'check' : 'spa'}}</span>
+            </div>
+            <span class="text-[12px] font-bold uppercase tracking-wider" [ngClass]="onboardingProgress.servicesCompleted ? 'text-success' : 'text-on-surface-variant'">Bước 3</span>
+          </div>
+          <h3 class="text-[16px] font-bold text-on-surface mb-2">Tiện ích & Dịch vụ</h3>
+          <p class="text-[13px] text-on-surface-variant mb-4 flex-1">Khai báo hồ bơi, nhà hàng, spa và các dịch vụ tính phí.</p>
+          <button class="w-full py-2 rounded-md font-bold text-[13px] transition-colors" (click)="navigateTo('/admin/services')" [ngClass]="onboardingProgress.servicesCompleted ? 'bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high' : 'bg-primary text-white hover:bg-primary-dark'">
+            {{onboardingProgress.servicesCompleted ? 'Quản lý dịch vụ' : 'Thêm dịch vụ'}}
+          </button>
+        </div>
+
+        <!-- Step 4: Approval -->
+        <div class="p-6 flex flex-col h-full bg-surface-container-lowest">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center" [ngClass]="onboardingProgress.isApproved ? 'bg-success text-white' : 'bg-surface-container-high text-on-surface-variant'">
+              <span class="material-symbols-outlined">{{onboardingProgress.isApproved ? 'verified' : 'send'}}</span>
+            </div>
+            <span class="text-[12px] font-bold uppercase tracking-wider text-on-surface-variant">Bước 4</span>
+          </div>
+          <h3 class="text-[16px] font-bold text-on-surface mb-2">Gửi yêu cầu duyệt</h3>
+          <p class="text-[13px] text-on-surface-variant mb-4 flex-1">Khi đã hoàn tất 3 bước trên, gửi yêu cầu lên Admin để kích hoạt khách sạn.</p>
+          <button type="button" class="w-full py-2 rounded-md font-bold text-[13px] text-white transition-colors" (click)="submitOnboardingApproval()" [disabled]="completedSteps < 3 || !canSubmitApproval || onboardingSubmitting || onboardingLoading" [ngClass]="completedSteps < 3 || !canSubmitApproval ? 'bg-surface-variant text-on-surface-variant cursor-not-allowed' : 'bg-success hover:bg-success-dark'">
+            {{ approvalButtonLabel }}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- BEGIN: Statistics Cards -->
+  <section class="row g-4 mb-4">
+    <!-- Total Rooms Card -->
+    <div class="col-12 col-md-6 col-lg-3">
+      <app-stat-card 
+        title="Tổng đặt phòng"
+        [value]="data?.totalBookings ?? 0"
+        icon="pi pi-home"
+        iconColor="#1978e5"
+        iconBgColor="#eff6ff"
+        borderColor="#1978e5">
+      </app-stat-card>
+    </div>
+    
+    <!-- Active Room Types Card -->
+    <div class="col-12 col-md-6 col-lg-3">
+      <app-stat-card 
+        title="Công suất phòng"
+        [value]="(data?.occupancyRate ?? 0) + '%'"
+        icon="pi pi-th-large"
+        iconColor="#fb923c"
+        iconBgColor="#fff7ed"
+        borderColor="#fb923c">
+      </app-stat-card>
+    </div>
+    
+    <!-- Services Configured Card -->
+    <div class="col-12 col-md-6 col-lg-3">
+      <app-stat-card 
+        title="Tổng doanh thu"
+        [value]="((data?.totalRevenue ?? 0) | number:'1.0-0') ?? '0'"
+        icon="pi pi-star"
+        iconColor="#198754"
+        iconBgColor="#d1e7dd"
+        borderColor="#198754">
+      </app-stat-card>
+    </div>
+    
+    <!-- Bookings Today Card -->
+    <div class="col-12 col-md-6 col-lg-3">
+      <app-stat-card 
+        title="Đặt phòng hôm nay" 
+        [value]="data?.bookingsToday ?? 0"
+        icon="pi pi-calendar-plus"
+        iconColor="#dc3545"
+        iconBgColor="#f8d7da"
+        borderColor="#dc3545">
+      </app-stat-card>
+    </div>
+  </section>
+
+  <!-- BEGIN: Analytics Row (Faded during Phase 1) -->
+  <section class="row g-4 mb-4" *ngIf="data" [ngClass]="{'opacity-60 grayscale pointer-events-none relative': showOnboarding && completedSteps < 3}">
+    <!-- Phase 1 Overlay Overlay -->
+    <div *ngIf="showOnboarding && completedSteps < 3" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/40 backdrop-blur-[2px] rounded-xl border border-outline-variant">
+      <div class="bg-surface px-6 py-4 rounded-lg shadow-md text-center max-w-sm">
+        <span class="material-symbols-outlined text-[32px] text-primary mb-2">lock</span>
+        <h3 class="font-bold text-[16px] text-on-surface mb-1">Mở khóa Phân tích</h3>
+        <p class="text-[13px] text-on-surface-variant m-0">Hoàn thành thiết lập khách sạn để bắt đầu theo dõi doanh thu và công suất phòng thực tế.</p>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <app-revenue-chart [labels]="data.labels" [datasets]="revenueChartData.datasets"></app-revenue-chart>
+    </div>
+    <div class="col-12 col-lg-6">
+      <app-occupancy-chart [labels]="data.labels" [datasets]="occupancyChartData.datasets"></app-occupancy-chart>
+    </div>
+  </section>
+
+  <!-- BEGIN: Work Order Table -->
+  <section class="bg-white rounded-3 shadow-sm border overflow-hidden mb-4">
+    <div class="p-4 border-bottom d-flex align-items-center justify-content-between">
+      <h2 class="h5 mb-0 fw-bold text-dark">Yêu cầu bảo trì</h2>
+      <button type="button" class="btn btn-sm btn-outline-primary" (click)="loadWorkOrders()" [disabled]="loadingWorkOrders">Tải lại</button>
+    </div>
+    <div *ngIf="workOrdersError" class="alert alert-danger m-3" role="alert">{{ workOrdersError }}</div>
+    <app-data-table
+      [columns]="workOrderColumns"
+      [data]="workOrders"
+      [totalRecords]="totalWorkOrders"
+      [loading]="loadingWorkOrders"
+      [pageSize]="10"
+      (pageChange)="onPageChange($event)"
+      (sortChange)="onSortChange($event)"
+      (filterChange)="onFilterChange($event)">
+    </app-data-table>
+  </section>
+</div>

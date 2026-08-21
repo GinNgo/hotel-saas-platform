@@ -1,0 +1,295 @@
+<section class="checkout-workspace" aria-labelledby="checkout-title">
+  <header class="checkout-hero">
+    <div>
+      <span class="eyebrow">Folio trực tiếp · {{ bookingCode || ('RES-' + reservationId) }}</span>
+      <h2 id="checkout-title">Dịch vụ &amp; quyết toán lưu trú</h2>
+      <p>Mọi khoản tiền được tính từ dữ liệu máy chủ trước khi hóa đơn được chốt.</p>
+    </div>
+    <button
+      type="button"
+      class="icon-button"
+      aria-label="Đóng cửa sổ quyết toán"
+      [disabled]="busyAction() !== null"
+      (click)="close()"
+    >
+      <i class="pi pi-times" aria-hidden="true"></i>
+    </button>
+  </header>
+
+  <div class="feedback error" *ngIf="errorMessage() as error" role="alert">
+    <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+    <span>{{ error }}</span>
+    <button type="button" (click)="loadPreview()" [disabled]="busyAction() !== null">Thử lại</button>
+  </div>
+  <div class="feedback success" *ngIf="successMessage() as success" aria-live="polite">
+    <i class="pi pi-check-circle" aria-hidden="true"></i>
+    <span>{{ success }}</span>
+  </div>
+
+  <div class="workspace-grid">
+    <div class="entry-column">
+      <article class="operation-card" *ngIf="canCreateFinanceCharge">
+        <div class="card-heading">
+          <span class="card-icon"><i class="pi pi-sparkles" aria-hidden="true"></i></span>
+          <div>
+            <h3>Thêm dịch vụ</h3>
+            <p>Giá bán được lấy từ danh mục, nhân viên chỉ chọn dịch vụ và số lượng.</p>
+          </div>
+        </div>
+        <div class="catalog-state" *ngIf="catalogLoading()" role="status">
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+          <span>Đang tải danh mục của khách sạn...</span>
+        </div>
+        <div class="catalog-state error" *ngIf="catalogError() as error" role="alert">
+          <span>{{ error }}</span>
+          <button type="button" (click)="retryCatalog()">Thử lại</button>
+        </div>
+        <div
+          class="catalog-state"
+          *ngIf="!catalogLoading() && !catalogError() && catalogHotelId() && serviceOptions().length === 0"
+        >
+          Khách sạn chưa có dịch vụ đang hoạt động.
+        </div>
+        <form [formGroup]="serviceForm" (ngSubmit)="addService()" class="form-grid">
+          <fieldset class="charge-type-picker field-wide">
+            <legend>Loại sử dụng</legend>
+            <button
+              type="button"
+              class="charge-type-option"
+              [class.selected]="serviceForm.controls.chargeType.value === 'SERVICE'"
+              [attr.aria-pressed]="serviceForm.controls.chargeType.value === 'SERVICE'"
+              (click)="selectChargeType('SERVICE')"
+            >
+              <i class="pi pi-sparkles" aria-hidden="true"></i>
+              <span><strong>Dịch vụ</strong><small>Đồ ăn, đồ uống, giặt ủi...</small></span>
+            </button>
+            <button
+              type="button"
+              class="charge-type-option"
+              [class.selected]="serviceForm.controls.chargeType.value === 'MINIBAR'"
+              [attr.aria-pressed]="serviceForm.controls.chargeType.value === 'MINIBAR'"
+              (click)="selectChargeType('MINIBAR')"
+            >
+              <i class="pi pi-shopping-bag" aria-hidden="true"></i>
+              <span><strong>Minibar</strong><small>Sản phẩm dùng tại phòng</small></span>
+            </button>
+          </fieldset>
+          <label class="field field-wide">
+            <span>Dịch vụ</span>
+            <p-select
+              formControlName="serviceId"
+              [options]="serviceOptions()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Chọn dịch vụ"
+              appendTo="body"
+              styleClass="field-control"
+            ></p-select>
+            <small *ngIf="serviceForm.controls.serviceId.touched && serviceForm.controls.serviceId.invalid">
+              Vui lòng chọn một dịch vụ hợp lệ.
+            </small>
+          </label>
+          <label class="field">
+            <span>Số lượng</span>
+            <p-inputNumber
+              formControlName="quantity"
+              [min]="0.01"
+              [minFractionDigits]="0"
+              [maxFractionDigits]="2"
+              [showButtons]="true"
+              inputId="checkout-service-quantity"
+              styleClass="field-control"
+            ></p-inputNumber>
+          </label>
+          <button
+            pButton
+            type="submit"
+            label="Thêm vào folio"
+            icon="pi pi-plus"
+            class="primary-action field-wide"
+            [loading]="busyAction() === 'SERVICE'"
+            [disabled]="busyAction() !== null || serviceOptions().length === 0"
+          ></button>
+        </form>
+      </article>
+
+      <article class="operation-card" *ngIf="canCreateFinanceCharge">
+        <div class="card-heading">
+          <span class="card-icon warm"><i class="pi pi-receipt" aria-hidden="true"></i></span>
+          <div>
+            <h3>Phụ thu &amp; điều chỉnh</h3>
+            <p>Điều chỉnh giảm được tách riêng để backend kiểm tra quyền phê duyệt.</p>
+          </div>
+        </div>
+        <form [formGroup]="adjustmentForm" (ngSubmit)="addAdjustment()" class="form-grid">
+          <label class="field">
+            <span>Loại thao tác</span>
+            <p-select
+              formControlName="mode"
+              [options]="adjustmentModes"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="field-control"
+            ></p-select>
+          </label>
+          <label class="field" *ngIf="adjustmentForm.controls.mode.value === 'SURCHARGE'; else negativeType">
+            <span>Loại phụ thu</span>
+            <p-select
+              formControlName="surchargeType"
+              [options]="surchargeTypes"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="field-control"
+            ></p-select>
+          </label>
+          <ng-template #negativeType>
+            <label class="field">
+              <span>Lý do điều chỉnh</span>
+              <p-select
+                formControlName="negativeType"
+                [options]="negativeAdjustmentTypes"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="field-control"
+              ></p-select>
+            </label>
+          </ng-template>
+          <label class="field field-wide">
+            <span>Mô tả nghiệp vụ</span>
+            <textarea
+              formControlName="description"
+              rows="2"
+              placeholder="Ví dụ: Trả phòng muộn đến 15:00"
+            ></textarea>
+            <small *ngIf="adjustmentForm.controls.description.touched && adjustmentForm.controls.description.invalid">
+              Cần nhập mô tả để lưu dấu vết nghiệp vụ.
+            </small>
+          </label>
+          <label class="field field-wide">
+            <span>Số tiền (VND)</span>
+            <p-inputNumber
+              formControlName="amount"
+              mode="currency"
+              currency="VND"
+              locale="vi-VN"
+              [min]="1"
+              [minFractionDigits]="0"
+              [maxFractionDigits]="0"
+              inputId="checkout-adjustment-amount"
+              styleClass="field-control"
+            ></p-inputNumber>
+          </label>
+          <button
+            pButton
+            type="submit"
+            [label]="adjustmentForm.controls.mode.value === 'SURCHARGE' ? 'Ghi nhận phụ thu' : 'Gửi điều chỉnh giảm'"
+            icon="pi pi-plus-circle"
+            class="secondary-action field-wide"
+            [loading]="busyAction() === 'ADJUSTMENT'"
+            [disabled]="busyAction() !== null"
+          ></button>
+        </form>
+      </article>
+    </div>
+
+    <aside class="folio-panel" aria-live="polite">
+      <div class="folio-loading" *ngIf="busyAction() === 'PREVIEW' && !preview()">
+        <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        <span>Đang đối chiếu folio...</span>
+      </div>
+
+      <ng-container *ngIf="preview() as current">
+        <div class="folio-title-row">
+          <div>
+            <span class="eyebrow">Số liệu máy chủ</span>
+            <h3>Checkout preview</h3>
+          </div>
+          <span class="settlement-chip" [class]="'settlement-chip ' + current.settlementState.toLowerCase()">
+            <i
+              [class]="current.settlementState === 'SETTLED' ? 'pi pi-check-circle' : 'pi pi-info-circle'"
+              aria-hidden="true"
+            ></i>
+            {{ current.settlementState === 'SETTLED' ? 'Đã cân bằng' : current.settlementState === 'OUTSTANDING' ? 'Còn công nợ' : 'Thanh toán dư' }}
+          </span>
+        </div>
+
+        <div class="balance-block">
+          <span>Số dư cần xử lý</span>
+          <strong>{{ current.folio.balance | currency: 'VND' : 'symbol' : '1.0-0' : 'vi-VN' }}</strong>
+          <small>Cập nhật {{ current.calculatedAt | date: 'HH:mm dd/MM/yyyy' }}</small>
+        </div>
+
+        <dl class="folio-metrics">
+          <div><dt>Tiền phòng</dt><dd>{{ current.folio.roomCharges | currency: 'VND' : 'symbol' : '1.0-0' : 'vi-VN' }}</dd></div>
+          <div><dt>Dịch vụ</dt><dd>{{ current.folio.serviceCharges | currency: 'VND' : 'symbol' : '1.0-0' : 'vi-VN' }}</dd></div>
+          <div><dt>Phụ thu</dt><dd>{{ current.folio.surchargeCharges | currency: 'VND' : 'symbol' : '1.0-0' : 'vi-VN' }}</dd></div>
+          <div><dt>Thuế &amp; phí</dt><dd>{{ sumAmounts(current.folio.taxCharges, current.folio.feeCharges) | currency: 'VND' : 'symbol' : '1.0-0' : 'vi-VN' }}</dd></div>
+          <div><dt>Đã thanh toán</dt><dd class="positive">{{ current.folio.successfulPayments | currency: 'VND' : 'symbol' : '1.0-0' : 'vi-VN' }}</dd></div>
+          <div><dt>Đã hoàn/ghi có</dt><dd>{{ sumAmounts(current.folio.successfulRefunds, current.folio.otherCredits) | currency: 'VND' : 'symbol' : '1.0-0' : 'vi-VN' }}</dd></div>
+        </dl>
+
+        <div class="folio-lines">
+          <div class="lines-heading">
+            <h4>Chi tiết phát sinh</h4>
+            <span>{{ current.folio.lines.length }} dòng</span>
+          </div>
+          <div class="line-empty" *ngIf="current.folio.lines.length === 0">Chưa có dòng phát sinh.</div>
+          <div class="folio-line" *ngFor="let line of current.folio.lines; trackBy: trackLine">
+            <div>
+              <strong>{{ line.name }}</strong>
+              <small>{{ line.category }} · {{ line.quantity }} × {{ line.unitPrice | currency: 'VND' : 'symbol' : '1.0-0' : 'vi-VN' }}</small>
+            </div>
+            <span [class.negative]="isNegative(line.signedEffect)">
+              {{ line.signedEffect | currency: 'VND' : 'symbol' : '1.0-0' : 'vi-VN' }}
+            </span>
+          </div>
+        </div>
+
+        <section class="adjustment-history" aria-labelledby="adjustment-history-title" *ngIf="adjustmentHistory().length > 0">
+          <div class="lines-heading">
+            <h4 id="adjustment-history-title">Lịch sử phụ thu &amp; điều chỉnh đã duyệt</h4>
+            <span>{{ adjustmentHistory().length }} mục bất biến</span>
+          </div>
+          <div class="adjustment-history-item" *ngFor="let line of adjustmentHistory(); trackBy: trackLine">
+            <div>
+              <strong>{{ line.name }}</strong>
+              <small>{{ line.category }} · {{ line.description || 'Không có mô tả' }}</small>
+            </div>
+            <span [class.negative]="isNegative(line.signedEffect)">
+              {{ line.signedEffect | currency: 'VND' : 'symbol' : '1.0-0' : 'vi-VN' }}
+            </span>
+          </div>
+        </section>
+
+        <form class="override-panel" *ngIf="needsDebtOverride() && canApproveCheckout" [formGroup]="overrideForm" (ngSubmit)="authorizeDebtOverride()">
+          <div class="override-heading"><i class="pi pi-shield" aria-hidden="true"></i><span><strong>Phê duyệt ghi nợ có kiểm soát</strong><small>Chỉ tiếp tục khi khách có thỏa thuận công nợ hợp lệ. Máy chủ sẽ lưu người duyệt và lý do.</small></span></div>
+          <label><span>Lý do phê duyệt</span><textarea formControlName="reason" rows="3" placeholder="Ví dụ: Hợp đồng công nợ doanh nghiệp đã được quản lý xác nhận"></textarea><small *ngIf="overrideForm.controls.reason.touched && overrideForm.controls.reason.invalid">Nhập lý do từ 10 đến 500 ký tự.</small></label>
+          <button pButton type="submit" label="Yêu cầu phê duyệt ghi nợ" icon="pi pi-lock-open" class="override-action" [loading]="busyAction() === 'OVERRIDE'" [disabled]="busyAction() !== null"></button>
+        </form>
+
+        <div class="override-approved" *ngIf="checkoutOverrideId() as overrideId" role="status"><i class="pi pi-check-circle" aria-hidden="true"></i><span>Máy chủ đã cấp phê duyệt #{{ overrideId }} cho lần checkout này.</span></div>
+
+        <div class="blocking-message" *ngIf="isOverpaid()">
+          <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+          <span>Khoản thanh toán dư cần được xử lý trước khi trả phòng; hệ thống không tự động bỏ qua.</span>
+        </div>
+
+        <div class="checkout-actions">
+          <button type="button" class="text-action" (click)="loadPreview()" [disabled]="busyAction() !== null">
+            <i class="pi pi-refresh" aria-hidden="true"></i> Làm mới
+          </button>
+          <button
+            pButton
+            type="button"
+            label="Chốt checkout & hóa đơn"
+            icon="pi pi-check"
+            class="checkout-action"
+            [loading]="busyAction() === 'CHECKOUT'"
+            [disabled]="!canCheckout() || busyAction() !== null || !canExecuteCheckout"
+            (click)="checkout()"
+          ></button>
+        </div>
+      </ng-container>
+    </aside>
+  </div>
+</section>

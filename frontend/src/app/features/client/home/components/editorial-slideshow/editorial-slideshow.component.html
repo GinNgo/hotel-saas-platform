@@ -1,0 +1,65 @@
+<section
+  class="editorial-story"
+  aria-labelledby="editorial-story-title"
+  (mouseenter)="setHovered(true)"
+  (mouseleave)="setHovered(false)"
+  (focusin)="setFocused(true)"
+  (focusout)="setFocused(false)"
+>
+  <div class="story-media" aria-live="off">
+    <img
+      *ngIf="!imageFailed()"
+      [src]="activeSlide().imageUrl"
+      [alt]="activeSlide().altKey | translate"
+      width="1200"
+      height="720"
+      (error)="handleImageError()"
+    >
+    <div *ngIf="imageFailed()" class="image-fallback" role="img" [attr.aria-label]="'HOME.SLIDES.IMAGE_FALLBACK' | translate">
+      <i class="pi pi-map" aria-hidden="true"></i>
+    </div>
+    <div class="story-shade" aria-hidden="true"></div>
+  </div>
+
+  <div class="story-content">
+    <span class="story-kicker">{{ activeSlide().eyebrowKey | translate }}</span>
+    <h2 id="editorial-story-title">{{ activeSlide().titleKey | translate }}</h2>
+    <p>{{ activeSlide().descriptionKey | translate }}</p>
+    <a routerLink="/search" [queryParams]="activeSlide().queryParams" class="story-link">
+      <span>{{ activeSlide().ctaKey | translate }}</span>
+      <i class="pi pi-arrow-up-right" aria-hidden="true"></i>
+    </a>
+  </div>
+
+  <div class="story-controls" [attr.aria-label]="'HOME.SLIDES.CONTROLS' | translate">
+    <button type="button" (click)="showPrevious()" [attr.aria-label]="'HOME.SLIDES.PREVIOUS' | translate">
+      <i class="pi pi-arrow-left" aria-hidden="true"></i>
+    </button>
+    <div class="story-dots">
+      <button
+        *ngFor="let slide of slides(); let index = index"
+        type="button"
+        class="story-dot"
+        style="width: 2.75rem !important; min-width: 2.75rem !important; height: 2.75rem !important; min-height: 2.75rem !important; background: transparent !important"
+        [class.active]="index === activeIndex()"
+        [attr.aria-current]="index === activeIndex() ? 'true' : null"
+        [attr.aria-label]="('HOME.SLIDES.GO_TO' | translate:{ number: index + 1 })"
+        (click)="showSlide(index)"
+      >
+        <span
+          aria-hidden="true"
+          style="display: block; height: .65rem; border-radius: 999px"
+          [style.width]="index === activeIndex() ? '1.75rem' : '.65rem'"
+          [style.background]="index === activeIndex() ? '#f4d795' : 'rgba(255, 255, 255, .55)'"
+        ></span>
+      </button>
+    </div>
+    <button type="button" (click)="showNext()" [attr.aria-label]="'HOME.SLIDES.NEXT' | translate">
+      <i class="pi pi-arrow-right" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="pause-button" (click)="togglePause()" [attr.aria-pressed]="manuallyPaused()">
+      <i class="pi" [ngClass]="isPaused() ? 'pi-play' : 'pi-pause'" aria-hidden="true"></i>
+      <span>{{ (isPaused() ? 'HOME.SLIDES.PLAY' : 'HOME.SLIDES.PAUSE') | translate }}</span>
+    </button>
+  </div>
+</section>

@@ -1,0 +1,138 @@
+<div class="login-shell bg-surface text-on-surface flex flex-col font-body-md relative">
+  <!-- Background Layer with Overlay -->
+  <div class="absolute inset-0 z-0 pointer-events-none">
+    <img class="absolute inset-0 w-full h-full object-cover scale-105" alt="Sảnh LuxeStay" src="/assets/images/login-bg.png">
+    <div class="absolute inset-0 bg-primary-container/40 backdrop-blur-[2px]"></div>
+  </div>
+
+  <!-- Content Canvas -->
+  <main class="login-main relative z-10 flex-1 flex flex-col items-center px-4 md:px-gutter py-6 overflow-y-auto custom-scrollbar">
+    
+    <div class="w-full max-w-[440px] my-auto shrink-0">
+      <!-- Login Card -->
+      <div class="glass-panel border border-outline-variant rounded-xl shadow-2xl p-6 md:p-8 relative">
+        <!-- Decorative Top Border -->
+        <div class="absolute top-0 left-0 w-full h-1 bg-secondary"></div>
+
+        <a class="auth-back-link" routerLink="/" aria-label="Quay lại trang chủ">
+          <i class="pi pi-arrow-left" aria-hidden="true"></i>
+          <span>Quay lại trang chủ</span>
+        </a>
+        
+        <!-- Branding -->
+        <div class="flex flex-col items-center mb-6 shrink-0">
+          <div class="mb-2">
+            <img class="login-brand-mark" src="/assets/brand/luxestay-mark.svg" alt="LuxeStay">
+          </div>
+          <h1 class="font-headline-lg text-[28px] font-bold text-primary tracking-tight m-0">LuxeStay Portal</h1>
+          <p class="font-body-sm text-[13px] text-on-surface-variant mt-1 text-center m-0">Đăng nhập để truy cập hệ thống</p>
+        </div>
+
+        <div *ngIf="errorMessage" class="mb-4 p-2.5 bg-red-100/80 border border-red-200 text-red-700 rounded text-center text-sm font-medium backdrop-blur-sm" role="alert" aria-live="assertive">
+          {{ errorMessage }}
+        </div>
+
+        <form class="space-y-4 shrink-0" (ngSubmit)="onSubmit()" #loginForm="ngForm">
+          <!-- Email Field -->
+          <div class="space-y-1.5">
+            <label class="font-label-md text-[11px] font-bold text-on-surface-variant uppercase tracking-wider" for="username">Email hoặc tên đăng nhập</label>
+            <div class="auth-field">
+              <i class="pi pi-user field-icon field-icon--start" aria-hidden="true"></i>
+              <input class="auth-input input-focus-ring" id="username" name="username" placeholder="email@domain.com hoặc tên đăng nhập" type="text" autocomplete="username" required [(ngModel)]="loginObj.username">
+            </div>
+          </div>
+
+          <!-- Password Field -->
+          <div class="space-y-1.5">
+            <label class="font-label-md text-[11px] font-bold text-on-surface-variant uppercase tracking-wider" for="password">Mật khẩu</label>
+            <div class="auth-field">
+              <i class="pi pi-lock field-icon field-icon--start" aria-hidden="true"></i>
+              <input class="auth-input auth-input--password input-focus-ring" id="password" name="password" placeholder="••••••••" [type]="passwordVisible ? 'text' : 'password'" autocomplete="current-password" required [(ngModel)]="loginObj.password">
+              <button class="field-icon field-icon--end password-toggle" type="button" (click)="togglePasswordVisibility()" [attr.aria-label]="passwordVisible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'" [attr.aria-pressed]="passwordVisible">
+                <i class="pi" [class.pi-eye-slash]="passwordVisible" [class.pi-eye]="!passwordVisible" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Utilities Row -->
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-0.5">
+            <a class="font-body-sm text-[12px] text-primary font-bold sm:text-right hover:underline" routerLink="/forgot-password">Quên mật khẩu?</a>
+          </div>
+
+          <!-- Login Button -->
+          <button [disabled]="isLoading || !!socialProviderLoading || loginForm.invalid" class="w-full bg-primary text-on-primary py-3 font-label-md text-[12px] font-bold uppercase tracking-[0.1em] rounded-lg hover:bg-primary-container transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2 group border-0 mt-2 disabled:opacity-60 disabled:cursor-not-allowed" type="submit">
+            <ng-container *ngIf="!isLoading">
+              Đăng nhập
+              <i class="pi pi-arrow-right text-[16px] group-hover:translate-x-1 transition-transform" aria-hidden="true"></i>
+            </ng-container>
+            <ng-container *ngIf="isLoading">
+              <i class="pi pi-spin pi-spinner text-xl"></i>
+            </ng-container>
+          </button>
+        </form>
+
+        <div class="social-divider" aria-hidden="true"><span>hoặc tiếp tục với</span></div>
+
+        <div class="social-login-stack" aria-label="Đăng nhập qua nền tảng bên ngoài">
+          <div *ngIf="isGoogleConfigured" class="google-button-shell">
+            <asl-google-signin-button type="standard" size="large" text="continue_with" shape="rectangular" theme="outline" logo_alignment="left" [width]="googleButtonWidth" locale="vi"></asl-google-signin-button>
+          </div>
+          <button *ngIf="isGoogleConfigured" class="social-button social-button--google-mobile" type="button" [disabled]="!!socialProviderLoading" (click)="loginWithGoogle()" aria-label="Tiếp tục với Google" title="Tiếp tục với Google" [attr.aria-busy]="socialProviderLoading === 'google'">
+            <span class="social-mark social-mark--google" aria-hidden="true">G</span>
+            <span class="social-button__label">Tiếp tục với Google</span>
+          </button>
+
+          <button *ngIf="!isGoogleConfigured" class="social-button social-button--disabled social-button--google-fallback" type="button" disabled title="Cần cấu hình Google OAuth Client ID" aria-label="Google chưa được cấu hình">
+            <span class="social-mark social-mark--google" aria-hidden="true">G</span>
+            <span class="social-button__label">Google chưa được cấu hình</span>
+            <i class="pi pi-lock social-lock" aria-hidden="true"></i>
+          </button>
+
+          <button class="social-button social-button--facebook" type="button" [disabled]="!isFacebookConfigured || !!socialProviderLoading" (click)="loginWithFacebook()" [attr.title]="isFacebookConfigured ? null : 'Cần cấu hình Facebook App ID và App Secret'" [attr.aria-label]="isFacebookConfigured ? 'Tiếp tục với Facebook' : 'Facebook chưa được cấu hình'" [attr.aria-busy]="socialProviderLoading === 'facebook'">
+            <i class="pi" [class.pi-facebook]="socialProviderLoading !== 'facebook'" [class.pi-spin]="socialProviderLoading === 'facebook'" [class.pi-spinner]="socialProviderLoading === 'facebook'" aria-hidden="true"></i>
+            <span class="social-button__label">{{ isFacebookConfigured ? 'Tiếp tục với Facebook' : 'Facebook chưa được cấu hình' }}</span>
+            <i *ngIf="!isFacebookConfigured" class="pi pi-lock social-lock" aria-hidden="true"></i>
+          </button>
+
+          <p *ngIf="!isGoogleConfigured || !isFacebookConfigured" class="social-config-note">
+            Nút xã hội chỉ hoạt động sau khi quản trị viên cấu hình OAuth hợp lệ.
+          </p>
+        </div>
+
+        <!-- Footer within card -->
+        <div class="mt-5 text-center shrink-0">
+          <p class="font-body-sm text-[12px] text-on-surface-variant m-0">
+            Chưa có tài khoản? 
+            <a class="text-primary font-bold hover:underline decoration-secondary underline-offset-4"
+               routerLink="/register" [queryParams]="{ returnUrl: returnUrl }">Tạo tài khoản mới</a>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="login-footer relative z-10 w-full shrink-0 bg-surface-container-low/80 backdrop-blur-sm border-t border-outline-variant/30 flex items-center">
+    <div class="flex flex-col md:flex-row justify-between items-center w-full px-gutter max-w-container-max mx-auto space-y-stack-sm md:space-y-0">
+      <div class="flex flex-col md:flex-row items-center md:space-x-stack-md text-center md:text-left">
+        <span class="login-footer-brand"><img src="/assets/brand/luxestay-mark.svg" alt=""><strong>LuxeStay</strong></span>
+        <p class="font-body-sm text-body-sm text-on-surface-variant m-0">© 2026 LuxeStay Hospitality Group. All rights reserved.</p>
+      </div>
+      <div class="flex space-x-stack-md">
+        <a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors no-underline" routerLink="/privacy" (click)="openLegal($event, 'PRIVACY')">{{ i18n.text('AUTH_LEGAL.NAV.PRIVACY') }}</a>
+        <a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors no-underline" routerLink="/terms" (click)="openLegal($event, 'TERMS')">{{ i18n.text('AUTH_LEGAL.NAV.TERMS') }}</a>
+        <a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors no-underline" routerLink="/support" (click)="openLegal($event, 'SUPPORT')">{{ i18n.text('AUTH_LEGAL.NAV.SUPPORT') }}</a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<div *ngIf="legalModal" class="legal-modal-backdrop" role="presentation" (click)="closeLegal()">
+  <section class="legal-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <button type="button" class="legal-modal-close" (click)="closeLegal()" aria-label="Đóng">×</button>
+    <h2>{{ i18n.text('AUTH_LEGAL.NAV.' + legalModal) }}</h2>
+    <p>{{ legalModal === 'TERMS' ? 'Các điều khoản sử dụng dịch vụ và quy định đặt phòng của LuxeStay.' : legalModal === 'PRIVACY' ? 'LuxeStay bảo vệ thông tin tài khoản, liên hệ và lịch sử đặt phòng của bạn.' : 'Liên hệ đội ngũ LuxeStay để được hỗ trợ tài khoản, đặt phòng và thanh toán.' }}</p>
+    <a class="legal-modal-link" [routerLink]="'/' + legalModal.toLowerCase()" (click)="closeLegal()">Xem đầy đủ</a>
+  </section>
+</div>

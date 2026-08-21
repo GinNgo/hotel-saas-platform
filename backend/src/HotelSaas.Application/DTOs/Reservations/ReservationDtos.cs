@@ -7,7 +7,8 @@ public record CreateBookingHoldRequestDto(
     Guid RoomTypeId,
     DateOnly CheckInDate,
     DateOnly CheckOutDate,
-    int Quantity = 1
+    int Quantity = 1,
+    string? CouponCode = null
 );
 
 public record BookingHoldResponseDto(
@@ -17,7 +18,14 @@ public record BookingHoldResponseDto(
     Guid RoomTypeId,
     DateOnly CheckInDate,
     DateOnly CheckOutDate,
-    decimal EstimatedTotal
+    decimal EstimatedTotal,
+    decimal BaseSubtotal = 0,
+    decimal DiscountAmount = 0,
+    decimal TaxAmount = 0,
+    decimal FeeAmount = 0,
+    Guid? PromotionId = null,
+    string? PromotionCode = null,
+    string? PromotionTitle = null
 );
 
 public record ConfirmBookingRequestDto(
@@ -27,7 +35,9 @@ public record ConfirmBookingRequestDto(
     string GuestPhoneNumber,
     string? GuestIdentityCard,
     string? SpecialRequests,
-    PaymentMethod PaymentMethod
+    PaymentMethod PaymentMethod,
+    int? Adults = null,
+    int? Children = null
 );
 
 public record ReservationDto(

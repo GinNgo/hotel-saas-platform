@@ -1,0 +1,21 @@
+.tree-table-row:hover {
+    background-color: #f8f9fa;
+}
+.cursor-pointer {
+    cursor: pointer;
+}
+.context-icon {
+    visibility: hidden;
+}
+.tree-table-row:hover .context-icon {
+    visibility: visible;
+}
+:host ::ng-deep .p-treetable .p-treetable-tbody > tr > td {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+:host ::ng-deep .p-treetable .p-treetable-thead > tr > th {
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+}

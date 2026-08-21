@@ -1,0 +1,100 @@
+<div class="ai-widget-container">
+  <section
+    *ngIf="isOpen"
+    id="ai-assistant-dialog"
+    class="ai-chat-window"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="ai-assistant-title"
+  >
+    <div class="ai-header d-flex justify-content-between align-items-center p-3">
+      <div class="d-flex align-items-center">
+        <i class="pi pi-sparkles fs-4 me-2 ai-header-icon" aria-hidden="true"></i>
+        <div>
+          <h2 id="ai-assistant-title" class="ai-title">LuxeStay Concierge</h2>
+          <p class="ai-subtitle"><span class="ai-online-dot" aria-hidden="true"></span> Hướng dẫn tự động · Sẵn sàng hỗ trợ</p>
+        </div>
+      </div>
+      <button type="button" class="ai-icon-button" aria-label="Đóng trợ lý AI" (click)="toggleChat()">
+        <i class="pi pi-times fs-5" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="ai-body p-3" #scrollMe role="log" aria-live="polite" aria-relevant="additions">
+      <div *ngFor="let msg of messages" class="mb-3 d-flex" [ngClass]="msg.sender === 'user' ? 'justify-content-end' : 'justify-content-start'">
+        <div class="ai-avatar me-2" *ngIf="msg.sender === 'ai'">
+          <i class="pi pi-sparkles" aria-hidden="true"></i>
+        </div>
+
+        <div class="msg-bubble p-3 shadow-sm" [ngClass]="msg.sender === 'user' ? 'msg-user' : 'msg-ai'">
+          <span class="msg-text">{{ msg.text }}</span>
+          <small *ngIf="msg.sender === 'ai' && msg.source" class="msg-source">Nguồn: {{ msg.source }}<span *ngIf="msg.updatedAtUtc"> · {{ msg.updatedAtUtc | date:'HH:mm:ss' }}</span></small>
+          <button
+            *ngIf="msg.retryText"
+            type="button"
+            class="ai-retry-button"
+            [disabled]="isTyping"
+            (click)="retryMessage(msg.retryText)"
+          >
+            <i class="pi pi-refresh" aria-hidden="true"></i>
+            Thử gửi lại
+          </button>
+          <div class="msg-time mt-1 text-end">
+            {{ msg.time | date:'HH:mm' }}
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3 d-flex justify-content-start" *ngIf="isTyping" role="status">
+        <div class="ai-avatar me-2">
+          <i class="pi pi-sparkles" aria-hidden="true"></i>
+        </div>
+        <div class="msg-bubble msg-ai p-3 shadow-sm d-flex align-items-center">
+          <span class="visually-hidden">Đang nhận phản hồi...</span>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-footer p-3 border-top">
+      <p class="ai-disclaimer">Trợ lý cung cấp hướng dẫn chung. Hãy kiểm tra dữ liệu nghiệp vụ trước khi thao tác.</p>
+      <div class="input-group">
+        <label class="visually-hidden" for="ai-message-input">Tin nhắn cho trợ lý AI</label>
+        <input
+          id="ai-message-input"
+          type="text"
+          class="form-control"
+          placeholder="Hỏi tôi bất cứ điều gì..."
+          autocomplete="off"
+          maxlength="500"
+          [(ngModel)]="newMessage"
+          (keyup.enter)="sendMessage()"
+        >
+        <button
+          type="button"
+          class="btn ai-send-button"
+          aria-label="Gửi tin nhắn"
+          (click)="sendMessage()"
+          [disabled]="!newMessage.trim() || isTyping"
+        >
+          <i class="pi pi-send" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <button
+    #triggerButton
+    type="button"
+    class="ai-fab"
+    aria-controls="ai-assistant-dialog"
+    [attr.aria-expanded]="isOpen"
+    [attr.aria-label]="isOpen ? 'Đóng trợ lý AI' : 'Mở trợ lý AI'"
+    (click)="toggleChat()"
+    [ngClass]="{'open': isOpen}"
+  >
+    <i class="pi" [ngClass]="isOpen ? 'pi-times' : 'pi-sparkles'" aria-hidden="true"></i>
+  </button>
+</div>

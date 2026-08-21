@@ -1,0 +1,221 @@
+.partner-register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 80px);
+  background-color: var(--hotel-surface);
+  padding: 2rem 1rem;
+}
+
+.register-card {
+  background: white;
+  border-radius: var(--hotel-radius-lg);
+  box-shadow: var(--hotel-shadow-md);
+  width: 100%;
+  max-width: 600px;
+  overflow: hidden;
+}
+
+.header {
+  background-color: var(--hotel-primary);
+  color: white;
+  padding: 2rem;
+  text-align: center;
+}
+
+.header h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.header p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 0.9rem;
+}
+
+.register-form {
+  padding: 2rem;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.form-section h3 {
+  font-size: 1.1rem;
+  color: var(--hotel-text-primary);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--hotel-border);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.account-notice {
+  margin-bottom: 1rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--hotel-primary);
+  border-radius: var(--hotel-radius);
+  background: color-mix(in srgb, var(--hotel-primary) 8%, white);
+  color: var(--hotel-text-primary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+input[readonly] {
+  background: var(--hotel-surface);
+  cursor: not-allowed;
+}
+
+@media (max-width: 576px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--hotel-text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+input {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--hotel-border);
+  border-radius: var(--hotel-radius);
+  font-size: 1rem;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--hotel-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+input.invalid {
+  border-color: var(--hotel-error);
+}
+
+.error-msg {
+  color: var(--hotel-error);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  background-color: #fee2e2;
+  color: var(--hotel-error);
+  padding: 1rem;
+  border-radius: var(--hotel-radius);
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  text-align: left;
+  line-height: 1.5;
+}
+
+p-select {
+  width: 100%;
+}
+
+:host ::ng-deep .p-select {
+  width: 100%;
+  max-width: 100%;
+  min-height: 44px;
+}
+
+:host ::ng-deep .p-select-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .p-select-overlay {
+  max-width: min(34rem, calc(100vw - 2rem));
+}
+
+:host ::ng-deep .p-select-option {
+  align-items: flex-start;
+  min-height: 44px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.error-banner i {
+  margin-top: 0.15rem;
+  flex: 0 0 auto;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 0.875rem;
+  background-color: var(--hotel-primary);
+  color: white;
+  border: none;
+  border-radius: var(--hotel-radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background-color: var(--hotel-primary-dark);
+}
+
+.submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.login-link {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--hotel-text-secondary);
+}
+
+.login-link a {
+  color: var(--hotel-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-link a:hover {
+  text-decoration: underline;
+}

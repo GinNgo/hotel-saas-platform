@@ -34,6 +34,7 @@ public class RoomConfiguration : IEntityTypeConfiguration<Room>
     {
         builder.HasKey(r => r.Id);
         builder.Property(r => r.RoomNumber).HasMaxLength(20).IsRequired();
+        builder.Property(r => r.MaintenanceReason).HasMaxLength(500);
         builder.Property(r => r.RowVersion).IsRowVersion();
     }
 }
@@ -47,6 +48,28 @@ public class ReservationConfiguration : IEntityTypeConfiguration<Reservation>
         builder.HasIndex(r => r.BookingCode).IsUnique();
         builder.Property(r => r.TotalAmount).HasPrecision(18, 2);
         builder.Property(r => r.DepositAmount).HasPrecision(18, 2);
+        builder.Property(r => r.ClientRequestFingerprint).HasMaxLength(64);
+        builder.Property(r => r.GuestAccessKey).HasMaxLength(64);
+        builder.Property(r => r.ConfirmationEmailStatus).HasMaxLength(30);
+        builder.Property(r => r.ConfirmationEmailFailureReason).HasMaxLength(500);
+    }
+}
+
+public class TenantFinancialConfiguration : IEntityTypeConfiguration<Tenant>
+{
+    public void Configure(EntityTypeBuilder<Tenant> builder)
+    {
+        builder.Property(item => item.TaxRatePercent).HasPrecision(5, 2);
+        builder.Property(item => item.ServiceFeeRatePercent).HasPrecision(5, 2);
+    }
+}
+
+public class BookingHoldFinancialConfiguration : IEntityTypeConfiguration<BookingHold>
+{
+    public void Configure(EntityTypeBuilder<BookingHold> builder)
+    {
+        builder.Property(item => item.TaxAmount).HasPrecision(18, 2);
+        builder.Property(item => item.FeeAmount).HasPrecision(18, 2);
     }
 }
 
@@ -70,9 +93,15 @@ public class PrecisionConfigurations :
         builder.Property(f => f.TotalCredits).HasPrecision(18, 2);
     }
     public void Configure(EntityTypeBuilder<FolioItem> builder) => builder.Property(fi => fi.UnitPrice).HasPrecision(18, 2);
-    public void Configure(EntityTypeBuilder<Payment> builder) => builder.Property(p => p.Amount).HasPrecision(18, 2);
+    public void Configure(EntityTypeBuilder<Payment> builder)
+    {
+        builder.Property(p => p.Amount).HasPrecision(18, 2);
+        builder.Property(p => p.ClientRequestKey).HasMaxLength(200);
+    }
     public void Configure(EntityTypeBuilder<Promotion> builder)
     {
+        builder.Property(p => p.ApplicationType).HasMaxLength(20).HasDefaultValue("AUTOMATIC");
+        builder.HasIndex(p => new { p.TenantId, p.Code }).IsUnique().HasFilter("[IsDeleted] = 0");
         builder.Property(p => p.DiscountPercent).HasPrecision(5, 2);
         builder.Property(p => p.MaxDiscountAmount).HasPrecision(18, 2);
         builder.Property(p => p.MinBookingAmount).HasPrecision(18, 2);

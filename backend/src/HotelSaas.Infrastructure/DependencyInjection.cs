@@ -24,8 +24,10 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IVnPayService, VnPayService>();
+        services.AddScoped<IEmailDeliveryService, SmtpEmailDeliveryService>();
 
         services.AddHostedService<BookingHoldCleanupWorker>();
+        services.AddHostedService<NotificationRetentionWorker>();
 
         return services;
     }

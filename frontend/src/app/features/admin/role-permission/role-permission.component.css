@@ -1,0 +1,12 @@
+:host{display:block}
+.list-group-item{min-height:52px;text-align:left;transition:background-color .16s ease,color .16s ease}
+.list-group-item:focus-visible{outline:0;box-shadow:var(--hotel-focus-ring)}
+.permission-table-region{max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;border-radius:12px}
+.permission-table-region:focus-visible{outline:0;box-shadow:var(--hotel-focus-ring)}
+:host ::ng-deep .permission-table-region .p-datatable-table{min-width:900px}
+:host ::ng-deep .permission-table-region th:first-child,
+:host ::ng-deep .permission-table-region td:first-child{position:sticky;left:0;z-index:1;background:var(--hotel-card-bg,#fff);box-shadow:6px 0 10px -10px rgb(15 23 42 / .55)}
+:host ::ng-deep .permission-table-region thead th:first-child{z-index:2;background:var(--hotel-surface-muted,#f8fafc)}
+:host ::ng-deep .permission-table-region .p-checkbox{min-width:44px;min-height:44px;display:inline-grid;place-items:center}
+@media(max-width:767px){.m-3{margin:.75rem!important}.permission-table-region{margin-inline:-.5rem;padding-bottom:.35rem}}
+@media(prefers-reduced-motion:reduce){.list-group-item{transition:none}}

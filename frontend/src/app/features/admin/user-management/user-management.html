@@ -1,0 +1,181 @@
+<p-toast></p-toast>
+
+<div class="card border-0 shadow-sm m-3">
+  <div class="card-header bg-white border-0 py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+      <h5 class="mb-1 fw-bold text-primary">
+        <i class="pi {{ userType === 'CUSTOMER' ? 'pi-id-card' : 'pi-users' }} me-2"></i>
+        {{ userType === 'CUSTOMER' ? (isSystemAdministrator ? 'Quản lý Khách hàng' : 'Khách lưu trú') : 'Quản lý Nhân sự' }}
+      </h5>
+      <div class="text-muted small">
+        {{ userType === 'CUSTOMER' && !isSystemAdministrator
+          ? 'Chỉ hiển thị khách có đặt phòng tại cơ sở hiện tại. Thông tin tài khoản chỉ được xem.'
+          : 'Quản lý tài khoản, phân quyền và trạng thái.' }}
+      </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <button pButton label="Tải lại" icon="pi pi-refresh" class="p-button-sm p-button-outlined p-button-secondary" (click)="loadUsers()" [disabled]="loading || saving"></button>
+      <button *ngIf="userType === 'STAFF' || isSystemAdministrator" pButton [label]="userType === 'CUSTOMER' ? 'Thêm khách hàng' : 'Thêm nhân sự'" icon="pi pi-user-plus" class="p-button-sm p-button-primary" (click)="openNew()" [disabled]="loading || saving"></button>
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger m-3 d-flex align-items-center justify-content-between gap-3">
+    <span><i class="pi pi-exclamation-circle me-2"></i>{{ errorMessage }}</span>
+    <button pButton label="Thử lại" icon="pi pi-refresh" class="p-button-sm p-button-danger p-button-outlined" (click)="loadUsers()" [disabled]="loading"></button>
+  </div>
+
+  <div class="card-body p-0">
+    <p-table
+      [value]="users"
+      [paginator]="true"
+      [rows]="10"
+      [loading]="loading"
+      [rowHover]="true"
+      responsiveLayout="scroll"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th *ngIf="userType === 'STAFF' || isSystemAdministrator" pSortableColumn="id" style="width: 10%">ID <p-sortIcon field="id"></p-sortIcon></th>
+          <th *ngIf="userType === 'STAFF' || isSystemAdministrator" pSortableColumn="username" style="width: 20%">Tài khoản <p-sortIcon field="username"></p-sortIcon></th>
+          <th *ngIf="userType === 'CUSTOMER' && !isSystemAdministrator" pSortableColumn="fullName" style="width: 50%">Họ và tên <p-sortIcon field="fullName"></p-sortIcon></th>
+          <th pSortableColumn="email" style="width: 20%">Email <p-sortIcon field="email"></p-sortIcon></th>
+          <th *ngIf="userType === 'STAFF'" style="width: 20%">Vai trò</th>
+          <th *ngIf="userType === 'STAFF'" style="min-width: 220px">Phân công cơ sở</th>
+          <th *ngIf="userType === 'STAFF' || isSystemAdministrator" pSortableColumn="status" style="width: 15%">Trạng thái <p-sortIcon field="status"></p-sortIcon></th>
+          <th *ngIf="userType === 'STAFF' || isSystemAdministrator" style="width: 15%" class="text-center">Thao tác</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-user>
+        <tr class="tree-table-row">
+          <td *ngIf="userType === 'STAFF' || isSystemAdministrator" class="text-muted fw-bold" data-label="ID">#{{ user.id }}</td>
+          <td *ngIf="userType === 'STAFF' || isSystemAdministrator" class="text-dark fw-bold" data-label="Tài khoản">{{ user.username }}</td>
+          <td *ngIf="userType === 'CUSTOMER' && !isSystemAdministrator" class="text-dark fw-bold" data-label="Họ và tên">{{ user.fullName || 'Khách hàng' }}</td>
+          <td class="text-muted" data-label="Email">{{ user.email }}</td>
+          <td *ngIf="userType === 'STAFF'" data-label="Vai trò">
+            <p-select [options]="assignableRoles" [ngModel]="roleId(user)" (ngModelChange)="assignRole(user, $event)" optionLabel="name" optionValue="id" appendTo="body" styleClass="role-inline-select" [disabled]="saving || assigningRoleId === user.id || user.id === currentUserId" aria-label="Đổi vai trò"></p-select>
+          </td>
+          <td *ngIf="userType === 'STAFF'" class="text-muted small" data-label="Phân công cơ sở">
+            {{ assignmentLabel(user) }}
+          </td>
+          <td *ngIf="userType === 'STAFF' || isSystemAdministrator" data-label="Trạng thái">
+            <span class="badge"
+                  [ngClass]="{
+                    'bg-success': user.status === 'ACTIVE',
+                    'bg-secondary': user.status === 'INACTIVE'
+                  }">
+              {{ user.status === 'ACTIVE' ? 'Hoạt động' : 'Đã khóa' }}
+            </span>
+          </td>
+          <td *ngIf="userType === 'STAFF' || isSystemAdministrator" class="text-center" data-label="Thao tác">
+            <div class="d-flex justify-content-center gap-1">
+              <button pButton icon="pi pi-pencil" class="p-button-text p-button-secondary p-button-sm" [attr.aria-label]="'Sửa người dùng ' + (user.fullName || user.username)" (click)="editUser(user)" [disabled]="saving"></button>
+              <button *ngIf="userType === 'STAFF' && canManageLifecycle(user, 'ACTIVE')" pButton icon="pi pi-ban" class="p-button-text p-button-danger p-button-sm" [attr.aria-label]="'Ngừng quyền truy cập của ' + (user.fullName || user.username)" (click)="openLifecycle(user, 'deactivate')" [disabled]="saving"></button>
+              <button *ngIf="userType === 'STAFF' && canManageLifecycle(user, 'INACTIVE')" pButton icon="pi pi-user-plus" class="p-button-text p-button-success p-button-sm" [attr.aria-label]="'Tuyển lại ' + (user.fullName || user.username)" (click)="openLifecycle(user, 'reactivate')" [disabled]="saving"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="userType === 'STAFF' ? 7 : (isSystemAdministrator ? 5 : 2)" class="text-center p-4 text-muted">Không tìm thấy dữ liệu người dùng.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog [(visible)]="displayDialog" [modal]="true" [style]="{width: '750px'}" [header]="(userDialogMode === 'create' ? 'Thêm ' : 'Cập nhật ') + (userType === 'CUSTOMER' ? 'Khách hàng' : 'Nhân sự')" [draggable]="false" [resizable]="false" appendTo="body">
+  <div class="row pt-2">
+    <div class="col-12 col-md-6 mb-3 field">
+      <label for="staff-username" class="fw-bold mb-1">Tên tài khoản <span class="text-danger">*</span></label>
+      <input id="staff-username" type="text" pInputText [(ngModel)]="userForm.username" class="w-100" autocomplete="username" maxlength="50" [disabled]="userDialogMode === 'edit' || saving" required autofocus [attr.aria-invalid]="!!usernameError" aria-describedby="staff-username-help" />
+      <small *ngIf="usernameError" id="staff-username-help" class="text-danger">{{ usernameError }}</small>
+    </div>
+    <div class="col-12 col-md-6 mb-3 field">
+      <label for="staff-email" class="fw-bold mb-1">Email <span class="text-danger">*</span></label>
+      <input id="staff-email" type="email" pInputText [(ngModel)]="userForm.email" class="w-100" autocomplete="email" [disabled]="userDialogMode === 'edit' || saving" required [attr.aria-invalid]="!!emailError" aria-describedby="staff-email-help" />
+      <small *ngIf="emailError" id="staff-email-help" class="text-danger">{{ emailError }}</small>
+    </div>
+    <div class="col-12 col-md-6 mb-3 field">
+      <label for="staff-password" class="fw-bold mb-1">Mật khẩu <span *ngIf="userDialogMode === 'create'" class="text-danger">*</span></label>
+      <input id="staff-password" type="password" pInputText [(ngModel)]="userForm.password" class="w-100" autocomplete="new-password" [attr.minlength]="passwordPolicy.minLength" [attr.maxlength]="passwordPolicy.maxLength" [placeholder]="userDialogMode === 'edit' ? 'Để trống nếu không đổi' : ''" [disabled]="saving" [attr.aria-invalid]="!!passwordError" aria-describedby="staff-password-help" />
+      <small id="staff-password-help" [class.text-danger]="passwordError">{{ passwordError || ('Từ ' + passwordPolicy.minLength + ' ký tự.') }}</small>
+    </div>
+    <div class="col-12 col-md-6 mb-3 field">
+      <label class="fw-bold mb-1">Họ và tên</label>
+      <input type="text" pInputText [(ngModel)]="userForm.fullName" class="w-100" [disabled]="saving" />
+    </div>
+    <div class="col-12 col-md-6 mb-3 field">
+      <label class="fw-bold mb-1">Số điện thoại</label>
+      <input type="text" pInputText [(ngModel)]="userForm.phone" class="w-100" [disabled]="saving" />
+    </div>
+    <div class="col-12 col-md-6 mb-3 field">
+      <label class="fw-bold mb-1">Trạng thái</label>
+      <p-select [options]="[{label: 'Hoạt động (ACTIVE)', value: 'ACTIVE'}, {label: 'Khóa (INACTIVE)', value: 'INACTIVE'}]" [(ngModel)]="userForm.status" appendTo="body" styleClass="w-100" [disabled]="saving || (userType === 'STAFF' && userDialogMode === 'edit')"></p-select>
+      <small *ngIf="userType === 'STAFF' && userDialogMode === 'edit'" class="text-muted d-block mt-1">Dùng thao tác ngừng quyền truy cập hoặc tuyển lại để lưu đầy đủ lịch sử.</small>
+    </div>
+    <ng-container *ngIf="userType === 'STAFF'">
+      <div class="col-12 col-md-6 mb-3 field">
+        <label class="fw-bold mb-1" for="staff-roles">Vai trò <span class="text-danger">*</span></label>
+        <p-multiSelect inputId="staff-roles" [options]="assignableRoles" [(ngModel)]="userForm.roleIds" optionLabel="name" optionValue="id" defaultLabel="Chọn vai trò" display="chip" appendTo="body" styleClass="w-100" [disabled]="saving"></p-multiSelect>
+        <small *ngIf="!userForm.roleIds?.length" class="text-danger d-block mt-1">Chọn ít nhất một vai trò.</small>
+      </div>
+      <div class="col-12 col-md-6 mb-3 field">
+        <label class="fw-bold mb-1">Cơ sở lưu trú</label>
+        <p-select [options]="hotels" [(ngModel)]="userForm.hotelId" optionLabel="name" optionValue="id" [showClear]="userDialogMode === 'create' && hotels.length > 1" placeholder="Chọn cơ sở quản lý" appendTo="body" styleClass="w-100" [disabled]="saving || userDialogMode === 'edit'"></p-select>
+        <small *ngIf="userDialogMode === 'edit'" class="text-muted d-block mt-1">Cơ sở được gắn theo phân công nhân sự. Dùng thao tác ngừng truy cập/tuyển lại nếu cần chuyển cơ sở.</small>
+      </div>
+    </ng-container>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button pButton label="Hủy" icon="pi pi-times" class="p-button-text" (click)="displayDialog = false" [disabled]="saving"></button>
+    <button pButton [label]="saving ? 'Đang lưu...' : 'Lưu'" [icon]="saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'" class="p-button-primary" (click)="saveUser()" [disabled]="saving || !userFormValid"></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="lifecycleDialogVisible"
+  [modal]="true"
+  [style]="{width: '520px', maxWidth: 'calc(100vw - 2rem)'}"
+  [header]="lifecycleMode === 'deactivate' ? 'Ngừng quyền truy cập nhân viên' : 'Tuyển lại nhân viên'"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+>
+  <div class="lifecycle-note">
+    <i class="pi" [ngClass]="lifecycleMode === 'deactivate' ? 'pi-shield' : 'pi-history'"></i>
+    <div>
+      <strong>{{ lifecycleUser?.fullName || lifecycleUser?.username }}</strong>
+      <span>{{ lifecycleMode === 'deactivate' ? 'Tài khoản chỉ bị khóa khi không còn phân công hoạt động.' : 'Hệ thống tạo một kỳ phân công mới và giữ nguyên lịch sử cũ.' }}</span>
+    </div>
+  </div>
+
+  <div class="field mt-3">
+    <label class="fw-bold mb-1" for="lifecycle-property">Cơ sở lưu trú</label>
+    <p-select
+      inputId="lifecycle-property"
+      [options]="lifecycleAssignments(lifecycleUser, lifecycleMode)"
+      [(ngModel)]="lifecycleHotelId"
+      optionLabel="hotelName"
+      optionValue="hotelId"
+      appendTo="body"
+      styleClass="w-100"
+      [disabled]="saving"
+    ></p-select>
+  </div>
+
+  <div class="field mt-3">
+    <label class="fw-bold mb-1" for="lifecycle-reason">Lý do <span class="text-danger">*</span></label>
+    <textarea id="lifecycle-reason" pInputTextarea [(ngModel)]="lifecycleReason" rows="4" maxlength="500" class="w-100" [disabled]="saving" placeholder="Ví dụ: Kết thúc hợp đồng, nghỉ việc, tuyển lại theo hợp đồng mới..."></textarea>
+    <small class="text-muted">Lý do được lưu cùng người thực hiện và thời điểm thay đổi.</small>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button pButton label="Hủy" icon="pi pi-times" class="p-button-text" (click)="lifecycleDialogVisible = false" [disabled]="saving"></button>
+    <button pButton [label]="saving ? 'Đang xử lý...' : (lifecycleMode === 'deactivate' ? 'Ngừng truy cập' : 'Tuyển lại')" [icon]="saving ? 'pi pi-spin pi-spinner' : (lifecycleMode === 'deactivate' ? 'pi pi-ban' : 'pi pi-user-plus')" [class.p-button-danger]="lifecycleMode === 'deactivate'" [class.p-button-success]="lifecycleMode === 'reactivate'" (click)="submitLifecycle()" [disabled]="saving || lifecycleReason.trim().length < 3"></button>
+  </ng-template>
+</p-dialog>

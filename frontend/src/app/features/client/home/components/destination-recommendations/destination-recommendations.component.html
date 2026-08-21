@@ -1,0 +1,152 @@
+<section class="recommendation-section" aria-labelledby="home-recommendations-title">
+  <header class="section-intro">
+    <div>
+      <span class="eyebrow">{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.KICKER') }}</span>
+      <h2 id="home-recommendations-title">{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.TITLE') }}</h2>
+      <p>{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.DESCRIPTION') }}</p>
+    </div>
+    @if (selectedDestination()) {
+      <a class="view-all" routerLink="/search" [queryParams]="searchQueryParams()">
+        <span>{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.VIEW_ALL') }}</span>
+        <i class="pi pi-arrow-right" aria-hidden="true"></i>
+      </a>
+    }
+  </header>
+
+  @if (destinationsLoading()) {
+    <div class="tab-skeletons" aria-busy="true" [attr.aria-label]="i18n.text('PUBLIC.HOME_RECOMMENDATIONS.DESTINATIONS_LOADING')">
+      @for (item of [1, 2, 3, 4]; track item) { <span></span> }
+    </div>
+    <div class="card-track skeleton-track" aria-hidden="true">
+      @for (item of [1, 2, 3, 4]; track item) {
+        <div class="card-skeleton"><span></span><b></b><i></i><em></em></div>
+      }
+    </div>
+  } @else if (destinationsError()) {
+    <div class="feedback-state error-state" role="alert">
+      <span class="feedback-icon" aria-hidden="true"><i class="pi pi-wifi"></i></span>
+      <div>
+        <strong>{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.DESTINATIONS_ERROR_TITLE') }}</strong>
+        <p>{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.DESTINATIONS_ERROR_BODY') }}</p>
+      </div>
+      <button type="button" (click)="retryDestinations()">{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.RETRY') }}</button>
+    </div>
+  } @else if (!destinations().length) {
+    <div class="feedback-state" role="status">
+      <span class="feedback-icon" aria-hidden="true"><i class="pi pi-map"></i></span>
+      <div>
+        <strong>{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.DESTINATIONS_EMPTY_TITLE') }}</strong>
+        <p>{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.DESTINATIONS_EMPTY_BODY') }}</p>
+      </div>
+      <a routerLink="/search" [queryParams]="propertyQueryParams()">{{ i18n.text('PUBLIC.HOME_CARDS.OPEN_SEARCH') }}</a>
+    </div>
+  } @else {
+    <div class="destination-tabs" role="tablist" [attr.aria-label]="i18n.text('PUBLIC.HOME_RECOMMENDATIONS.TABLIST_LABEL')">
+      @for (destination of destinations(); track destination.id) {
+        <button
+          type="button"
+          role="tab"
+          [id]="'destination-tab-' + destination.id"
+          [attr.aria-controls]="'destination-panel-' + destination.id"
+          [attr.aria-selected]="selectedProvinceId() === destination.id"
+          [class.active]="selectedProvinceId() === destination.id"
+          (click)="selectDestination(destination.id)">
+          <span>{{ destination.name }}</span>
+          <small>{{ i18n.text('PUBLIC.HOME_CARDS.PROPERTY_COUNT', { count: destination.propertyCount }) }}</small>
+        </button>
+      }
+    </div>
+
+    <div
+      class="recommendation-panel"
+      role="tabpanel"
+      [id]="'destination-panel-' + selectedProvinceId()"
+      [attr.aria-labelledby]="'destination-tab-' + selectedProvinceId()"
+      [attr.aria-busy]="recommendationsLoading()">
+      @if (recommendationsLoading()) {
+        <div class="card-track skeleton-track" [attr.aria-label]="i18n.text('PUBLIC.HOME_RECOMMENDATIONS.PROPERTIES_LOADING')">
+          @for (item of [1, 2, 3, 4]; track item) {
+            <div class="card-skeleton"><span></span><b></b><i></i><em></em></div>
+          }
+        </div>
+      } @else if (recommendationsError()) {
+        <div class="feedback-state error-state" role="alert">
+          <span class="feedback-icon" aria-hidden="true"><i class="pi pi-refresh"></i></span>
+          <div>
+            <strong>{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.PROPERTIES_ERROR_TITLE') }}</strong>
+            <p>{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.PROPERTIES_ERROR_BODY') }}</p>
+          </div>
+          <button type="button" (click)="retryRecommendations()">{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.RETRY') }}</button>
+        </div>
+      } @else if (!recommendations().length) {
+        <div class="feedback-state" role="status">
+          <span class="feedback-icon" aria-hidden="true"><i class="pi pi-calendar-times"></i></span>
+          <div>
+            <strong>{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.PROPERTIES_EMPTY_TITLE') }}</strong>
+            <p>{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.PROPERTIES_EMPTY_BODY') }}</p>
+          </div>
+          <a routerLink="/search" [queryParams]="searchQueryParams()">{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.CHANGE_SEARCH') }}</a>
+        </div>
+      } @else {
+        <div class="card-track">
+          @for (property of recommendations(); track property.propertyId) {
+            <a class="property-card" [routerLink]="['/hotel', property.propertyId]" [queryParams]="propertyQueryParams()">
+              <span class="property-image">
+                <img
+                  [src]="displayImage(property)"
+                  [alt]="property.imageAlt || property.name"
+                  loading="lazy"
+                  width="640"
+                  height="480"
+                  (error)="handleImageError($event, property.propertyType)">
+                <span class="property-type">{{ propertyTypeLabel(property.propertyType) }}</span>
+              </span>
+              <span class="property-body">
+                <span class="title-row">
+                  <strong>{{ property.name }}</strong>
+                  @if (property.reviewScore && property.reviewCount) {
+                    <b [attr.aria-label]="i18n.text('PUBLIC.HOME_RECOMMENDATIONS.REVIEW_SCORE', { score: property.reviewScore })">
+                      {{ property.reviewScore | number:'1.1-1' }}
+                    </b>
+                  }
+                </span>
+                <span class="location-line">
+                  <i class="pi pi-map-marker" aria-hidden="true"></i>
+                  {{ property.wardName || property.provinceName }}
+                </span>
+                <span class="meta-line">
+                  <span>{{ property.reviewCount ? i18n.text('PUBLIC.HOME_CARDS.REVIEW_COUNT', { count: property.reviewCount }) : i18n.text('PUBLIC.HOME_CARDS.NO_REVIEWS') }}</span>
+                  @if (property.availableRoomCount !== null && property.availableRoomCount !== undefined) {
+                    <span>{{ i18n.text('PUBLIC.HOME_CARDS.AVAILABLE_ROOMS', { count: property.availableRoomCount }) }}</span>
+                  }
+                </span>
+                @if (property.pricing) {
+                  <span class="price-line">
+                    <small>{{ i18n.text('PUBLIC.HOME_CARDS.FROM') }}</small>
+                    @if (property.pricing.totalDiscount && property.pricing.finalNightlyPrice && property.pricing.finalNightlyPrice < property.pricing.nightlyPrice) {
+                      <del>{{ property.pricing.nightlyPrice | currency:'VND':'symbol':'1.0-0' }}</del>
+                      <strong>{{ property.pricing.finalNightlyPrice | currency:'VND':'symbol':'1.0-0' }}</strong>
+                    } @else {
+                      <strong>{{ property.pricing.nightlyPrice | currency:'VND':'symbol':'1.0-0' }}</strong>
+                    }
+                    <small>{{ i18n.text('PUBLIC.HOME_CARDS.PER_NIGHT') }}</small>
+                  </span>
+                  @if (property.quote?.totalDiscount) {
+                    <span class="promotion-proof">
+                      {{ i18n.text('PUBLIC.HOME_CARDS.PROMOTION_APPLIED', { amount: formatVnd(property.quote.totalDiscount) }) }}
+                      @if (property.quote.memberBenefit.eligible) {
+                        <span>{{ i18n.text('PUBLIC.HOME_CARDS.MEMBER_PRICE', { tier: memberTierLabel(property) }) }}</span>
+                      }
+                    </span>
+                  }
+                } @else {
+                  <span class="price-unavailable">{{ i18n.text('PUBLIC.HOME_RECOMMENDATIONS.PRICE_UNAVAILABLE') }}</span>
+                }
+              </span>
+            </a>
+          }
+        </div>
+      }
+    </div>
+  }
+</section>

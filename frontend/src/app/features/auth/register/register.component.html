@@ -1,0 +1,172 @@
+<div class="register-page-shell bg-gradient-to-r from-[#f0f4f8] to-white text-on-background min-h-screen w-screen flex flex-col font-body-md overflow-x-hidden md:h-screen md:overflow-hidden relative">
+  <!-- Top Navigation Bar (Simplified for Auth) -->
+  <nav class="w-full bg-white/80 backdrop-blur-md border-b border-outline-variant z-50 shrink-0">
+    <div class="max-w-[1440px] mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+      <a class="flex items-center gap-2 text-primary no-underline" routerLink="/" aria-label="LuxeStay - Trang chủ">
+        <img class="register-brand-mark" src="/assets/brand/luxestay-mark.svg" alt="" aria-hidden="true">
+        <span class="register-brand-copy"><strong>LuxeStay</strong><small>Hotels</small></span>
+      </a>
+      <div class="flex items-center gap-4">
+        <a class="font-body-sm text-[13px] text-on-surface-variant font-bold" routerLink="/support">{{ i18n.text('AUTH_LEGAL.NAV.SUPPORT') }}</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Canvas -->
+  <main class="flex-1 flex flex-col items-center justify-center relative overflow-visible md:overflow-hidden py-4 px-4">
+    <!-- Registration Container -->
+    <div class="register-card relative z-10 w-full max-w-[1000px] flex-none md:flex-1 max-h-[650px] shrink-0 flex flex-col md:flex-row shadow-2xl rounded-xl overflow-hidden bg-surface border border-outline-variant">
+      
+      <!-- Left Side: Editorial Image/Mood Section -->
+      <div class="hidden md:flex w-5/12 relative flex-col justify-end p-8 text-on-primary shrink-0">
+        <img alt="Sảnh LuxeStay" class="absolute inset-0 w-full h-full object-cover" src="/assets/images/login-bg.png">
+        <div class="absolute inset-0 bg-gradient-to-t from-surface-dark/90 via-surface-dark/40 to-transparent"></div>
+        <div class="relative z-10 space-y-3">
+          <h2 class="font-headline-lg text-[28px] leading-tight font-bold m-0 text-white">Trải nghiệm Nghệ thuật Lòng mến khách</h2>
+          <p class="font-body-md text-[14px] opacity-90 m-0 text-white/90">Gia nhập mạng lưới độc quyền của các nhà quản lý khách sạn. Nâng tầm tiêu chuẩn vận hành của bạn ngay hôm nay.</p>
+        </div>
+      </div>
+
+      <!-- Right Side: Registration Form -->
+      <div class="w-full md:w-7/12 p-4 md:p-6 flex flex-col overflow-y-auto custom-scrollbar bg-surface relative">
+        <div class="max-w-[420px] mx-auto w-full py-2 shrink-0 my-auto">
+          <div class="mb-5 shrink-0">
+            <h2 class="font-headline-lg text-[22px] font-bold text-primary mb-0.5 mt-0">Tạo tài khoản</h2>
+            <p class="font-body-md text-[13px] text-on-surface-variant m-0">Hoàn thành biểu mẫu để bắt đầu hành trình với LuxeStay.</p>
+          </div>
+          <form class="space-y-2.5 shrink-0" (ngSubmit)="onSubmit()" #registerForm="ngForm">
+            
+            <!-- Messages -->
+            <div *ngIf="errorMessage" class="register-alert register-alert--error" role="alert" aria-live="assertive">
+              {{ errorMessage }}
+            </div>
+            <div *ngIf="successMessage" class="register-alert register-alert--success" role="status" aria-live="polite">
+              {{ successMessage }}
+            </div>
+            <!-- Full Name Field -->
+            <div class="space-y-0.5">
+              <label class="font-label-md text-[10px] font-bold text-on-surface-variant block uppercase tracking-wider" for="full_name">Họ và Tên</label>
+              <div class="auth-field">
+                <i class="pi pi-user field-icon field-icon--start" aria-hidden="true"></i>
+                <input class="auth-input form-input-focus" id="full_name" name="fullName" placeholder="Nguyễn Văn An" type="text" autocomplete="name" required [(ngModel)]="registerObj.fullName">
+              </div>
+            </div>
+
+            <!-- Email Field -->
+            <div class="space-y-0.5">
+              <label class="font-label-md text-[10px] font-bold text-on-surface-variant block uppercase tracking-wider" for="email">Email</label>
+              <div class="auth-field">
+                <i class="pi pi-envelope field-icon field-icon--start" aria-hidden="true"></i>
+                <input class="auth-input form-input-focus" id="email" name="email" placeholder="email@domain.com" type="email" autocomplete="email" inputmode="email" required email [(ngModel)]="registerObj.email">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              <!-- Password Field -->
+              <div class="space-y-0.5">
+                <label class="font-label-md text-[10px] font-bold text-on-surface-variant block uppercase tracking-wider" for="password">Mật khẩu</label>
+                <div class="auth-field">
+                  <i class="pi pi-lock field-icon field-icon--start" aria-hidden="true"></i>
+                  <input class="auth-input auth-input--password form-input-focus" id="password" name="password" placeholder="••••••••" [type]="passwordVisible ? 'text' : 'password'" autocomplete="new-password" required [attr.minlength]="passwordPolicy.minLength" [attr.maxlength]="passwordPolicy.maxLength" [(ngModel)]="registerObj.password">
+                  <button class="field-icon field-icon--end password-toggle" type="button" (click)="togglePasswordVisibility('password')" [attr.aria-label]="passwordVisible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'" [attr.aria-pressed]="passwordVisible">
+                    <i class="pi" [class.pi-eye-slash]="passwordVisible" [class.pi-eye]="!passwordVisible" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Confirm Password Field -->
+              <div class="space-y-0.5">
+                <label class="font-label-md text-[10px] font-bold text-on-surface-variant block uppercase tracking-wider" for="confirmPassword">Xác nhận mật khẩu</label>
+                <div class="auth-field">
+                  <i class="pi pi-lock field-icon field-icon--start" aria-hidden="true"></i>
+                  <input class="auth-input auth-input--password form-input-focus" id="confirmPassword" name="confirmPassword" placeholder="••••••••" [type]="confirmPasswordVisible ? 'text' : 'password'" autocomplete="new-password" required [attr.minlength]="passwordPolicy.minLength" [attr.maxlength]="passwordPolicy.maxLength" [(ngModel)]="registerObj.confirmPassword">
+                  <button class="field-icon field-icon--end password-toggle" type="button" (click)="togglePasswordVisibility('confirmPassword')" [attr.aria-label]="confirmPasswordVisible ? 'Ẩn mật khẩu xác nhận' : 'Hiện mật khẩu xác nhận'" [attr.aria-pressed]="confirmPasswordVisible">
+                    <i class="pi" [class.pi-eye-slash]="confirmPasswordVisible" [class.pi-eye]="!confirmPasswordVisible" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Phone Number -->
+            <div class="space-y-0.5">
+              <label class="font-label-md text-[10px] font-bold text-on-surface-variant block uppercase tracking-wider" for="phone">Số điện thoại</label>
+              <div class="phone-field flex items-stretch shadow-sm rounded-md border border-outline-variant focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all duration-200">
+                <div class="relative flex items-center bg-surface-container-low border-r border-outline-variant shrink-0 rounded-l-md">
+                   <select class="country-code-select pl-2.5 pr-6 py-2 bg-transparent font-body-md text-[12px] font-medium text-on-surface outline-none appearance-none cursor-pointer border-0" name="countryCode" [(ngModel)]="registerObj.countryCode">
+                      <option value="+84">🇻🇳 +84</option>
+                      <option value="+1">🇺🇸 +1</option>
+                      <option value="+44">🇬🇧 +44</option>
+                      <option value="+61">🇦🇺 +61</option>
+                      <option value="+81">🇯🇵 +81</option>
+                      <option value="+82">🇰🇷 +82</option>
+                      <option value="+86">🇨🇳 +86</option>
+                      <option value="+49">🇩🇪 +49</option>
+                      <option value="+33">🇫🇷 +33</option>
+                      <option value="+65">🇸🇬 +65</option>
+                   </select>
+                   <i class="pi pi-chevron-down field-icon country-code-arrow" aria-hidden="true"></i>
+                </div>
+                <input class="phone-input w-full pl-3 pr-3 py-2 bg-white font-body-md text-[12px] text-on-surface border-0 outline-none placeholder:text-gray-400 rounded-r-md" id="phone" name="phone" placeholder="901 234 567" type="tel" autocomplete="tel-national" inputmode="tel" [(ngModel)]="registerObj.phone">
+              </div>
+            </div>
+
+            <!-- Terms and Privacy -->
+            <div class="flex items-start gap-2 pt-0.5">
+              <div class="flex items-center h-4">
+                <input class="h-[13px] w-[13px] rounded border-outline-variant text-primary focus:ring-primary transition-all cursor-pointer m-0" id="terms" name="terms" type="checkbox" aria-describedby="terms-consent-copy" [(ngModel)]="registerObj.terms">
+              </div>
+              <p id="terms-consent-copy" class="text-[11px] text-on-surface-variant leading-5 m-0">
+                <label class="select-none cursor-pointer" for="terms">{{ i18n.text('AUTH_LEGAL.CONSENT.PREFIX') }}</label>
+                <a class="text-primary font-bold hover:underline terms-consent-link" href="/terms" (click)="openLegal($event, 'TERMS')">{{ i18n.text('AUTH_LEGAL.NAV.TERMS') }}</a>
+                {{ i18n.text('AUTH_LEGAL.CONSENT.AND') }}
+                <a class="text-primary font-bold hover:underline terms-consent-link" href="/privacy" (click)="openLegal($event, 'PRIVACY')">{{ i18n.text('AUTH_LEGAL.NAV.PRIVACY') }}</a>.
+              </p>
+            </div>
+
+            <!-- Action Button -->
+            <div class="pt-1.5">
+              <button class="w-full bg-primary text-white py-2.5 px-4 rounded-md font-bold text-[11px] uppercase tracking-widest hover:bg-primary-container active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5 border-0 disabled:opacity-50 disabled:cursor-not-allowed" type="submit" [disabled]="isLoading || registerForm.invalid">
+                <span *ngIf="!isLoading">Tạo tài khoản</span>
+                <i *ngIf="isLoading" class="pi pi-spin pi-spinner text-[14px]"></i>
+                <i *ngIf="!isLoading" class="pi pi-arrow-right text-[14px]"></i>
+              </button>
+            </div>
+          </form>
+          
+          <!-- Footer Link -->
+          <div class="mt-4 text-center shrink-0">
+            <p class="font-body-sm text-[12px] text-on-surface-variant m-0">
+              Đã có tài khoản? 
+              <a class="text-primary font-bold hover:underline" routerLink="/login">Đăng nhập</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-surface-container-low border-t border-outline-variant shrink-0">
+    <div class="flex flex-col md:flex-row justify-between items-center py-4 px-gutter max-w-container-max mx-auto gap-stack-md min-h-[64px]">
+      <div class="flex flex-col md:flex-row items-center md:items-start gap-4">
+        <span class="font-headline-md text-headline-md text-primary font-bold">LuxeStay</span>
+        <p class="font-body-sm text-body-sm text-on-surface-variant m-0 mt-1">© 2026 LuxeStay Hospitality Group. All rights reserved.</p>
+      </div>
+      <div class="flex flex-wrap justify-center gap-x-6 gap-y-2">
+        <a class="font-body-sm text-[13px] text-on-surface-variant hover:text-primary transition-colors no-underline font-medium" routerLink="/privacy">{{ i18n.text('AUTH_LEGAL.NAV.PRIVACY') }}</a>
+        <a class="font-body-sm text-[13px] text-on-surface-variant hover:text-primary transition-colors no-underline font-medium" routerLink="/terms">{{ i18n.text('AUTH_LEGAL.NAV.TERMS') }}</a>
+        <a class="font-body-sm text-[13px] text-on-surface-variant hover:text-primary transition-colors no-underline font-medium" routerLink="/cookies">{{ i18n.text('AUTH_LEGAL.NAV.COOKIES') }}</a>
+        <a class="font-body-sm text-[13px] text-on-surface-variant hover:text-primary transition-colors no-underline font-medium" routerLink="/contact">{{ i18n.text('AUTH_LEGAL.NAV.CONTACT') }}</a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<div *ngIf="legalModal" class="legal-modal-backdrop" role="presentation" (click)="closeLegal()">
+  <section class="legal-modal" role="dialog" aria-modal="true" aria-labelledby="legal-modal-title" (click)="$event.stopPropagation()">
+    <button type="button" class="legal-modal-close" (click)="closeLegal()" aria-label="Đóng">×</button>
+    <h2 id="legal-modal-title">{{ legalModal === 'TERMS' ? i18n.text('AUTH_LEGAL.NAV.TERMS') : i18n.text('AUTH_LEGAL.NAV.PRIVACY') }}</h2>
+    <p>{{ legalModal === 'TERMS' ? 'Các điều khoản sử dụng dịch vụ và quy định đặt phòng của LuxeStay.' : 'LuxeStay bảo vệ thông tin tài khoản, liên hệ và lịch sử đặt phòng của bạn.' }}</p>
+    <a class="legal-modal-link" [routerLink]="legalModal === 'TERMS' ? '/terms' : '/privacy'" (click)="closeLegal()">Xem đầy đủ</a>
+  </section>
+</div>

@@ -1,0 +1,54 @@
+<section class="support-page" aria-labelledby="system-support-title">
+  <header class="support-header">
+    <div>
+      <p class="eyebrow">LUXESTAY CARE · ĐỐI TÁC</p>
+      <h2 id="system-support-title">Liên hệ quản trị hệ thống</h2>
+      <p>Trao đổi trực tiếp với Admin/Super Admin về tài khoản, gói phần mềm và vận hành hệ thống.</p>
+    </div>
+    <span class="connection" [class.connected]="connectionState() === 'connected'">
+      {{ connectionState() === 'connected' ? 'Đã kết nối' : 'Chưa kết nối' }}
+    </span>
+  </header>
+
+  @if (!propertyId) {
+    <div class="state error" role="alert">Vui lòng chọn một cơ sở trước khi bắt đầu cuộc trò chuyện.</div>
+  }
+
+  <div #messageStream class="message-stream" role="log" aria-live="polite">
+    @if (historyState() === 'loading') {
+      <div class="state">Đang tải lịch sử hỗ trợ…</div>
+    } @else if (historyState() === 'error') {
+      <div class="state error"><span>{{ errorMessage() }}</span><button type="button" (click)="retry()">Thử lại</button></div>
+    } @else if (messages().length === 0) {
+      <div class="state empty">
+        <span class="material-symbols-outlined" aria-hidden="true">support_agent</span>
+        <strong>Bắt đầu yêu cầu hỗ trợ</strong>
+        <p>Hãy mô tả vấn đề. Hội thoại này chỉ được gửi đến đội ngũ quản trị LuxeStay.</p>
+      </div>
+    }
+
+    @for (message of messages(); track message.id || $index) {
+      <article class="message" [class.own]="isOwnMessage(message)">
+        <div>
+          <p>{{ message.content }}</p>
+          @if (message.timestamp) { <time [attr.datetime]="message.timestamp">{{ message.timestamp | date:'dd/MM/yyyy HH:mm' }}</time> }
+        </div>
+      </article>
+    }
+  </div>
+
+  <form class="composer" (ngSubmit)="sendMessage()">
+    <label for="tenant-support-message">Nội dung cần hỗ trợ</label>
+    <div>
+      <textarea id="tenant-support-message" name="tenantSupportMessage" rows="3" maxlength="2000"
+        [(ngModel)]="newMessage" [disabled]="!propertyId || !canCreate || isSending()"
+        placeholder="Mô tả vấn đề bạn cần Admin LuxeStay hỗ trợ…"></textarea>
+      <button type="submit" [disabled]="!propertyId || !canCreate || !newMessage.trim() || isSending()">
+        <span class="material-symbols-outlined" aria-hidden="true">send</span>
+        {{ isSending() ? 'Đang gửi' : 'Gửi yêu cầu' }}
+      </button>
+    </div>
+    @if (errorMessage() && historyState() !== 'error') { <p class="inline-error" role="alert">{{ errorMessage() }}</p> }
+    @if (!canCreate) { <p class="inline-error"><span aria-hidden="true">🔒</span> Bạn chỉ có quyền xem lịch sử hỗ trợ.</p> }
+  </form>
+</section>

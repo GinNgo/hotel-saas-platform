@@ -1,0 +1,76 @@
+<a class="skip-link" href="#public-information-content">
+  {{ i18n.text('AUTH_LEGAL.A11Y.SKIP_TO_CONTENT') }}
+</a>
+
+<div class="information-shell">
+  <main id="public-information-content" class="information-main" tabindex="-1">
+    <section class="information-hero" aria-labelledby="public-information-title">
+      <p class="eyebrow">{{ i18n.text('AUTH_LEGAL.COMMON.EYEBROW') }}</p>
+      <h1 #pageHeading id="public-information-title" tabindex="-1">{{ pageText('TITLE') }}</h1>
+      <p class="intro">{{ pageText('INTRO') }}</p>
+      <p class="updated">
+        {{ i18n.text('AUTH_LEGAL.COMMON.LAST_UPDATED') }}
+        <time datetime="2026-08-04">{{ i18n.text('AUTH_LEGAL.COMMON.LAST_UPDATED_VALUE') }}</time>
+      </p>
+    </section>
+
+    <nav class="information-nav" [attr.aria-label]="i18n.text('AUTH_LEGAL.A11Y.INFORMATION_NAVIGATION')">
+      <a
+        *ngFor="let item of navigationItems"
+        [routerLink]="item.route"
+        [attr.aria-current]="pageKind === item.kind ? 'page' : null"
+      >
+        {{ navigationText(item.kind) }}
+      </a>
+    </nav>
+
+    <article class="information-article">
+      <section *ngFor="let sectionNumber of sectionNumbers">
+        <h2>{{ pageText('SECTION_' + sectionNumber + '_TITLE') }}</h2>
+        <p>{{ pageText('SECTION_' + sectionNumber + '_BODY') }}</p>
+      </section>
+
+      <form *ngIf="pageKind === 'COOKIES'" class="cookie-form" (ngSubmit)="saveCookiePreferences()">
+        <fieldset>
+          <legend>{{ i18n.text('AUTH_LEGAL.COOKIES.SETTINGS_TITLE') }}</legend>
+          <label>
+            <input type="checkbox" checked disabled />
+            <span>
+              <strong>{{ i18n.text('AUTH_LEGAL.COOKIES.ESSENTIAL_TITLE') }}</strong>
+              <small>{{ i18n.text('AUTH_LEGAL.COOKIES.ESSENTIAL_BODY') }}</small>
+            </span>
+          </label>
+          <label>
+            <input type="checkbox" name="analyticsCookies" [(ngModel)]="analyticsCookies" />
+            <span>
+              <strong>{{ i18n.text('AUTH_LEGAL.COOKIES.ANALYTICS_TITLE') }}</strong>
+              <small>{{ i18n.text('AUTH_LEGAL.COOKIES.ANALYTICS_BODY') }}</small>
+            </span>
+          </label>
+          <label>
+            <input type="checkbox" name="marketingCookies" [(ngModel)]="marketingCookies" />
+            <span>
+              <strong>{{ i18n.text('AUTH_LEGAL.COOKIES.MARKETING_TITLE') }}</strong>
+              <small>{{ i18n.text('AUTH_LEGAL.COOKIES.MARKETING_BODY') }}</small>
+            </span>
+          </label>
+        </fieldset>
+        <button type="submit">{{ i18n.text('AUTH_LEGAL.COOKIES.SAVE') }}</button>
+        <p class="save-status" aria-live="polite">
+          <ng-container *ngIf="cookieSaveState === 'saved'">{{ i18n.text('AUTH_LEGAL.COOKIES.SAVED') }}</ng-container>
+          <ng-container *ngIf="cookieSaveState === 'error'">{{ i18n.text('AUTH_LEGAL.COOKIES.SAVE_ERROR') }}</ng-container>
+        </p>
+      </form>
+
+      <aside *ngIf="pageKind === 'CONTACT' || pageKind === 'SUPPORT'" class="contact-panel" [attr.aria-label]="i18n.text('AUTH_LEGAL.A11Y.CONTACT_ACTIONS')">
+        <h2>{{ i18n.text('AUTH_LEGAL.CONTACT.TITLE') }}</h2>
+        <p>{{ i18n.text('AUTH_LEGAL.CONTACT.BODY') }}</p>
+        <div class="contact-actions">
+          <a href="tel:+842873006886">{{ i18n.text('AUTH_LEGAL.CONTACT.PHONE') }}: 028 7300 6886</a>
+          <a href="mailto:luxestay8386@gmail.com">{{ i18n.text('AUTH_LEGAL.CONTACT.EMAIL') }}: luxestay8386&#64;gmail.com</a>
+        </div>
+      </aside>
+    </article>
+  </main>
+
+</div>

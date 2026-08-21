@@ -1,0 +1,78 @@
+<section class="task-page" aria-labelledby="task-heading">
+  <header class="task-hero">
+    <div class="hero-copy">
+      <span class="eyebrow">Trung tâm điều phối</span>
+      <h1 id="task-heading">Hàng đợi vận hành</h1>
+      <p>Nhận việc, giao đúng người và hoàn tất nghiệp vụ từ một màn hình.</p>
+    </div>
+    <div class="hero-metric" aria-label="Số tác vụ đang hiển thị"><strong>{{ tasks.length }}</strong><span>tác vụ</span></div>
+  </header>
+
+  <div class="toolbar">
+    <span *ngIf="aiOnly" class="ai-inbox-badge">AI approval inbox</span>
+    <label class="filter-field"><span>Lọc theo trạng thái</span>
+      <select [(ngModel)]="status" [disabled]="loading">
+        <option value="">Tất cả trạng thái</option><option value="OPEN">Chưa nhận</option><option value="ASSIGNED">Đã giao</option>
+        <option value="IN_PROGRESS">Đang xử lý</option><option value="BLOCKED">Đang chặn</option><option value="COMPLETED">Hoàn tất</option>
+      </select>
+    </label>
+    <label class="filter-field search-field"><span>Tìm trong hàng đợi</span><input type="search" [(ngModel)]="search" placeholder="Mã hoàn tiền, số phòng, người phụ trách" /></label>
+    <button type="button" class="refresh-button" (click)="load()" [disabled]="loading" aria-label="Tải lại hàng đợi">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7" /></svg>{{ loading ? 'Đang tải' : 'Làm mới' }}
+    </button>
+  </div>
+  <nav class="status-summary" aria-label="Tóm tắt trạng thái tác vụ">
+    <button type="button" [class.active]="status === ''" (click)="selectStatus('')">Tất cả <strong>{{ tasks.length }}</strong></button>
+    <button type="button" [class.active]="status === 'OPEN'" (click)="selectStatus('OPEN')">Chưa nhận <strong>{{ countByStatus('OPEN') }}</strong></button>
+    <button type="button" [class.active]="status === 'ASSIGNED'" (click)="selectStatus('ASSIGNED')">Đã giao <strong>{{ countByStatus('ASSIGNED') }}</strong></button>
+    <button type="button" [class.active]="status === 'COMPLETED'" (click)="selectStatus('COMPLETED')">Hoàn tất <strong>{{ countByStatus('COMPLETED') }}</strong></button>
+  </nav>
+
+  <div *ngIf="error" class="feedback feedback-error" role="alert">{{ error }}</div>
+  <div *ngIf="notice" class="feedback feedback-success" role="status">{{ notice }}</div>
+  <div *ngIf="loading" class="loading-state" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Đang đồng bộ hàng đợi...</span></div>
+  <div *ngIf="!loading && !error && tasks.length === 0" class="empty-state">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 12 2 2 4-4M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" /></svg>
+    <h2>Không có tác vụ phù hợp</h2><p>Hàng đợi đã sạch hoặc chưa có công việc ở trạng thái này.</p>
+  </div>
+
+  <div *ngIf="!loading && visibleTasks.length" class="task-grid">
+    <article *ngFor="let task of visibleTasks; trackBy: trackTask" class="task-card" [class.task-complete]="task.status === 'COMPLETED'">
+      <div class="card-accent" [attr.data-type]="task.taskType"></div>
+      <header class="card-header">
+        <div class="task-identity"><span class="task-type">{{ taskLabel(task) }}</span><h2>{{ task.publicId }}</h2></div>
+        <span class="status-pill" [attr.data-status]="task.status">{{ statusLabel(task.status) }}</span>
+      </header>
+      <p class="task-description">{{ taskDescription(task) }}</p>
+      <dl class="task-facts">
+        <div *ngIf="task.toolName"><dt>AI tool</dt><dd>{{ task.toolName }}</dd></div>
+        <div *ngIf="task.toolName"><dt>Permission</dt><dd>{{ task.functionCode }} · action {{ task.requiredAction }}</dd></div>
+        <div><dt>{{ sourceLabel(task) }}</dt><dd>{{ task.sourceReference || task.aggregateId }}</dd></div>
+        <div *ngIf="task.sourceDescription"><dt>Chi tiết</dt><dd title="{{ task.sourceDescription }}">{{ task.sourceDescription }}</dd></div>
+        <div><dt>Người phụ trách</dt><dd>{{ assignedDisplay(task) }}<small *ngIf="task.assignedToRole"> · {{ roleLabel(task.assignedToRole) }}</small></dd></div>
+      </dl>
+
+      <div *ngIf="canReassign() && task.status !== 'COMPLETED' && task.status !== 'CANCELLED'" class="assignment-panel">
+        <label [for]="'assignee-' + task.id">Phân công nhân sự</label>
+        <div class="assignment-row">
+          <select [id]="'assignee-' + task.id" [(ngModel)]="selectedAssignee[task.id]" [disabled]="busyTaskId !== undefined">
+            <option [ngValue]="undefined">Chọn người nhận</option>
+            <option *ngFor="let assignee of assignees" [ngValue]="assignee.userId">{{ assignee.fullName || assignee.username }} · {{ roleLabel(assignee.role) }}</option>
+          </select>
+          <button type="button" class="button button-secondary" (click)="reassign(task)" [disabled]="busyTaskId !== undefined || !selectedAssignee[task.id]">
+            {{ busyTaskId === task.id ? 'Đang lưu...' : 'Giao việc' }}
+          </button>
+        </div>
+      </div>
+
+      <footer class="card-actions">
+        <button type="button" class="button button-secondary" *ngIf="task.taskType === 'AI_TOOL'" (click)="openAuthoritative(task)">Mở nghiệp vụ</button>
+        <button type="button" class="button button-secondary" *ngIf="task.status === 'OPEN' && canExecute(task)" (click)="claim(task)" [disabled]="busyTaskId !== undefined">{{ busyTaskId === task.id ? 'Đang nhận...' : 'Nhận việc' }}</button>
+        <button type="button" class="button button-primary" *ngIf="(task.status === 'ASSIGNED' || task.status === 'IN_PROGRESS') && canExecute(task)" (click)="complete(task)" [disabled]="busyTaskId !== undefined">{{ busyTaskId === task.id ? 'Đang hoàn tất...' : 'Xác nhận hoàn tất' }}</button>
+        <button type="button" class="button button-secondary" *ngIf="task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && canExecute(task)" (click)="cancel(task)" [disabled]="busyTaskId !== undefined">Hủy tác vụ</button>
+        <span *ngIf="!canExecute(task)" class="read-only-note">Bạn chỉ có quyền xem tác vụ này.</span>
+      </footer>
+    </article>
+  </div>
+  <div *ngIf="!loading && tasks.length > 0 && visibleTasks.length === 0" class="empty-state compact-empty"><h2>Không tìm thấy tác vụ</h2><p>Thử tìm bằng mã hoàn tiền, số phòng hoặc tên nhân sự.</p></div>
+</section>

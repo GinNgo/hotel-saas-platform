@@ -1,0 +1,61 @@
+@media (max-width: 760px) {
+  .public-header.account-menu-open {
+    backdrop-filter: none;
+  }
+
+  .account-menu {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    flex-direction: column;
+    overflow: hidden;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    background: #fff;
+    border: 0;
+    box-shadow: none;
+    overscroll-behavior: contain;
+    isolation: isolate;
+    z-index: 120;
+  }
+
+  .account-menu > header,
+  .account-menu > .account-rewards {
+    flex: 0 0 auto;
+  }
+
+  .account-menu > header {
+    position: static;
+  }
+
+  .account-menu .menu-close {
+    width: 44px;
+    height: 44px;
+    touch-action: manipulation;
+  }
+
+  .account-menu > nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@supports not (height: 100dvh) {
+  @media (max-width: 760px) {
+    .account-menu {
+      height: 100vh;
+      min-height: 100vh;
+      max-height: 100vh;
+    }
+  }
+}

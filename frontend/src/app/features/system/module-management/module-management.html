@@ -1,0 +1,92 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white border-0 py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+      <h5 class="mb-1 fw-bold text-primary"><i class="pi pi-sitemap me-2"></i>Khai b&aacute;o trang</h5>
+      <div class="text-muted small">Qu&#7843;n l&yacute; catalog ch&#7913;c n&#259;ng d&ugrave;ng cho ma tr&#7853;n ph&acirc;n quy&#7873;n.</div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <button pButton icon="pi pi-plus" label="Th&ecirc;m ch&#7913;c n&#259;ng" class="p-button-sm p-button-primary" (click)="openAddFunction()"></button>
+    </div>
+  </div>
+
+  <div class="card-body p-0">
+    <p-treeTable [value]="nodes" [loading]="loading" styleClass="p-treetable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 34%">T&ecirc;n</th>
+          <th style="width: 14%">M&atilde;</th>
+          <th style="width: 22%">Nh&oacute;m quy&#7873;n</th>
+          <th style="width: 16%">Action mask</th>
+          <th style="width: 8%" class="text-center">Tr&#7841;ng th&aacute;i</th>
+          <th style="width: 6%" class="text-center">S&#7917;a/X&oacute;a</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-rowNode let-rowData="rowData">
+        <tr class="tree-table-row" [class.table-light]="selectedNode?.key === (rowNode.node?.key || rowNode.key)" (click)="selectNode(rowNode, rowData)">
+          <td>
+            <p-treeTableToggler [rowNode]="rowNode"></p-treeTableToggler>
+            <i [class]="(rowData.type === 'module' ? 'pi pi-folder' : 'pi pi-shield') + ' me-2 text-muted'"></i>
+            <span [class.fw-bold]="rowData.type === 'module'">{{ rowData.name }}</span>
+            <span class="badge bg-light text-dark border ms-2" *ngIf="rowData.type === 'module'">Nh&oacute;m</span>
+          </td>
+          <td><span class="badge bg-secondary">{{ rowData.code }}</span></td>
+          <td class="text-muted">{{ rowData.moduleCode || '-' }}</td>
+          <td class="text-muted">{{ rowData.supportedActionMask || '-' }}</td>
+          <td class="text-center"><span *ngIf="rowData.type === 'function'" class="badge" [class.bg-success]="rowData.isActive" [class.bg-secondary]="!rowData.isActive">{{ rowData.isActive ? 'Ho&#7841;t &#273;&#7897;ng' : 'T&#7841;m kh&oacute;a' }}</span></td>
+          <td class="text-center">
+            <div class="d-flex justify-content-center gap-1">
+              <button *ngIf="rowData.type === 'function'" pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" aria-label="Sửa" title="Sửa" (click)="editNode(rowNode, rowData); $event.stopPropagation()"></button>
+              <button *ngIf="rowData.type === 'function' && rowData.isActive" pButton type="button" icon="pi pi-ban" class="p-button-text p-button-danger p-button-sm" aria-label="Vô hiệu hóa" title="Vô hiệu hóa" (click)="deleteNode(rowData); $event.stopPropagation()"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center p-4 text-muted">Ch&#432;a c&oacute; d&#7919; li&#7879;u trang.</td>
+        </tr>
+      </ng-template>
+    </p-treeTable>
+  </div>
+</div>
+
+<p-dialog [(visible)]="displayDialog" [modal]="true" [style]="{width: '560px'}" [header]="dialogTitle" [draggable]="false" [resizable]="false">
+  <div class="d-flex flex-column gap-3 p-2">
+    <div class="field">
+      <label class="fw-bold mb-1">M&atilde; <span class="text-danger">*</span></label>
+      <input type="text" pInputText [(ngModel)]="formData.code" class="w-100 text-uppercase" placeholder="VD: REPORT_TEMPLATE" />
+      <small class="text-muted">M&atilde; n&agrave;y &#273;&#432;&#7907;c nh&uacute;ng trong JWT v&agrave; policy backend.</small>
+    </div>
+
+    <div class="field">
+      <label class="fw-bold mb-1">T&ecirc;n hi&#7875;n th&#7883; <span class="text-danger">*</span></label>
+      <input type="text" pInputText [(ngModel)]="formData.name" class="w-100" placeholder="VD: Ph&acirc;n quy&#7873;n" />
+    </div>
+
+    <div class="field">
+      <label class="fw-bold mb-1">Nh&oacute;m quy&#7873;n</label>
+      <input type="text" pInputText [(ngModel)]="formData.moduleCode" class="w-100 text-uppercase" placeholder="VD: RESERVATION" />
+    </div>
+
+    <div class="field">
+      <label class="fw-bold mb-1">Action mask h&#7895; tr&#7907;</label>
+      <input type="number" min="1" max="127" pInputText [(ngModel)]="formData.supportedActionMask" class="w-100" />
+      <small class="text-muted">VIEW=1, CREATE=2, UPDATE=4, DELETE=8, EXPORT=16, APPROVE=32, EXECUTE=64.</small>
+    </div>
+
+    <div class="form-check" *ngIf="dialogMode === 'edit'">
+      <input id="function-active" type="checkbox" class="form-check-input" [(ngModel)]="formData.isActive" />
+      <label for="function-active" class="form-check-label">Ch&#7913;c n&#259;ng &#273;ang ho&#7841;t &#273;&#7897;ng</label>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button pButton label="H&#7911;y" icon="pi pi-times" class="p-button-text" (click)="displayDialog = false"></button>
+    <button pButton label="L&#432;u" icon="pi pi-check" class="p-button-primary" (click)="save()"></button>
+  </ng-template>
+</p-dialog>

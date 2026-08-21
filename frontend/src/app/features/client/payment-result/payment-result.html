@@ -1,0 +1,69 @@
+<main class="payment-result-shell">
+  <section class="payment-result-card" aria-live="polite" [attr.aria-busy]="isPolling ? 'true' : 'false'">
+    <div class="provider-brand">
+      <img *ngIf="provider.toUpperCase() === 'VNPAY'" src="assets/payment/vnpay-logo.svg" alt="VNPAY" class="provider-logo">
+      <p *ngIf="provider.toUpperCase() !== 'VNPAY'" class="payment-eyebrow">{{ provider || i18n.text('PUBLIC.PAYMENT.GATEWAY') }}</p>
+      <span *ngIf="provider.toUpperCase() === 'VNPAY'" class="sandbox-badge">Sandbox</span>
+    </div>
+
+    <div *ngIf="status === 'PROCESSING' || status === 'PENDING'" class="status-mark status-mark--pending" aria-hidden="true">
+      <i class="pi pi-spin pi-spinner"></i>
+    </div>
+    <div *ngIf="status === 'SUCCESS'" class="status-mark status-mark--success" aria-hidden="true">
+      <i class="pi pi-check"></i>
+    </div>
+    <div *ngIf="status === 'FAILED'" class="status-mark status-mark--failed" aria-hidden="true">
+      <i class="pi pi-times"></i>
+    </div>
+    <div *ngIf="status === 'RECONCILIATION'" class="status-mark status-mark--review" aria-hidden="true">
+      <i class="pi pi-shield"></i>
+    </div>
+
+    <h1 *ngIf="status === 'PROCESSING'">{{ i18n.text('PUBLIC.PAYMENT.PROCESSING_TITLE') }}</h1>
+    <h1 *ngIf="status === 'PENDING'">{{ i18n.text('PUBLIC.PAYMENT.PENDING_TITLE') }}</h1>
+    <h1 *ngIf="status === 'SUCCESS'">{{ i18n.text('PUBLIC.PAYMENT.SUCCESS_TITLE') }}</h1>
+    <h1 *ngIf="status === 'FAILED'">{{ i18n.text('PUBLIC.PAYMENT.FAILED_TITLE') }}</h1>
+    <h1 *ngIf="status === 'RECONCILIATION'">{{ i18n.text('PUBLIC.PAYMENT.RECONCILIATION_TITLE') }}</h1>
+
+    <p class="payment-message" role="status">{{ message }}</p>
+    <aside *ngIf="status === 'SUCCESS' && confirmationEmailStatus === 'NOT_CONFIGURED'" class="email-delivery-state" role="status">
+      <i class="pi pi-envelope" aria-hidden="true"></i>
+      <span>Thanh toán đã được xác nhận nhưng email chưa được gửi vì dịch vụ thư chưa cấu hình<span *ngIf="confirmationEmailRecipient"> cho {{ confirmationEmailRecipient }}</span>. Hãy lưu mã booking bên dưới.</span>
+    </aside>
+    <aside *ngIf="status === 'SUCCESS' && confirmationEmailStatus === 'FAILED'" class="email-delivery-state" role="alert">
+      <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+      <span>Thanh toán đã xác nhận nhưng email chưa gửi thành công. Bạn có thể gửi lại từ trang chuyến đi.</span>
+    </aside>
+    <aside *ngIf="status === 'SUCCESS' && confirmationEmailStatus === 'SENT'" class="email-delivery-state" role="status">
+      <i class="pi pi-check-circle" aria-hidden="true"></i>
+      <span>Email xác nhận đã được gửi<span *ngIf="confirmationEmailRecipient"> tới {{ confirmationEmailRecipient }}</span>.</span>
+    </aside>
+    <div *ngIf="bookingReference" class="payment-receipt">
+      <div><span>{{ i18n.text('PUBLIC.PAYMENT.RESERVATION_REFERENCE', { id: '' }) }}</span><strong>{{ bookingReference }}</strong></div>
+      <button type="button" (click)="copyReservationReference()" [attr.aria-label]="i18n.text('PUBLIC.PAYMENT.RESERVATION_REFERENCE', { id: bookingReference })">
+        <i [class]="referenceCopied ? 'pi pi-check' : 'pi pi-copy'" aria-hidden="true"></i>
+      </button>
+      <div><span>{{ i18n.text('PUBLIC.BOOKING.ESTIMATE') }}</span><strong>{{ formatMoney(amount) }}</strong></div>
+      <div *ngIf="provider"><span>{{ i18n.text('PUBLIC.PAYMENT.GATEWAY') }}</span><strong>{{ provider }}</strong></div>
+    </div>
+
+    <ol class="payment-timeline" [attr.aria-label]="i18n.text('PUBLIC.PAYMENT.GATEWAY')">
+      <li class="complete"><i class="pi pi-check" aria-hidden="true"></i><span>{{ i18n.text('PUBLIC.BOOKING.SUCCESS') }}</span></li>
+      <li [class.complete]="status === 'SUCCESS' || status === 'RECONCILIATION'" [class.current]="status === 'PROCESSING' || status === 'PENDING'" [attr.aria-current]="status === 'PROCESSING' || status === 'PENDING' ? 'step' : null"><i [class]="status === 'PROCESSING' || status === 'PENDING' ? 'pi pi-spin pi-spinner' : 'pi pi-check'" aria-hidden="true"></i><span>{{ i18n.text('PUBLIC.PAYMENT.PROCESSING_TITLE') }}</span></li>
+      <li [class.complete]="status === 'SUCCESS'" [class.failed]="status === 'FAILED'" [attr.aria-current]="status === 'SUCCESS' || status === 'FAILED' ? 'step' : null"><i [class]="status === 'FAILED' ? 'pi pi-times' : 'pi pi-check'" aria-hidden="true"></i><span>{{ i18n.text('PUBLIC.PAYMENT.SUCCESS_TITLE') }}</span></li>
+    </ol>
+
+    <div class="payment-actions">
+      <button *ngIf="pollingTimedOut" type="button" class="retry-action" [disabled]="isPolling" (click)="retryStatus()">
+        <i class="pi" [class.pi-refresh]="!isPolling" [class.pi-spinner]="isPolling" [class.pi-spin]="isPolling" aria-hidden="true"></i>
+        {{ i18n.text(isPolling ? 'PUBLIC.PAYMENT.CHECKING_AGAIN' : 'PUBLIC.PAYMENT.CHECK_AGAIN') }}
+      </button>
+      <button type="button" class="primary-action" (click)="goToBookings()">{{ i18n.text('PUBLIC.PAYMENT.VIEW_BOOKINGS') }}</button>
+      <a routerLink="/" class="secondary-action">{{ i18n.text('PUBLIC.PAYMENT.HOME') }}</a>
+    </div>
+
+    <p class="authority-note">
+      {{ i18n.text('PUBLIC.PAYMENT.AUTHORITY_NOTE') }}
+    </p>
+  </section>
+</main>

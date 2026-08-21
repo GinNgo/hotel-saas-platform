@@ -1,0 +1,54 @@
+<section class="refund-history" aria-labelledby="refund-history-title">
+  <div class="section-heading">
+    <div>
+      <span class="eyebrow">DÒNG TIỀN ĐẶT PHÒNG</span>
+      <h2 id="refund-history-title">Yêu cầu hoàn tiền</h2>
+      <p>Yêu cầu được xử lý theo số dư trên máy chủ và có thể cần thời gian đối soát.</p>
+    </div>
+    <span class="context-pill"><i class="pi pi-shield" aria-hidden="true"></i> Thanh toán đặt phòng</span>
+  </div>
+
+  <div *ngIf="error" class="feedback error" role="alert">{{ error }}</div>
+  <div *ngIf="success" class="feedback success" role="status">{{ success }}</div>
+
+  <form class="refund-form" (ngSubmit)="requestRefund()" novalidate [attr.aria-busy]="loading ? 'true' : 'false'">
+    <label>
+      <span>Mã giao dịch gốc</span>
+      <input [(ngModel)]="transactionPublicId" name="transactionPublicId" placeholder="TX-..." autocomplete="off" required />
+    </label>
+    <label>
+      <span>Số tiền VND</span>
+      <input [(ngModel)]="amount" name="amount" type="number" inputmode="numeric" min="1" step="1" placeholder="Ví dụ 300000" />
+    </label>
+    <label class="reason-field">
+      <span>Lý do</span>
+      <textarea [(ngModel)]="reason" name="reason" rows="2" maxlength="1000" placeholder="Nêu rõ lý do hoàn tiền"></textarea>
+    </label>
+    <button type="submit" [disabled]="loading">
+      <i [class]="loading ? 'pi pi-spin pi-spinner' : 'pi pi-send'" aria-hidden="true"></i>
+      {{ loading ? 'Đang gửi...' : 'Gửi yêu cầu' }}
+    </button>
+  </form>
+
+  <div *ngIf="refreshing" class="loading-row" role="status"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Đang tải trạng thái...</div>
+  <div *ngIf="!refreshing && !refunds.length" class="empty-state">
+    <i class="pi pi-replay" aria-hidden="true"></i>
+    <strong>Chưa có yêu cầu hoàn tiền</strong>
+    <span>Chưa ghi nhận yêu cầu hoàn tiền nào cho giao dịch này.</span>
+  </div>
+  <ol *ngIf="refunds.length" class="refund-list">
+    <li *ngFor="let refund of refunds" [attr.data-refund-status]="refund.status">
+      <div class="timeline-dot" [class]="statusTone(refund.status)"></div>
+      <div class="refund-entry">
+        <div class="entry-head">
+          <strong>{{ refund.requestedAmount | number }} {{ refund.currency }}</strong>
+          <span class="status-chip" [class]="statusTone(refund.status)">{{ statusLabel(refund.status) }}</span>
+        </div>
+        <small>{{ refund.requestedAt | date: 'dd/MM/yyyy HH:mm' }} · {{ refund.publicId }}</small>
+        <button type="button" class="link-button" (click)="refresh(refund.publicId)" [disabled]="refreshing" [attr.aria-label]="'Cập nhật trạng thái hoàn tiền ' + refund.publicId">
+          Cập nhật <i class="pi pi-refresh" aria-hidden="true"></i>
+        </button>
+      </div>
+    </li>
+  </ol>
+</section>

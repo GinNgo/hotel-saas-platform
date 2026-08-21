@@ -1,0 +1,84 @@
+name: Quality gates
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+      - name: Restore
+        run: dotnet restore backend/HotelSaas.slnx
+      - name: Build
+        run: dotnet build backend/HotelSaas.slnx --configuration Release --no-restore
+      - name: Test with coverage
+        run: >-
+          dotnet test backend/HotelSaas.slnx --configuration Release --no-build
+          --logger "trx;LogFileName=backend.trx"
+          --collect:"XPlat Code Coverage"
+          --results-directory artifacts/backend
+      - name: Upload backend reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: artifacts/backend
+
+  frontend-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build -- --configuration production
+      - run: npm run test:unit:ci
+      - name: Upload unit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-unit-reports
+          path: frontend/coverage
+
+  frontend-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e:smoke
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results

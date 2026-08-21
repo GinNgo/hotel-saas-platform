@@ -1,0 +1,180 @@
+<p-toast></p-toast>
+
+<section class="admin-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Danh mục vận hành</p>
+      <h1><i class="pi pi-building"></i> Quản lý cơ sở lưu trú</h1>
+      <p class="page-description">Tạo cơ sở mới, theo dõi trạng thái phê duyệt và chuẩn bị dữ liệu vận hành.</p>
+    </div>
+    <div class="header-actions">
+      <button pButton type="button" label="Tải lại" icon="pi pi-refresh" class="p-button-outlined" (click)="loadProperties()" [disabled]="loading" aria-label="Tải lại danh sách cơ sở"></button>
+      <button *ngIf="canCreate" pButton type="button" label="Thêm mới" icon="pi pi-plus" (click)="openCreate()" [disabled]="saving" aria-label="Thêm cơ sở lưu trú mới"></button>
+    </div>
+  </header>
+
+  <div class="context-banner">
+    <i class="pi pi-shield"></i>
+    <div>
+      <strong>Quy trình an toàn</strong>
+      <span>Cơ sở mới được lưu ở trạng thái bản nháp để hoàn thiện dữ liệu trước khi gửi duyệt.</span>
+    </div>
+  </div>
+
+  <div class="table-shell">
+    <p-table [value]="properties" [loading]="loading" [rowHover]="true" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10, 20, 50]" responsiveLayout="scroll" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Tên cơ sở</th>
+          <th>Địa điểm</th>
+          <th>Loại hình</th>
+          <th>Trạng thái</th>
+          <th class="actions">Hành động</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-property>
+        <tr>
+          <td>
+            <strong>{{ property.nameVi || property.name }}</strong>
+            <small>{{ property.addressLine || 'Chưa có địa chỉ' }}</small>
+          </td>
+          <td>{{ property.city || 'Chưa cập nhật' }}</td>
+          <td>{{ property.propertyType || 'HOTEL' }}</td>
+          <td><p-tag [severity]="statusSeverity(property)" [value]="statusLabel(property)"></p-tag></td>
+          <td class="actions">
+            <button *ngIf="canManagePricing" pButton type="button" icon="pi pi-percentage" class="p-button-rounded p-button-text" pTooltip="Cấu hình thuế và phí" (click)="openPricingSettings(property)" aria-label="Cấu hình thuế và phí"></button>
+            <button *ngIf="canUpdate && statusCode(property) === 'INACTIVE'" pButton type="button" icon="pi pi-send" class="p-button-rounded p-button-text" pTooltip="Gửi yêu cầu duyệt" (click)="submit(property)" aria-label="Gửi yêu cầu duyệt"></button>
+            <button *ngIf="canApprove && statusCode(property) === 'PENDING'" pButton type="button" icon="pi pi-check" class="p-button-rounded p-button-text p-button-success" pTooltip="Duyệt" (click)="approve(property)" aria-label="Duyệt cơ sở"></button>
+            <button *ngIf="canApprove && statusCode(property) === 'PENDING'" pButton type="button" icon="pi pi-times" class="p-button-rounded p-button-text p-button-danger" pTooltip="Từ chối" (click)="reject(property)" aria-label="Từ chối cơ sở"></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="5"><div class="empty-state"><i class="pi pi-building"></i><strong>Chưa có cơ sở nào</strong><span>Tạo cơ sở đầu tiên để bắt đầu cấu hình loại phòng và phòng vật lý.</span><button *ngIf="canCreate" pButton type="button" label="Thêm cơ sở" icon="pi pi-plus" (click)="openCreate()"></button></div></td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</section>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [draggable]="false" [style]="{width:'min(820px, 96vw)'}" header="Thêm cơ sở lưu trú" [closable]="!saving" (onHide)="closeCreate()">
+  <form id="property-create-form" [formGroup]="form" class="property-form" (ngSubmit)="save()" novalidate>
+    <div *ngIf="formError" class="form-error" role="alert"><i class="pi pi-exclamation-circle"></i><span>{{ formError }}</span></div>
+    <p class="form-intro">Các trường có dấu * là bắt buộc. Cơ sở sẽ được lưu ở trạng thái bản nháp.</p>
+
+    <div class="form-grid">
+      <label class="wide" for="property-name-vi">Tên cơ sở tiếng Việt *
+        <input id="property-name-vi" pInputText formControlName="nameVi" autocomplete="organization" [class.invalid]="isInvalid('nameVi')" />
+        <small *ngIf="isInvalid('nameVi')" class="field-error">Nhập tên cơ sở (tối đa 255 ký tự).</small>
+      </label>
+      <label for="property-name-en">Tên tiếng Anh
+        <input id="property-name-en" pInputText formControlName="nameEn" autocomplete="organization" />
+      </label>
+      <label for="property-type">Loại hình *
+        <p-select inputId="property-type" [options]="propertyTypes" optionLabel="label" optionValue="value" formControlName="propertyType"></p-select>
+      </label>
+      <label for="property-province">Tỉnh/thành phố *
+        <p-select inputId="property-province" [options]="provinces" optionLabel="nameVi" optionValue="id" formControlName="provinceId" placeholder="Chọn tỉnh/thành phố" [loading]="locationsLoading" (onChange)="onProvinceChange()"></p-select>
+        <small *ngIf="isInvalid('provinceId')" class="field-error">Chọn tỉnh/thành phố.</small>
+      </label>
+      <label for="property-ward">Phường/xã <span class="text-muted">(chưa có catalog)</span>
+        <p-select inputId="property-ward" [options]="wards" optionLabel="displayName" optionValue="id" formControlName="wardId"
+          [placeholder]="form.controls.provinceId.value ? 'Chọn phường/xã' : 'Chọn tỉnh/thành phố trước'" [loading]="locationsLoading"
+          [filter]="true" filterBy="displayName,nameVi,legacyParentName" filterMatchMode="contains"
+          filterPlaceholder="Nhập tên phường/xã hoặc quận/huyện" emptyFilterMessage="Không tìm thấy phường/xã"></p-select>
+        <small *ngIf="isInvalid('wardId')" class="field-error">Chọn phường/xã.</small>
+      </label>
+      <label class="wide" for="property-address">Địa chỉ *
+        <input id="property-address" pInputText formControlName="address" autocomplete="street-address" [class.invalid]="isInvalid('address')" />
+        <small *ngIf="isInvalid('address')" class="field-error">Nhập địa chỉ cơ sở.</small>
+      </label>
+      <label for="property-stars">Hạng sao
+        <input id="property-stars" pInputText type="number" min="0" max="5" formControlName="starRating" />
+      </label>
+      <label for="property-phone">Điện thoại
+        <input id="property-phone" pInputText formControlName="phone" autocomplete="tel" />
+      </label>
+      <label for="property-email">Email
+        <input id="property-email" pInputText type="email" formControlName="email" autocomplete="email" [class.invalid]="isInvalid('email')" />
+        <small *ngIf="isInvalid('email')" class="field-error">Email chưa đúng định dạng.</small>
+      </label>
+      <label for="property-website">Website
+        <input id="property-website" pInputText formControlName="website" inputmode="url" />
+      </label>
+      <label class="wide" for="property-image">Ảnh đại diện (URL)
+        <input id="property-image" pInputText formControlName="mainImage" placeholder="/assets/properties/..." />
+      </label>
+      <label for="property-latitude">Vĩ độ
+        <input id="property-latitude" pInputText type="number" min="-90" max="90" step="0.000001" formControlName="latitude" placeholder="16.061100" />
+        <small *ngIf="isInvalid('latitude')" class="field-error">Vĩ độ phải từ -90 đến 90.</small>
+      </label>
+      <label for="property-longitude">Kinh độ
+        <input id="property-longitude" pInputText type="number" min="-180" max="180" step="0.000001" formControlName="longitude" placeholder="108.227700" />
+        <small *ngIf="isInvalid('longitude')" class="field-error">Kinh độ phải từ -180 đến 180.</small>
+      </label>
+      <fieldset class="wide amenity-fieldset">
+        <legend>Tiện nghi nổi bật</legend>
+        <label *ngFor="let amenity of amenityOptions" class="amenity-option">
+          <input type="checkbox" [checked]="form.controls.amenityCodes.value.includes(amenity.value)" (change)="toggleAmenity(amenity.value, $any($event.target).checked)" />
+          <span>{{ amenity.label }}</span>
+        </label>
+      </fieldset>
+      <label for="property-check-in">Giờ nhận phòng *
+        <input id="property-check-in" pInputText type="time" formControlName="checkInTime" />
+      </label>
+      <label for="property-check-out">Giờ trả phòng *
+        <input id="property-check-out" pInputText type="time" formControlName="checkOutTime" />
+      </label>
+      <label for="property-tax-rate">Thuế suất (%)
+        <input id="property-tax-rate" pInputText type="number" min="0" max="30" step="0.01" formControlName="taxRatePercent" />
+        <small *ngIf="isInvalid('taxRatePercent')" class="field-error">Thuế suất phải từ 0 đến 30%.</small>
+      </label>
+      <label for="property-service-fee">Phí dịch vụ (%)
+        <input id="property-service-fee" pInputText type="number" min="0" max="30" step="0.01" formControlName="serviceFeeRatePercent" />
+        <small *ngIf="isInvalid('serviceFeeRatePercent')" class="field-error">Phí dịch vụ phải từ 0 đến 30%.</small>
+      </label>
+      <label class="wide" for="property-cancellation-policy">Chính sách hủy phòng
+        <textarea id="property-cancellation-policy" pInputTextarea rows="3" formControlName="cancellationPolicy" placeholder="Ví dụ: Miễn phí hủy trước 7 ngày; sau thời hạn thu đêm đầu tiên."></textarea>
+      </label>
+      <label class="wide" for="property-children-policy">Chính sách trẻ em
+        <textarea id="property-children-policy" pInputTextarea rows="2" formControlName="childrenPolicy"></textarea>
+      </label>
+      <label class="wide" for="property-pet-policy">Chính sách thú cưng
+        <textarea id="property-pet-policy" pInputTextarea rows="2" formControlName="petPolicy"></textarea>
+      </label>
+      <label class="wide" for="property-house-rules">Nội quy lưu trú
+        <textarea id="property-house-rules" pInputTextarea rows="3" formControlName="houseRules"></textarea>
+      </label>
+      <label class="wide" for="property-description-vi">Mô tả tiếng Việt
+        <textarea id="property-description-vi" pInputTextarea rows="3" formControlName="descriptionVi"></textarea>
+      </label>
+      <label class="wide" for="property-description-en">Mô tả tiếng Anh
+        <textarea id="property-description-en" pInputTextarea rows="3" formControlName="descriptionEn"></textarea>
+      </label>
+    </div>
+
+  </form>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Hủy" class="p-button-text" (click)="closeCreate()" [disabled]="saving"></button>
+    <button pButton type="submit" form="property-create-form" [label]="saving ? 'Đang lưu...' : 'Lưu bản nháp'" icon="pi pi-check" [disabled]="saving || locationsLoading"></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="pricingDialogVisible" [modal]="true" [draggable]="false" [style]="{width:'min(460px, 94vw)'}"
+  header="Cấu hình thuế và phí" [closable]="!pricingSaving" (onHide)="closePricingSettings()">
+  <form id="property-pricing-form" [formGroup]="pricingForm" class="property-form" (ngSubmit)="savePricingSettings()" novalidate>
+    <p class="form-intro">Áp dụng cho các báo giá và phiên giữ phòng mới của <strong>{{ pricingProperty?.nameVi || pricingProperty?.name }}</strong>.</p>
+    <div *ngIf="pricingError" class="form-error" role="alert"><i class="pi pi-exclamation-circle"></i><span>{{ pricingError }}</span></div>
+    <div class="form-grid">
+      <label for="pricing-tax-rate">Thuế suất (%)
+        <input id="pricing-tax-rate" pInputText type="number" min="0" max="30" step="0.01" formControlName="taxRatePercent" />
+      </label>
+      <label for="pricing-service-fee">Phí dịch vụ (%)
+        <input id="pricing-service-fee" pInputText type="number" min="0" max="30" step="0.01" formControlName="serviceFeeRatePercent" />
+      </label>
+    </div>
+  </form>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Hủy" class="p-button-text" (click)="closePricingSettings()" [disabled]="pricingSaving"></button>
+    <button pButton type="submit" form="property-pricing-form" [label]="pricingSaving ? 'Đang lưu...' : 'Lưu cấu hình'" icon="pi pi-check" [disabled]="pricingSaving"></button>
+  </ng-template>
+</p-dialog>

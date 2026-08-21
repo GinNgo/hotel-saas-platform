@@ -1,0 +1,309 @@
+<p-toast></p-toast>
+<div class="m-3">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1 text-dark fw-bold">
+        <i class="pi pi-calendar me-2" style="color: var(--hotel-gold)"></i>Quản lý Đặt phòng
+      </h2>
+      <p class="text-muted mb-0">Theo dõi và quản lý thông tin đặt phòng</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button
+        pButton
+        label="Xem Lịch trình (Timeline)"
+        icon="pi pi-calendar-times"
+        class="btn btn-outline-primary"
+        (click)="viewTimeline()"
+      ></button>
+      <button
+        pButton
+        label="Tạo Đặt phòng"
+        icon="pi pi-plus"
+        class="btn btn-primary-hotel"
+        (click)="createNew()"
+      ></button>
+    </div>
+  </div>
+
+  <section class="frontdesk-overview" aria-label="Tổng quan lễ tân">
+    <article><i class="pi pi-hourglass"></i><span>Chờ xử lý</span><strong>{{ pendingCount }}</strong></article>
+    <article><i class="pi pi-calendar-check"></i><span>Sắp nhận phòng</span><strong>{{ upcomingArrivalCount }}</strong></article>
+    <article><i class="pi pi-users"></i><span>Đang lưu trú</span><strong>{{ inHouseCount }}</strong></article>
+    <article><i class="pi pi-sign-out"></i><span>Trả phòng hôm nay</span><strong>{{ checkoutTodayCount }}</strong></article>
+  </section>
+
+  <div class="frontdesk-filters">
+    <label><span class="visually-hidden">Tìm đặt phòng</span><i class="pi pi-search"></i><input [(ngModel)]="searchTerm" type="search" placeholder="Tìm theo mã hoặc tên khách"></label>
+    <select [(ngModel)]="statusFilter" aria-label="Lọc trạng thái"><option value="">Tất cả trạng thái</option><option value="PENDING">Chờ xác nhận</option><option value="PENDING_PAYMENT">Chờ thanh toán</option><option value="CONFIRMED">Đã xác nhận</option><option value="CHECKED_IN">Đang lưu trú</option><option value="CHECKED_OUT">Đã trả phòng</option><option value="NO_SHOW">Không đến</option><option value="CANCELLED">Đã hủy</option></select>
+    <span class="frontdesk-sync" aria-live="polite"><i [class]="syncing ? 'pi pi-spin pi-spinner' : 'pi pi-cloud'" aria-hidden="true"></i>{{ syncing ? 'Đang đồng bộ...' : (lastSyncedAt ? 'Cập nhật ' + (lastSyncedAt | date:'HH:mm:ss') : '') }}</span>
+  </div>
+  <p *ngIf="syncWarning" class="frontdesk-sync-warning" role="status">{{ syncWarning }}</p>
+
+  <p-card styleClass="shadow-sm border-0 rounded-4" [style]="{ 'border-radius': '12px' }">
+    <p-table
+      [value]="filteredReservations"
+      [paginator]="true"
+      [rows]="10"
+      responsiveLayout="scroll"
+      [rowHover]="true"
+      styleClass="p-datatable-striped p-datatable-sm border-top"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th
+            class="text-muted fw-bold border-bottom"
+            style="font-size: 0.85rem; text-transform: uppercase"
+          >
+            Mã Booking
+          </th>
+          <th
+            class="text-muted fw-bold border-bottom"
+            style="font-size: 0.85rem; text-transform: uppercase"
+          >
+            Khách hàng
+          </th>
+          <th
+            class="text-muted fw-bold border-bottom"
+            style="font-size: 0.85rem; text-transform: uppercase"
+          >
+            Ngày nhận phòng
+          </th>
+          <th
+            class="text-muted fw-bold border-bottom"
+            style="font-size: 0.85rem; text-transform: uppercase"
+          >
+            Ngày trả phòng
+          </th>
+          <th
+            class="text-muted fw-bold border-bottom"
+            style="font-size: 0.85rem; text-transform: uppercase"
+          >
+            Tổng tiền
+          </th>
+          <th
+            class="text-muted fw-bold border-bottom"
+            style="font-size: 0.85rem; text-transform: uppercase"
+          >
+            Trạng thái
+          </th>
+          <th
+            class="text-muted fw-bold border-bottom"
+            style="font-size: 0.85rem; text-transform: uppercase"
+          >
+            Thanh toán
+          </th>
+          <th
+            class="text-muted fw-bold border-bottom"
+            style="font-size: 0.85rem; text-transform: uppercase"
+          >
+            Hoàn tiền
+          </th>
+          <th
+            class="text-muted fw-bold border-bottom text-center"
+            style="font-size: 0.85rem; text-transform: uppercase"
+          >
+            Thao tác
+          </th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-res>
+        <tr [attr.data-booking-id]="res.id">
+          <td class="text-dark fw-bold" data-label="Mã booking">{{ res.bookingCode || ('RES-' + res.id) }}</td>
+          <td class="text-dark" data-label="Khách hàng"><div class="guest-cell"><strong>{{ res.userFullName || res.username }}</strong><small>{{ res.adults ?? res.guests }} người lớn<span *ngIf="(res.children || 0) > 0"> · {{ res.children }} trẻ em</span></small><span *ngIf="roomAssignmentLabel(res) as roomLabel" class="room-assignment" [class.pending]="hasUnassignedRooms(res)"><i [class]="hasUnassignedRooms(res) ? 'pi pi-exclamation-circle' : 'pi pi-key'" aria-hidden="true"></i>{{ roomLabel }}</span></div></td>
+          <td class="text-muted" data-label="Ngày nhận phòng">{{ res.checkInDate | date: 'dd/MM/yyyy' }}</td>
+          <td class="text-muted" data-label="Ngày trả phòng">{{ res.checkOutDate | date: 'dd/MM/yyyy' }}</td>
+          <td class="text-dark fw-bold" data-label="Tổng tiền">{{ res.totalAmount | currency: 'VND' }}</td>
+          <td data-label="Trạng thái">
+            <span
+              class="badge rounded-pill badge-status"
+              [ngClass]="{
+                'status-available': res.status === 'CONFIRMED' || res.status === 'CHECKED_OUT',
+                'status-occupied': res.status === 'CHECKED_IN',
+                'status-reserved': res.status === 'PENDING' || res.status === 'PENDING_PAYMENT',
+                'status-maintenance': res.status === 'CANCELLED',
+              }"
+            >
+              {{ getReservationLabel(res.status) }}
+            </span>
+            <small *ngIf="res.status === 'CANCELLED' && res.cancellationReason" class="d-block mt-1 text-danger">
+              Lý do: {{ res.cancellationReason }}
+            </small>
+          </td>
+          <td data-label="Thanh toán">
+            <div class="financial-cell">
+              <span
+                class="lifecycle-chip"
+                [ngClass]="getPaymentTone(res.payment)"
+                [attr.data-payment-status]="
+                  res.payment?.reconciliationRequired
+                    ? 'RECONCILIATION'
+                    : res.payment?.status || 'NONE'
+                "
+              >
+                <i [class]="getPaymentIcon(res.payment)" aria-hidden="true"></i>
+                {{ getPaymentLabel(res.payment) }}
+              </span>
+              <small *ngIf="res.payment">
+                {{ res.payment.provider }} ·
+                {{ res.payment.amount | currency: 'VND' : 'symbol' : '1.0-0' }}
+              </small>
+              <small class="payment-preference">Dự kiến: {{ getPaymentMethodLabel(res.paymentMethod) }}</small>
+            </div>
+          </td>
+          <td data-label="Hoàn tiền">
+            <div class="financial-cell">
+              <span
+                class="lifecycle-chip"
+                [ngClass]="getRefundTone(getLatestRefund(res))"
+                [attr.data-refund-status]="getLatestRefund(res)?.status || 'NONE'"
+              >
+                <i [class]="getRefundIcon(getLatestRefund(res))" aria-hidden="true"></i>
+                {{ getRefundLabel(getLatestRefund(res)) }}
+              </span>
+              <small *ngIf="getLatestRefund(res) as refund">
+                {{ refund.provider }} · {{ refund.amount | currency: 'VND' : 'symbol' : '1.0-0' }}
+              </small>
+            </div>
+          </td>
+          <td class="text-center" data-label="Thao tác">
+            <div class="d-flex gap-2 justify-content-center">
+              <button
+                pButton
+                icon="pi pi-key"
+                class="p-button-text p-button-primary p-button-sm action-button"
+                data-action="assign-rooms"
+                aria-label="Tự động xếp phòng đúng hạng"
+                pTooltip="Xếp phòng tự động"
+                *ngIf="canAssignRooms && res.status === 'CONFIRMED' && hasUnassignedRooms(res)"
+                [loading]="isLifecycleBusy(res.id, 'ASSIGN_ROOMS')"
+                [disabled]="lifecycleActionKey() !== null"
+                (click)="assignRooms(res.id)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-check"
+                class="p-button-text p-button-success p-button-sm action-button"
+                aria-label="Xác nhận đặt phòng"
+                pTooltip="Xác nhận"
+                *ngIf="canUpdateReservation && res.status === 'PENDING_PAYMENT'"
+                [loading]="isLifecycleBusy(res.id, 'STATUS_CONFIRMED')"
+                [disabled]="lifecycleActionKey() !== null"
+                (click)="updateStatus(res.id, 'CONFIRMED')"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-sign-in"
+                class="p-button-text p-button-info p-button-sm action-button"
+                data-action="check-in"
+                aria-label="Nhận phòng"
+                pTooltip="Check-in"
+                *ngIf="canCheckIn && res.status === 'CONFIRMED' && isCheckInDue(res)"
+                [loading]="isLifecycleBusy(res.id, 'CHECK_IN')"
+                [disabled]="lifecycleActionKey() !== null"
+                (click)="checkIn(res.id)"
+              ></button>
+              <ng-container *ngIf="canMarkNoShow && res.status === 'CONFIRMED' && isNoShowDue(res)">
+                <button
+                  pButton
+                  [icon]="noShowPendingId === res.id ? 'pi pi-check' : 'pi pi-user-minus'"
+                  [class]="noShowPendingId === res.id ? 'p-button-text p-button-danger p-button-sm action-button' : 'p-button-text p-button-warning p-button-sm action-button'"
+                  data-action="no-show"
+                  [attr.aria-label]="noShowPendingId === res.id ? 'Xác nhận đánh dấu khách không đến' : 'Đánh dấu khách không đến'"
+                  [pTooltip]="noShowPendingId === res.id ? 'Bấm lại để xác nhận no-show' : 'No-show'"
+                  [loading]="isLifecycleBusy(res.id, 'NO_SHOW')"
+                  [disabled]="lifecycleActionKey() !== null"
+                  (click)="requestNoShow(res.id)"
+                ></button>
+                <button
+                  *ngIf="noShowPendingId === res.id"
+                  pButton
+                  icon="pi pi-undo"
+                  class="p-button-text p-button-secondary p-button-sm action-button"
+                  aria-label="Bỏ xác nhận no-show"
+                  pTooltip="Bỏ qua"
+                  (click)="clearNoShowConfirmation()"
+                ></button>
+              </ng-container>
+              <button
+                pButton
+                icon="pi pi-wallet"
+                class="p-button-text p-button-primary p-button-sm action-button"
+                data-action="open-authoritative-folio"
+                aria-label="Mở folio thanh toán"
+                pTooltip="Folio & thanh toán theo máy chủ"
+                *ngIf="canReadCheckout && res.status === 'CHECKED_IN'"
+                (click)="openCheckoutWorkspace(res)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-sign-out"
+                class="p-button-text p-button-secondary p-button-sm action-button"
+                data-action="check-out"
+                aria-label="Trả phòng"
+                pTooltip="Check-out"
+                *ngIf="canReadCheckout && canCheckOut && res.status === 'CHECKED_IN'"
+                (click)="openCheckoutWorkspace(res)"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-file-pdf"
+                class="p-button-text p-button-help p-button-sm action-button"
+                data-action="invoice"
+                aria-label="Xuất hóa đơn"
+                pTooltip="Xuất hóa đơn"
+                *ngIf="canViewInvoice && res.status === 'CHECKED_OUT'"
+                (click)="generateInvoice(res.id)"
+              ></button>
+              <ng-container *ngIf="canCancelOperational && canCancelReservation(res)">
+                <button
+                  pButton
+                  [icon]="cancelPendingId === res.id ? 'pi pi-check' : 'pi pi-times'"
+                  [class]="cancelPendingId === res.id ? 'p-button-text p-button-warning p-button-sm action-button' : 'p-button-text p-button-danger p-button-sm action-button'"
+                  data-action="cancel-operational"
+                  [attr.aria-label]="cancelPendingId === res.id ? 'Xác nhận hủy đặt phòng' : 'Hủy đặt phòng'"
+                  [pTooltip]="cancelPendingId === res.id ? 'Bấm lại để xác nhận hủy' : 'Hủy phòng'"
+                  [loading]="isLifecycleBusy(res.id, 'CANCEL')"
+                  [disabled]="lifecycleActionKey() !== null"
+                  (click)="requestCancel(res.id)"
+                ></button>
+                <button
+                  *ngIf="cancelPendingId === res.id"
+                  pButton
+                  icon="pi pi-undo"
+                  class="p-button-text p-button-secondary p-button-sm action-button"
+                  aria-label="Bỏ xác nhận hủy"
+                  pTooltip="Bỏ qua"
+                  (click)="clearCancelConfirmation()"
+                ></button>
+              </ng-container>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="9" class="text-center py-4 text-muted">Không có dữ liệu đặt phòng.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+  <p-dialog
+    [(visible)]="showCheckoutDialog"
+    [modal]="true"
+    [showHeader]="false"
+    [closable]="false"
+    [dismissableMask]="false"
+    [style]="{ width: 'min(1180px, 96vw)' }"
+    [breakpoints]="{ '768px': '100vw' }"
+    styleClass="checkout-dialog"
+  >
+    <app-reservation-checkout
+      *ngIf="selectedReservationId as reservationId"
+      [reservationId]="reservationId"
+      [bookingCode]="selectedBookingCode"
+      (closed)="showCheckoutDialog = false"
+      (completed)="handleCheckoutCompleted($event)"
+    ></app-reservation-checkout>
+  </p-dialog>
+</div>

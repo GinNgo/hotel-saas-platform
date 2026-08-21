@@ -1,0 +1,235 @@
+<div class="admin-shell" [class.sidebar-collapsed]="isSidebarCollapsed" [class.mobile-nav-open]="isMobileSidebarOpen">
+  <aside id="admin-navigation" class="admin-sidebar" aria-label="Điều hướng quản trị">
+    <app-sidebar
+      [isCollapsed]="isSidebarCollapsed"
+      (navigated)="closeMobileNavigation()"
+    ></app-sidebar>
+  </aside>
+
+  @if (isMobileSidebarOpen) {
+    <button
+      type="button"
+      class="nav-backdrop"
+      aria-label="Đóng điều hướng"
+      (click)="closeMobileNavigation()"
+    ></button>
+  }
+
+  <div class="admin-workspace">
+    <header class="admin-header">
+      <div class="header-leading">
+        <button
+          type="button"
+          class="shell-icon-button"
+          (click)="toggleSidebar()"
+          [attr.aria-expanded]="isMobileSidebarOpen || !isSidebarCollapsed"
+          aria-controls="admin-navigation"
+          [attr.aria-label]="isMobileSidebarOpen ? 'Đóng điều hướng' : 'Mở hoặc thu gọn điều hướng'"
+        >
+          <i class="pi pi-bars" aria-hidden="true"></i>
+        </button>
+
+        <div class="page-context">
+          <nav aria-label="Đường dẫn trang">
+            <ol class="breadcrumbs">
+              <li><a routerLink="/admin/dashboard">Quản trị</a></li>
+              <li aria-current="page">{{ pageTitle }}</li>
+            </ol>
+          </nav>
+          <h1>{{ pageTitle }}</h1>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <form class="quick-search" role="search" (submit)="$event.preventDefault(); executeGlobalSearch()">
+          <label class="visually-hidden" for="admin-quick-search">Tìm nhanh màn hình</label>
+          <i class="pi pi-search" aria-hidden="true"></i>
+          <input
+            id="admin-quick-search"
+            type="search"
+            name="quickSearch"
+            placeholder="Tìm nhanh màn hình..."
+            autocomplete="off"
+            [(ngModel)]="globalSearchTerm"
+          />
+        </form>
+
+        <div class="popup-anchor">
+          <button
+            type="button"
+            class="shell-icon-button"
+            (click)="toggleNotifications()"
+            [attr.aria-expanded]="isNotificationOpen"
+            aria-controls="notification-panel"
+            aria-haspopup="dialog"
+            [attr.aria-label]="'Thông báo, ' + unreadCount + ' chưa đọc. ' + notificationConnectionLabel"
+          >
+            <i class="pi pi-bell" aria-hidden="true"></i>
+            @if (notificationConnectionState !== 'connected' && notificationConnectionState !== 'idle') {
+              <span
+                class="notification-connection-dot"
+                [class.is-error]="notificationConnectionState === 'offline' || notificationConnectionState === 'error'"
+                aria-hidden="true"
+              ></span>
+            }
+            @if (unreadCount > 0) {
+              <span class="notification-count" aria-hidden="true">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+            }
+          </button>
+
+          @if (isNotificationOpen) {
+            <section
+              id="notification-panel"
+              class="shell-popup notification-panel"
+              role="dialog"
+              aria-modal="false"
+              aria-labelledby="notification-heading"
+            >
+              <header class="popup-header">
+                <h2 id="notification-heading">Thông báo</h2>
+                <span class="status-badge">{{ unreadCount }} chưa đọc</span>
+                <button type="button" class="text-action" (click)="markAllNotificationsAsRead()" [disabled]="unreadCount === 0 || notificationMarkingAll">
+                  {{ notificationMarkingAll ? 'Đang xử lý...' : 'Đọc tất cả' }}
+                </button>
+              </header>
+
+              @if (notificationConnectionState !== 'connected' && notificationConnectionState !== 'idle') {
+                <div
+                  class="notification-connection-status"
+                  [class.is-error]="notificationConnectionState === 'offline' || notificationConnectionState === 'error'"
+                  [attr.role]="notificationConnectionState === 'offline' || notificationConnectionState === 'error' ? 'alert' : 'status'"
+                >
+                  <i
+                    class="pi"
+                    [class.pi-spin]="notificationConnectionState === 'connecting' || notificationConnectionState === 'reconnecting'"
+                    [class.pi-refresh]="notificationConnectionState === 'connecting' || notificationConnectionState === 'reconnecting'"
+                    [class.pi-exclamation-circle]="notificationConnectionState === 'offline' || notificationConnectionState === 'error'"
+                    aria-hidden="true"
+                  ></i>
+                  <span>{{ notificationConnectionMessage || notificationConnectionLabel }}</span>
+                  @if (notificationConnectionState === 'offline' || notificationConnectionState === 'error' || notificationConnectionState === 'reconnecting') {
+                    <button type="button" class="text-action" (click)="retryNotificationConnection()">
+                      Kết nối lại
+                    </button>
+                  }
+                </div>
+              }
+
+              <p class="notification-retention">
+                Lịch sử trong {{ notificationRetentionDays }} ngày gần nhất
+              </p>
+
+              @if (notificationActionError) {
+                <div class="notification-action-error" role="alert">
+                  {{ notificationActionError }}
+                </div>
+              }
+
+              <div class="notification-list" aria-live="polite">
+                @if (notificationsLoading) {
+                  <div class="popup-state" role="status">
+                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                    Đang tải thông báo...
+                  </div>
+                } @else if (notificationsError) {
+                  <div class="popup-state popup-error" role="alert">
+                    <span>{{ notificationsError }}</span>
+                    <button type="button" class="text-action" (click)="loadNotifications()">Thử lại</button>
+                  </div>
+                } @else if (notifications.length === 0) {
+                  <div class="popup-state" role="status">
+                    <i class="pi pi-inbox" aria-hidden="true"></i>
+                    Chưa có thông báo.
+                  </div>
+                } @else {
+                  @for (notif of notifications; track notif.id) {
+                    <button
+                      type="button"
+                      class="notification-item"
+                      [class.unread]="!notif.isRead"
+                      (click)="openNotification(notif)"
+                      [disabled]="notificationMarkingIds.has(notif.id)"
+                      [attr.aria-busy]="notificationMarkingIds.has(notif.id)"
+                    >
+                      <span class="notification-title">{{ notif.title }}</span>
+                      <span class="notification-message">{{ notif.message }}</span>
+                      <time>{{ notif.createdAt | date: 'dd/MM/yyyy HH:mm' }}</time>
+                      @if (!notif.isRead) {
+                        <span class="unread-dot" aria-label="Chưa đọc"></span>
+                      }
+                    </button>
+                  }
+
+                  @if (notificationHasMore) {
+                    <button
+                      type="button"
+                      class="notification-load-more"
+                      (click)="loadMoreNotifications()"
+                      [disabled]="notificationsLoadingMore"
+                    >
+                      @if (notificationsLoadingMore) {
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        Đang tải...
+                      } @else {
+                        Xem thêm thông báo
+                      }
+                    </button>
+                  }
+                }
+              </div>
+            </section>
+          }
+        </div>
+
+        <div class="popup-anchor profile-anchor">
+          <button
+            type="button"
+            class="profile-button"
+            (click)="toggleUserMenu()"
+            [attr.aria-expanded]="isUserMenuOpen"
+            aria-controls="user-menu"
+            aria-haspopup="menu"
+          >
+            @if (currentAvatarSrc) {
+              <img [src]="currentAvatarSrc" alt="" />
+            } @else {
+              <span class="profile-initials" aria-hidden="true">{{ currentUserInitials }}</span>
+            }
+            <span class="profile-copy">
+              <strong>{{ currentUserName }}</strong>
+              <small>{{ currentRoleLabel }}</small>
+            </span>
+            <i class="pi pi-chevron-down" aria-hidden="true"></i>
+            <span class="visually-hidden">Mở menu tài khoản</span>
+          </button>
+
+          @if (isUserMenuOpen) {
+            <ul id="user-menu" class="shell-popup user-menu" role="menu">
+              <li role="none">
+                <button type="button" role="menuitem" (click)="viewProfile()">
+                  <i class="pi pi-user" aria-hidden="true"></i> Hồ sơ
+                </button>
+              </li>
+              <li role="none">
+                <button type="button" role="menuitem" class="danger-action" (click)="logout()">
+                  <i class="pi pi-sign-out" aria-hidden="true"></i> Đăng xuất
+                </button>
+              </li>
+            </ul>
+          }
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content" class="admin-content" tabindex="-1">
+      <router-outlet></router-outlet>
+    </main>
+
+    <footer class="admin-footer">
+      &copy; 2026 LuxeStay Hospitality Group
+    </footer>
+  </div>
+</div>
+
+<p-toast position="top-right"></p-toast>
+<app-ai-assistant *ngIf="canUseAiAssistant"></app-ai-assistant>
