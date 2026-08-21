@@ -527,7 +527,7 @@
       "QUOTE_PENDING_NOTE": "Estimated from the room rate while the exact quote is being checked.",
       "CAPACITY_ERROR": "The selected rooms do not have enough capacity for these guests.",
       "SELECT_HINT": "Choose a quantity for a room type to see the total.",
-      "CONTINUE_BOOKING": "Continue booking",
+      "CONTINUE_BOOKING": "Hold room for 15 minutes",
       "CLAIM_TITLE": "Claim property ownership",
       "CLAIM_HELP": "Provide details so the LuxeStay team can review management ownership.",
       "CLOSE": "Close",

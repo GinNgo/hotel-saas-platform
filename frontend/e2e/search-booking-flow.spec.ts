@@ -22,7 +22,7 @@ async function installSearchFixtures(page: Page): Promise<void> {
     descriptionVi: 'Phòng nhìn ra sông', descriptionEn: 'River view room', availableRooms: 3,
   }] }));
   await page.route('**/api/public/quotes**', route => route.fulfill({ json: {
-    quoteId: 'quote-mobile-501', expiresAt: '2099-08-20T12:30:00Z', propertyId: 501,
+    quoteId: 'quote-mobile-501', expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(), propertyId: 501,
     roomTypeId: 901, nightlyPrice: 500000, numberOfNights: 1, roomQuantity: 1,
     baseSubtotal: 500000, taxAmount: 30000, feeAmount: 7500, taxesAndFees: 37500,
     appliedPromotions: [], memberBenefit: { eligible: false }, totalDiscount: 0,
@@ -52,6 +52,14 @@ test.describe('Search result and room selection', () => {
     await expect(page).toHaveURL(/checkOutDate=2026-08-03/);
     await expect(page.locator('#rooms')).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('heading', { name: 'Chọn phòng' })).toBeVisible();
+
+    await page.locator('.room-quantity-select').first().selectOption('1');
+    const holdButton = page.getByRole('button', { name: 'Khóa giữ phòng 15 phút' }).first();
+    await expect(holdButton).toBeEnabled();
+    await holdButton.click();
+    await expect(page).toHaveURL(/\/booking\/901/);
+    await expect(page.locator('.hold-timer')).toBeVisible();
+    await expect(page.locator('.hold-timer strong')).toHaveText(/^\d{2}:\d{2}$/);
   });
 
   test('mobile search and filter do not overflow', async ({ page }) => {

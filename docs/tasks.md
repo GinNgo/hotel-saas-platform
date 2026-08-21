@@ -8,18 +8,20 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
   - [x] 1.3 Cấu hình EF Core Global Query Filter tự động lọc theo `TenantId`.
   - [x] 1.4 Sinh Migration `InitialSaaSPlatformSchema` và Seed Data mẫu thành công.
 
-- [ ] **Giai Đoạn 2: Xây Lại Giao Diện Trang Chủ & Widget Tìm Kiếm (Traveloka/iVIVU Style)**
-  - [ ] 2.1 Thiết kế Hero Search Widget nổi bật với bộ chọn Điểm đến, Popup Chọn Lịch 2 tháng, Counter chọn Khách/Phòng.
-  - [ ] 2.2 Móc API `GET /api/rooms/search` hiển thị danh sách phòng trống thực tế từ .NET 10.
-  - [ ] 2.3 Tối ưu UX: Thêm Skeleton Loading khi chờ dữ liệu API, validate ngày trả phòng phải sau ngày nhận phòng.
+- [x] **Giai Đoạn 2: Xây Lại Giao Diện Trang Chủ & Widget Tìm Kiếm (Traveloka/iVIVU Style)**
+  - Ghi nhận nghiệm thu (2026-08-21): hero search dùng location autocomplete, lịch range 2 tháng trên desktop/1 tháng mobile, guest-room counter; state được giữ qua query params và search gọi public inventory authoritative.
+  - [x] 2.1 Thiết kế Hero Search Widget nổi bật với bộ chọn Điểm đến, Popup Chọn Lịch 2 tháng, Counter chọn Khách/Phòng.
+  - [x] 2.2 Móc API `GET /api/rooms/search` hiển thị danh sách phòng trống thực tế từ .NET 10.
+  - [x] 2.3 Tối ưu UX: Thêm Skeleton Loading khi chờ dữ liệu API, validate ngày trả phòng phải sau ngày nhận phòng.
 
-- [ ] **Giai Đoạn 3: Trang Kết Quả Tìm Kiếm & Chi Tiết Phòng (Agoda Style)**
-  - [ ] 3.1 Dựng Sidebar Bộ lọc Đa Chiều (Khoảng giá slider, Hạng sao ⭐, Tiện ích bể bơi/bữa sáng).
-  - [ ] 3.2 Dựng Thẻ Khách sạn (Hotel Card) kèm Slider ảnh, Điểm đánh giá (vd: `9.4/10`), Badge "Hủy miễn phí".
-  - [ ] 3.3 Dựng Bảng Loại Phòng (Room Comparison Matrix) kèm nút **"Khóa giữ phòng 15p"**.
+- [x] **Giai Đoạn 3: Trang Kết Quả Tìm Kiếm & Chi Tiết Phòng (Agoda Style)**
+  - Ghi nhận nghiệm thu (2026-08-21): filter được đồng bộ URL, hotel card dùng ảnh/điểm review/quote authoritative, chi tiết có gallery và room matrix responsive; CTA chuyển sang checkout và hiển thị countdown giữ chỗ.
+  - [x] 3.1 Dựng Sidebar Bộ lọc Đa Chiều (Khoảng giá slider, Hạng sao ⭐, Tiện ích bể bơi/bữa sáng).
+  - [x] 3.2 Dựng Thẻ Khách sạn (Hotel Card) kèm Slider ảnh, Điểm đánh giá (vd: `9.4/10`), Badge "Hủy miễn phí".
+  - [x] 3.3 Dựng Bảng Loại Phòng (Room Comparison Matrix) kèm nút **"Khóa giữ phòng 15p"**.
 
-- [ ] **Giai Đoạn 4: Trang Đặt Phòng & Thanh Toán VNPay Sandbox (Checkout Flow)**
-  - [ ] 4.1 Dựng màn hình Checkout 1 trang với đồng hồ đếm ngược 15:00 giữ chỗ.
+- [x] **Giai Đoạn 4: Trang Đặt Phòng & Thanh Toán VNPay Sandbox (Checkout Flow)**
+  - [x] 4.1 Dựng màn hình Checkout 1 trang với đồng hồ đếm ngược 15:00 giữ chỗ.
   - [x] 4.2 Móc API `POST /api/reservations/hold` và `POST /api/reservations/confirm`; khóa tồn kho bằng `RoomDateLock` unique theo phòng/ngày.
   - [x] 4.3 Kết nối nút thanh toán VNPay QR Code sang Cổng Sandbox và xử lý trang Callback kết quả.
   - [x] 4.4 Tách IPN server-to-server authoritative khỏi redirect callback; callback không thay đổi dữ liệu.
