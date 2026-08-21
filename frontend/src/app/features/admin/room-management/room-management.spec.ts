@@ -47,4 +47,21 @@ describe('RoomManagement', () => {
 
     expect(reload).toHaveBeenCalledTimes(1);
   });
+
+  it('groups the operational room matrix by floor with text and icons in addition to color', () => {
+    component.loading = false;
+    component.rooms = [
+      { id: 1, hotelId: 7, roomTypeId: 9, roomNumber: '101', floor: 1, status: 'AVAILABLE', housekeepingStatus: 'CLEAN', maintenanceStatus: 'NONE', roomTypeNameVi: 'Deluxe' },
+      { id: 2, hotelId: 7, roomTypeId: 9, roomNumber: '201', floor: 2, status: 'OCCUPIED', housekeepingStatus: 'DIRTY', maintenanceStatus: 'NONE', roomTypeNameVi: 'Deluxe' },
+      { id: 3, hotelId: 7, roomTypeId: 9, roomNumber: '202', floor: 2, status: 'DIRTY', housekeepingStatus: 'DIRTY', maintenanceStatus: 'NONE', roomTypeNameVi: 'Deluxe' },
+    ];
+    component.totalItems = 3;
+    component.viewMode = 'matrix';
+
+    expect(component.roomGroups.map(group => [group.floor, group.rooms.length])).toEqual([[1, 1], [2, 2]]);
+    expect(component.roomStatusLabel('AVAILABLE')).toBe('Phòng trống');
+    expect(component.roomStatusLabel('OCCUPIED')).toBe('Đang có khách');
+    expect(component.roomStatusIcon('OCCUPIED')).toBe('pi-user');
+    expect(component.roomStatusClass(component.rooms[2])).toBe('dirty');
+  });
 });

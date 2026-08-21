@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, Subject } from 'rxjs';
 import { debounceTime, finalize, map, tap, timeout } from 'rxjs/operators';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { PaginatorModule } from 'primeng/paginator';
 import { SharedModule } from '../../../shared/shared.module';
 import { AdminInventoryService, AdminPropertyOption, AdminRoom, AdminRoomType, BulkRoomRequest } from '../../../core/services/admin-inventory.service';
 import { ActionCode, FunctionCode, PermissionService } from '../../../core/services/permission.service';
@@ -11,7 +12,7 @@ import { RoomStatusRealtimeService } from '../../../core/services/room-status-re
 
 @Component({
   selector: 'app-room-management',
-  imports: [SharedModule],
+  imports: [SharedModule, PaginatorModule],
   providers: [ConfirmationService, MessageService],
   templateUrl: './room-management.html',
   styleUrl: './room-management.css',
@@ -31,6 +32,7 @@ export class RoomManagement implements OnInit {
   rooms: AdminRoom[] = []; roomTypes: AdminRoomType[] = []; properties: AdminPropertyOption[] = [];
   loading = false; saving = false; errorMessage = '';
   page = 1; pageSize = 15; totalItems = 0;
+  viewMode: 'matrix' | 'table' = 'matrix';
   searchText = ''; propertyFilter: string | number | null = null; roomTypeFilter: string | number | null = null;
   floorFilter: number | null = null; statusFilter = ''; housekeepingFilter = ''; maintenanceFilter = '';
   dialogVisible = false; bulkVisible = false; editingId: string | number | null = null;
@@ -85,6 +87,7 @@ export class RoomManagement implements OnInit {
       this.statusFilter = params.get('status') || '';
       this.housekeepingFilter = params.get('housekeepingStatus') || '';
       this.maintenanceFilter = params.get('maintenanceStatus') || '';
+      this.viewMode = params.get('view') === 'table' ? 'table' : 'matrix';
       this.page = Math.max(1, Number(params.get('page') || 1));
       this.pageSize = Math.max(1, Number(params.get('pageSize') || 15));
       this.loadData();
@@ -92,15 +95,20 @@ export class RoomManagement implements OnInit {
   }
   get availableTypeOptions(): AdminRoomType[] { const hotelId = this.editingId ? this.form.hotelId : (this.form.hotelId || this.bulk.hotelId); return this.roomTypes.filter(t => !hotelId || t.hotelId === hotelId); }
   get filteredRooms(): AdminRoom[] { const key=this.searchText.trim().toLowerCase(); return this.rooms.filter(r => (!key || r.roomNumber.toLowerCase().includes(key)) && (!this.propertyFilter || r.hotelId===this.propertyFilter) && (!this.roomTypeFilter || r.roomTypeId===this.roomTypeFilter) && (this.floorFilter===null || r.floor===this.floorFilter) && (!this.statusFilter || r.status===this.statusFilter) && (!this.housekeepingFilter || r.housekeepingStatus===this.housekeepingFilter) && (!this.maintenanceFilter || r.maintenanceStatus===this.maintenanceFilter)); }
+  get roomGroups(): Array<{ floor: number; rooms: AdminRoom[] }> { const groups = new Map<number, AdminRoom[]>(); for (const room of this.filteredRooms) { const rooms = groups.get(room.floor) || []; rooms.push(room); groups.set(room.floor, rooms); } return [...groups.entries()].sort(([a], [b]) => a - b).map(([floor, rooms]) => ({ floor, rooms: rooms.sort((a, b) => a.roomNumber.localeCompare(b.roomNumber, undefined, { numeric: true })) })); }
+  get roomStatusSummary(): Array<{ key: string; label: string; count: number; icon: string }> { const statuses = ['AVAILABLE', 'DIRTY', 'OCCUPIED', 'CLEANING', 'OUT_OF_SERVICE']; return statuses.map(key => ({ key, label: this.roomStatusLabel(key), count: this.filteredRooms.filter(room => room.status === key).length, icon: this.roomStatusIcon(key) })); }
   roomStatusLabel(status: string): string { return this.statusLabel(this.roomStatuses, status); }
   housekeepingStatusLabel(status: string): string { return this.statusLabel(this.housekeepingStatuses, status); }
   maintenanceStatusLabel(status: string): string { return this.statusLabel(this.maintenanceStatuses, status); }
+  roomStatusIcon(status: string): string { return ({ AVAILABLE: 'pi-check-circle', DIRTY: 'pi-sparkles', OCCUPIED: 'pi-user', CLEANING: 'pi-spin pi-spinner', MAINTENANCE: 'pi-wrench', OUT_OF_SERVICE: 'pi-wrench', DELETED: 'pi-trash' } as Record<string, string>)[status] || 'pi-circle'; }
+  roomStatusClass(room: AdminRoom): string { if (room.status === 'DELETED') return 'deleted'; if (room.maintenanceStatus !== 'NONE' || room.status === 'OUT_OF_SERVICE' || room.status === 'MAINTENANCE') return 'maintenance'; return room.status.toLowerCase(); }
+  setViewMode(mode: 'matrix' | 'table'): void { this.viewMode = mode; this.updateQuery(); }
 
-  loadData(): void { this.loading=true; this.errorMessage=''; const roomsRequest = this.api.getRoomsPaged({ search: this.searchText.trim() || undefined, propertyId: this.propertyFilter || undefined, roomTypeId: this.roomTypeFilter || undefined, status: this.statusFilter || undefined, page: this.page, pageSize: this.pageSize }).pipe(tap(result => this.totalItems = result.totalItems), map(result => result.items)); forkJoin({rooms:roomsRequest,roomTypes:this.api.getRoomTypes(),properties:this.api.getProperties()}).pipe(timeout(15000),finalize(()=>{this.loading=false;this.cdr.detectChanges();})).subscribe({next:d=>{this.rooms=d.rooms;this.roomTypes=d.roomTypes;this.properties=d.properties;},error:e=>this.errorMessage=e?.error?.message||'Không thể tải danh sách phòng.'}); }
+  loadData(): void { this.loading=true; this.errorMessage=''; const roomsRequest = this.api.getRoomsPaged({ search: this.searchText.trim() || undefined, propertyId: this.propertyFilter || undefined, roomTypeId: this.roomTypeFilter || undefined, status: this.statusFilter || undefined, housekeepingStatus: this.housekeepingFilter || undefined, maintenanceStatus: this.maintenanceFilter || undefined, page: this.page, pageSize: this.pageSize }).pipe(tap(result => this.totalItems = result.totalItems), map(result => result.items)); forkJoin({rooms:roomsRequest,roomTypes:this.api.getRoomTypes(),properties:this.api.getProperties()}).pipe(timeout(15000),finalize(()=>{this.loading=false;this.cdr.detectChanges();})).subscribe({next:d=>{this.rooms=d.rooms;this.roomTypes=d.roomTypes;this.properties=d.properties;},error:e=>this.errorMessage=e?.error?.message||'Không thể tải danh sách phòng.'}); }
   onPageChange(event: { first?: number; rows?: number }): void { this.pageSize = event.rows || this.pageSize; this.page = Math.floor((event.first || 0) / this.pageSize) + 1; this.loadData(); }
   propertyName(id:string|number):string{const p=this.properties.find(x=>x.id===id);return p?.nameVi||p?.name||`Cơ sở #${id}`;}
   resetFilters():void{this.searchText='';this.propertyFilter=null;this.roomTypeFilter=null;this.floorFilter=null;this.statusFilter='';this.housekeepingFilter='';this.maintenanceFilter='';this.page=1;this.updateQuery();}
-  updateQuery(): void { if (!this.router || !this.route) return; void this.router.navigate([], { relativeTo: this.route, queryParams: { search: this.searchText || null, propertyId: this.propertyFilter || null, roomTypeId: this.roomTypeFilter || null, status: this.statusFilter || null, housekeepingStatus: this.housekeepingFilter || null, maintenanceStatus: this.maintenanceFilter || null, page: this.page, pageSize: this.pageSize }, queryParamsHandling: 'merge' }); }
+  updateQuery(): void { if (!this.router || !this.route) return; void this.router.navigate([], { relativeTo: this.route, queryParams: { search: this.searchText || null, propertyId: this.propertyFilter || null, roomTypeId: this.roomTypeFilter || null, status: this.statusFilter || null, housekeepingStatus: this.housekeepingFilter || null, maintenanceStatus: this.maintenanceFilter || null, view: this.viewMode === 'table' ? 'table' : null, page: this.page, pageSize: this.pageSize }, queryParamsHandling: 'merge' }); }
   onFormPropertyChange():void{this.form.roomTypeId=undefined;}
   onBulkPropertyChange():void{this.bulk.roomTypeId=0;}
   openCreate():void{if(!this.canCreate)return;this.editingId=null;this.form=this.emptyForm();this.dialogVisible=true;}

@@ -16,18 +16,49 @@
 
   <div class="filters">
     <span class="search"><i class="pi pi-search"></i><input pInputText [(ngModel)]="searchText" (ngModelChange)="page=1; updateQuery()" placeholder="Tìm số phòng" /></span>
-    <p-select [options]="properties" optionLabel="name" optionValue="id" [(ngModel)]="propertyFilter" placeholder="Tất cả cơ sở" [showClear]="true"></p-select>
-    <p-select [options]="roomTypes" optionLabel="nameVi" optionValue="id" [(ngModel)]="roomTypeFilter" placeholder="Tất cả loại phòng" [showClear]="true"></p-select>
-    <input pInputText type="number" [(ngModel)]="floorFilter" placeholder="Tầng" />
+    <p-select [options]="properties" optionLabel="name" optionValue="id" [(ngModel)]="propertyFilter" (ngModelChange)="page=1; updateQuery()" placeholder="Tất cả cơ sở" [showClear]="true"></p-select>
+    <p-select [options]="roomTypes" optionLabel="nameVi" optionValue="id" [(ngModel)]="roomTypeFilter" (ngModelChange)="page=1; updateQuery()" placeholder="Tất cả loại phòng" [showClear]="true"></p-select>
+    <input pInputText type="number" [(ngModel)]="floorFilter" (ngModelChange)="page=1" placeholder="Tầng" />
     <p-select [options]="roomStatuses" optionLabel="label" optionValue="value" [(ngModel)]="statusFilter" (ngModelChange)="page=1; updateQuery()" placeholder="Trạng thái phòng" [showClear]="true"></p-select>
-    <p-select [options]="housekeepingStatuses" optionLabel="label" optionValue="value" [(ngModel)]="housekeepingFilter" placeholder="Dọn phòng" [showClear]="true"></p-select>
-    <p-select [options]="maintenanceStatuses" optionLabel="label" optionValue="value" [(ngModel)]="maintenanceFilter" placeholder="Bảo trì" [showClear]="true"></p-select>
+    <p-select [options]="housekeepingStatuses" optionLabel="label" optionValue="value" [(ngModel)]="housekeepingFilter" (ngModelChange)="page=1; updateQuery()" placeholder="Dọn phòng" [showClear]="true"></p-select>
+    <p-select [options]="maintenanceStatuses" optionLabel="label" optionValue="value" [(ngModel)]="maintenanceFilter" (ngModelChange)="page=1; updateQuery()" placeholder="Bảo trì" [showClear]="true"></p-select>
     <button pButton icon="pi pi-filter-slash" class="p-button-text" title="Đặt lại" (click)="resetFilters()"></button>
   </div>
 
   <div *ngIf="errorMessage" class="error-state"><span>{{errorMessage}}</span><button pButton label="Thử lại" (click)="loadData()"></button></div>
 
-  <div class="table-shell">
+  <section class="room-overview" aria-labelledby="room-overview-title">
+    <div class="overview-heading">
+      <div><span class="eyebrow">PMS LIVE BOARD</span><h2 id="room-overview-title">Sơ đồ vận hành phòng</h2><p>{{totalItems}} phòng phù hợp bộ lọc · hiển thị {{filteredRooms.length}} phòng trên trang hiện tại</p></div>
+      <div class="view-switch" role="group" aria-label="Kiểu hiển thị phòng">
+        <button type="button" [class.active]="viewMode==='matrix'" [attr.aria-pressed]="viewMode==='matrix'" (click)="setViewMode('matrix')"><i class="pi pi-th-large" aria-hidden="true"></i><span>Ma trận</span></button>
+        <button type="button" [class.active]="viewMode==='table'" [attr.aria-pressed]="viewMode==='table'" (click)="setViewMode('table')"><i class="pi pi-list" aria-hidden="true"></i><span>Danh sách</span></button>
+      </div>
+    </div>
+    <div class="status-legend" aria-label="Chú giải trạng thái phòng">
+      <div *ngFor="let item of roomStatusSummary" class="legend-item" [attr.data-status]="item.key"><i class="pi" [ngClass]="item.icon" aria-hidden="true"></i><span>{{item.label}}</span><strong>{{item.count}}</strong></div>
+    </div>
+  </section>
+
+  <div *ngIf="viewMode==='matrix'" class="matrix-shell" [attr.aria-busy]="loading">
+    <div *ngIf="loading" class="matrix-loading" role="status"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i><span>Đang đồng bộ trạng thái phòng...</span></div>
+    <section *ngFor="let group of roomGroups" class="floor-section" [attr.aria-labelledby]="'floor-'+group.floor">
+      <header><div><span>TẦNG</span><strong [id]="'floor-'+group.floor">{{group.floor}}</strong></div><p>{{group.rooms.length}} phòng trên trang hiện tại</p></header>
+      <div class="room-matrix">
+        <article *ngFor="let room of group.rooms" class="room-card" [ngClass]="roomStatusClass(room)" [attr.aria-label]="'Phòng '+room.roomNumber+', '+roomStatusLabel(room.status)">
+          <div class="room-card-top"><span class="room-number">{{room.roomNumber}}</span><i class="pi" [ngClass]="roomStatusIcon(room.status)" aria-hidden="true"></i></div>
+          <strong>{{roomStatusLabel(room.status)}}</strong>
+          <span>{{room.roomTypeNameVi || room.roomTypeCode}}</span>
+          <small><i class="pi pi-sparkles" aria-hidden="true"></i>{{housekeepingStatusLabel(room.housekeepingStatus)}}</small>
+          <button *ngIf="canUpdate && room.status!=='DELETED'" type="button" class="room-card-action" (click)="openEdit(room)" [attr.aria-label]="'Chỉnh sửa phòng '+room.roomNumber"><i class="pi pi-pencil" aria-hidden="true"></i><span>Chi tiết</span></button>
+        </article>
+      </div>
+    </section>
+    <div *ngIf="!loading && roomGroups.length===0" class="empty-state"><i class="pi pi-inbox"></i><b>Không có phòng phù hợp.</b><span>Hãy thay đổi bộ lọc hoặc thêm phòng mới.</span></div>
+    <p-paginator [first]="(page-1)*pageSize" [rows]="pageSize" [totalRecords]="totalItems" [rowsPerPageOptions]="[15,30,50]" (onPageChange)="onPageChange($event)"></p-paginator>
+  </div>
+
+  <div *ngIf="viewMode==='table'" class="table-shell">
     <p-table [value]="filteredRooms" [loading]="loading" [paginator]="true" [rows]="pageSize" [totalRecords]="totalItems" [rowsPerPageOptions]="[15,30,50]" (onPage)="onPageChange($event)" [rowHover]="true" responsiveLayout="scroll" styleClass="p-datatable-sm">
       <ng-template pTemplate="header"><tr><th pSortableColumn="roomNumber">Số phòng <p-sortIcon field="roomNumber"></p-sortIcon></th><th>Cơ sở</th><th pSortableColumn="roomTypeNameVi">Loại phòng <p-sortIcon field="roomTypeNameVi"></p-sortIcon></th><th pSortableColumn="floor">Tầng <p-sortIcon field="floor"></p-sortIcon></th><th>Trạng thái phòng</th><th>Dọn phòng</th><th>Bảo trì</th><th>Ghi chú</th><th class="actions">Thao tác</th></tr></ng-template>
       <ng-template pTemplate="body" let-room><tr><td><b>{{room.roomNumber}}</b></td><td>{{propertyName(room.hotelId)}}</td><td>{{room.roomTypeNameVi}}<small>{{room.roomTypeCode}}</small></td><td>{{room.floor}}</td><td><span class="status" [class.danger]="room.status==='DELETED'">{{room.status==='DELETED' ? 'Đã xóa mềm' : roomStatusLabel(room.status)}}</span></td><td><span class="status secondary">{{housekeepingStatusLabel(room.housekeepingStatus)}}</span></td><td><span class="status" [class.danger]="room.maintenanceStatus!=='NONE'">{{maintenanceStatusLabel(room.maintenanceStatus)}}</span></td><td>{{room.maintenanceReason||room.note||'-'}}</td><td class="actions"><button *ngIf="canUpdate && room.status!=='DELETED'" pButton icon="pi pi-pencil" class="p-button-text" title="Chỉnh sửa" (click)="openEdit(room)"></button><button *ngIf="canExecute && room.status!=='DELETED' && room.maintenanceStatus==='NONE' && room.status!=='OCCUPIED'" pButton icon="pi pi-wrench" class="p-button-text p-button-warning" title="Bắt đầu bảo trì" (click)="setMaintenance(room,true)" [disabled]="stateChangingId!==null"></button><button *ngIf="canDelete && room.status!=='DELETED' && room.status!=='OUT_OF_SERVICE'" pButton icon="pi pi-ban" class="p-button-text p-button-danger" title="Xóa mềm" (click)="deactivate(room)"></button><button *ngIf="canUpdate && room.status==='DELETED'" pButton icon="pi pi-replay" class="p-button-text" title="Khôi phục" (click)="restore(room)"></button></td></tr></ng-template>

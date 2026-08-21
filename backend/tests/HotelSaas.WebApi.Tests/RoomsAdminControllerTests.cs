@@ -98,6 +98,29 @@ public sealed class RoomsAdminControllerTests
         Assert.Equal("104", Assert.Single(available).RoomNumber);
     }
 
+    [Fact]
+    public async Task Paged_room_filters_apply_housekeeping_and_maintenance_on_the_server()
+    {
+        var tenant = Hotel("Matrix Hotel");
+        var roomType = Type(tenant, "DLX");
+        var clean = new Room { TenantId = tenant.Id, RoomTypeId = roomType.Id, RoomType = roomType, RoomNumber = "101", Status = RoomStatus.Clean, IsActive = true };
+        var dirty = new Room { TenantId = tenant.Id, RoomTypeId = roomType.Id, RoomType = roomType, RoomNumber = "102", Status = RoomStatus.Dirty, IsActive = true };
+        var maintenance = new Room { TenantId = tenant.Id, RoomTypeId = roomType.Id, RoomType = roomType, RoomNumber = "103", Status = RoomStatus.OutOfService, IsActive = true };
+        await using var db = CreateContext(tenant, roomType, clean, dirty, maintenance);
+        var controller = WithUser(new RoomsController(db), "Manager", tenant.Id);
+
+        var cleanResult = await controller.GetAdminRoomsPaged(new RoomQuery(HousekeepingStatus: "CLEAN"));
+        var maintenanceResult = await controller.GetAdminRoomsPaged(new RoomQuery(MaintenanceStatus: "MAINTENANCE"));
+        var availableResult = await controller.GetAdminRoomsPaged(new RoomQuery(Status: "AVAILABLE"));
+
+        var cleanPage = Assert.IsType<PagedRoomResponse>(Assert.IsType<OkObjectResult>(cleanResult.Result).Value);
+        var maintenancePage = Assert.IsType<PagedRoomResponse>(Assert.IsType<OkObjectResult>(maintenanceResult.Result).Value);
+        var availablePage = Assert.IsType<PagedRoomResponse>(Assert.IsType<OkObjectResult>(availableResult.Result).Value);
+        Assert.Equal("101", Assert.Single(cleanPage.Items).RoomNumber);
+        Assert.Equal("103", Assert.Single(maintenancePage.Items).RoomNumber);
+        Assert.Equal("101", Assert.Single(availablePage.Items).RoomNumber);
+    }
+
     private static RoomsController WithUser(RoomsController controller, string role, Guid tenantId)
     {
         var claims = new[] { new Claim(ClaimTypes.Role, role), new Claim("tenant_id", tenantId.ToString()) };

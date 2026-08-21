@@ -41,12 +41,35 @@ public class RoomsController : ControllerBase
     [Authorize(Policy = "room.read")]
     public async Task<ActionResult<PagedRoomResponse>> GetAdminRoomsPaged([FromQuery] RoomQuery options)
     {
-        var query = _context.Rooms.IgnoreQueryFilters().AsNoTracking().Include(room => room.RoomType).Where(room => options.IncludeDeleted || !room.IsDeleted);
+        var includeDeleted = options.IncludeDeleted || options.Status?.Equals("DELETED", StringComparison.OrdinalIgnoreCase) == true;
+        var query = _context.Rooms.IgnoreQueryFilters().AsNoTracking().Include(room => room.RoomType).Where(room => includeDeleted || !room.IsDeleted);
         if (!User.IsInRole("SuperAdmin")) { if (!TryGetTenantId(out var tenantId)) return Forbid(); query = query.Where(room => room.TenantId == tenantId); }
         if (options.PropertyId.HasValue) query = query.Where(room => room.TenantId == options.PropertyId.Value);
         if (options.RoomTypeId.HasValue) query = query.Where(room => room.RoomTypeId == options.RoomTypeId.Value);
         if (!string.IsNullOrWhiteSpace(options.Search)) query = query.Where(room => room.RoomNumber.Contains(options.Search));
-        if (!string.IsNullOrWhiteSpace(options.Status)) query = query.Where(room => room.Status.ToString() == options.Status);
+        if (!string.IsNullOrWhiteSpace(options.Status)) query = options.Status.ToUpperInvariant() switch
+        {
+            "DELETED" => query.Where(room => room.IsDeleted),
+            "AVAILABLE" => query.Where(room => !room.IsDeleted && room.Status == RoomStatus.Clean),
+            "OCCUPIED" => query.Where(room => !room.IsDeleted && room.Status == RoomStatus.Occupied),
+            "DIRTY" => query.Where(room => !room.IsDeleted && room.Status == RoomStatus.Dirty),
+            "CLEANING" => query.Where(room => !room.IsDeleted && room.Status == RoomStatus.Cleaning),
+            "MAINTENANCE" or "OUT_OF_SERVICE" => query.Where(room => !room.IsDeleted && room.Status == RoomStatus.OutOfService),
+            _ => query.Where(_ => false)
+        };
+        if (!string.IsNullOrWhiteSpace(options.HousekeepingStatus)) query = options.HousekeepingStatus.ToUpperInvariant() switch
+        {
+            "CLEAN" => query.Where(room => room.Status == RoomStatus.Clean),
+            "CLEANING" => query.Where(room => room.Status == RoomStatus.Cleaning),
+            "DIRTY" => query.Where(room => room.Status != RoomStatus.Clean && room.Status != RoomStatus.Cleaning),
+            _ => query.Where(_ => false)
+        };
+        if (!string.IsNullOrWhiteSpace(options.MaintenanceStatus)) query = options.MaintenanceStatus.ToUpperInvariant() switch
+        {
+            "NONE" => query.Where(room => room.Status != RoomStatus.OutOfService),
+            "MAINTENANCE" or "OUT_OF_SERVICE" => query.Where(room => room.Status == RoomStatus.OutOfService),
+            _ => query.Where(_ => false)
+        };
         query = options.SortDirection?.Equals("DESC", StringComparison.OrdinalIgnoreCase) == true ? query.OrderByDescending(room => room.Floor).ThenByDescending(room => room.RoomNumber) : query.OrderBy(room => room.Floor).ThenBy(room => room.RoomNumber);
         var page = Math.Max(1, options.Page); var size = Math.Clamp(options.PageSize, 1, 100); var total = await query.CountAsync();
         var items = await query.Skip((page - 1) * size).Take(size).ToListAsync();
@@ -370,5 +393,7 @@ public sealed record AdminRoomDto(Guid Id, Guid HotelId, Guid RoomTypeId, string
     string RoomNumber, int Floor, string Status, string HousekeepingStatus, string MaintenanceStatus, string? Note,
     string? MaintenanceReason, DateTime? MaintenanceStartedAt, DateTime? MaintenanceCompletedAt,
     Guid? MaintenanceStartedByUserId, Guid? MaintenanceCompletedByUserId);
-public sealed record RoomQuery(string? Search = null, Guid? PropertyId = null, Guid? RoomTypeId = null, string? Status = null, int Page = 1, int PageSize = 20, string? SortBy = "floor", string? SortDirection = "ASC", bool IncludeDeleted = false);
+public sealed record RoomQuery(string? Search = null, Guid? PropertyId = null, Guid? RoomTypeId = null,
+    string? Status = null, string? HousekeepingStatus = null, string? MaintenanceStatus = null,
+    int Page = 1, int PageSize = 20, string? SortBy = "floor", string? SortDirection = "ASC", bool IncludeDeleted = false);
 public sealed record PagedRoomResponse(List<AdminRoomDto> Items, int Page, int PageSize, int TotalItems, int TotalPages);

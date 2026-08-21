@@ -26,7 +26,7 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
 
 - [ ] **Giai Đoạn 5: Portal Quản Trị Khách Sạn & Lễ Tân (PMS Extranet)**
   - Ghi nhận audit (2026-08-21): backend đã có các controller/test cho check-in, folio, check-out, housekeeping và realtime; cần bổ sung nghiệm thu UI trên môi trường backend thật và đối chiếu feature-gating Basic/Pro.
-  - [ ] 5.1 Dựng Sơ đồ ma trận phòng (Room Grid) với mã màu trạng thái: Xanh (Clean), Vàng (Dirty), Đỏ (Occupied).
+  - [x] 5.1 Dựng Room Grid realtime theo tầng với xanh (Clean), vàng (Dirty), đỏ (Occupied), kèm icon/nhãn accessible, view danh sách và filter server-side.
   - [ ] 5.2 Móc API Lễ tân Check-in (Gán số phòng vật lý 101, 102).
   - [ ] 5.3 Móc API Ghi nhận chi phí Minibar/Giặt ủi vào Folio và Check-out quyết toán.
   - [x] 5.4 Chặn service/surcharge folio authoritative ở backend cho gói Basic và hiển thị cảnh báo nâng cấp gói PRO ngay trong workspace quyết toán.
