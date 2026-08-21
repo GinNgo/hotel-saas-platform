@@ -9,6 +9,7 @@ import { StickySearchBarComponent } from './components/sticky-search-bar/sticky-
 import { PopularDestinationsComponent } from './components/popular-destinations/popular-destinations.component';
 import { FeaturedPropertiesComponent } from './components/featured-properties/featured-properties.component';
 import { HomeSearchStateService } from './services/home-search-state.service';
+import { canonicalRoles } from '../../../core/auth/portal-access.resolver';
 import { AuthService } from '../../../core/services/auth';
 import { Hotel, LocationSuggestion, PublicPromotion, PromotionQuote, UserContext } from '../../../core/services/client-api.service';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -244,7 +245,7 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewInit {
     } else {
       this.clientApi.getProfile().pipe(takeUntil(this.destroy$)).subscribe({
         next: context => {
-          const roles = (context.roles || []).map(role => typeof role === 'string' ? role : role.code);
+          const roles = canonicalRoles((context.roles || []).map(role => typeof role === 'string' ? role : role.code));
           if (roles.includes('PROPERTY_OWNER') || context.assignedProperties?.length) this.router.navigate(['/management/dashboard']);
           else if (context.partnerRegistrationStatus === 'PENDING') this.router.navigate(['/partner/registration-status']);
           else this.router.navigate(['/partner/register']);
