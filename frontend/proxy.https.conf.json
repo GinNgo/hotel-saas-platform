@@ -1,1 +1,14 @@
-{ "/api": { "target": "http://127.0.0.1:5122", "secure": false, "changeOrigin": true, "ws": true } }
+{
+  "/api": {
+    "target": "http://127.0.0.1:5122",
+    "secure": false,
+    "changeOrigin": true,
+    "ws": true
+  },
+  "/hubs": {
+    "target": "http://127.0.0.1:5122",
+    "secure": false,
+    "changeOrigin": true,
+    "ws": true
+  }
+}

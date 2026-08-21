@@ -1,11 +1,13 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
-import { finalize, map, tap, timeout } from 'rxjs/operators';
+import { forkJoin, Subject } from 'rxjs';
+import { debounceTime, finalize, map, tap, timeout } from 'rxjs/operators';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { SharedModule } from '../../../shared/shared.module';
 import { AdminInventoryService, AdminPropertyOption, AdminRoom, AdminRoomType, BulkRoomRequest } from '../../../core/services/admin-inventory.service';
 import { ActionCode, FunctionCode, PermissionService } from '../../../core/services/permission.service';
+import { RoomStatusRealtimeService } from '../../../core/services/room-status-realtime.service';
 
 @Component({
   selector: 'app-room-management',
@@ -22,6 +24,9 @@ export class RoomManagement implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   private route = inject(ActivatedRoute, { optional: true });
   private router = inject(Router, { optional: true });
+  private destroyRef = inject(DestroyRef);
+  private realtime = inject(RoomStatusRealtimeService);
+  private realtimeRefresh = new Subject<void>();
 
   rooms: AdminRoom[] = []; roomTypes: AdminRoomType[] = []; properties: AdminPropertyOption[] = [];
   loading = false; saving = false; errorMessage = '';
@@ -65,6 +70,13 @@ export class RoomManagement implements OnInit {
   }));
 
   ngOnInit(): void {
+    this.realtimeRefresh.pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef)).subscribe(() => this.loadData());
+    this.realtime.roomStatusChanged$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(snapshot => {
+      const visibleRoomIds = new Set(this.rooms.map(room => String(room.id)));
+      if (snapshot.some(room => visibleRoomIds.has(String(room.roomId)))) this.realtimeRefresh.next();
+    });
+    this.realtime.connect();
+    this.destroyRef.onDestroy(() => this.realtime.disconnect());
     if (!this.route?.queryParamMap) { this.loadData(); return; }
     this.route.queryParamMap.subscribe(params => {
       this.searchText = params.get('search') || '';
