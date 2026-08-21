@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Threading.RateLimiting;
 using HotelSaas.WebApi.Authorization;
+using HotelSaas.WebApi.Realtime;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -170,6 +171,7 @@ builder.Services.AddCors(options =>
 // 5. Add Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -204,7 +206,9 @@ app.UseRateLimiter();
 app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
 app.UseMiddleware<OperationalAuditMiddleware>();
+app.UseMiddleware<RoomStatusRealtimeMiddleware>();
 
 app.MapControllers();
+app.MapHub<RoomStatusHub>("/hubs/room-status");
 
 app.Run();
