@@ -32,6 +32,24 @@ public class ManagementCheckoutControllerTests
     }
 
     [Fact]
+    public async Task Basic_tier_cannot_add_advanced_folio_charges()
+    {
+        var setup = await Setup(totalCredits: 1_000_000, tier: SubscriptionTier.Basic);
+        await using var db = setup.Db;
+        var controller = Controller(db);
+
+        var service = await controller.AddServiceCharge(setup.Reservation.Id,
+            new(setup.Service.Id, "MINIBAR", 1, null), "basic-service-key");
+        var adjustment = await controller.AddAdjustment(setup.Reservation.Id,
+            new("OTHER", null, "Phụ thu", 100_000, false), "basic-adjustment-key");
+
+        Assert.IsType<ConflictObjectResult>(service.Result);
+        Assert.IsType<ConflictObjectResult>(adjustment.Result);
+        Assert.Equal(1_000_000, setup.Reservation.Folio!.TotalCharges);
+        Assert.Single(setup.Reservation.Folio.Items);
+    }
+
+    [Fact]
     public async Task Checkout_blocks_outstanding_folio_without_manager_override()
     {
         var setup = await Setup(totalCredits: 500_000);
@@ -156,7 +174,7 @@ public class ManagementCheckoutControllerTests
         return controller;
     }
 
-    private static async Task<SetupResult> Setup(decimal totalCredits)
+    private static async Task<SetupResult> Setup(decimal totalCredits, SubscriptionTier tier = SubscriptionTier.Pro)
     {
         var tenantService = new CurrentTenantService();
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -166,7 +184,7 @@ public class ManagementCheckoutControllerTests
         {
             Name = "Checkout Hotel", Code = $"CO-{Guid.NewGuid():N}", Slug = $"co-{Guid.NewGuid():N}",
             Address = "1 Checkout Street", City = "Da Nang", Status = TenantStatus.Active,
-            SubscriptionTier = SubscriptionTier.Pro
+            SubscriptionTier = tier
         };
         tenantService.SetTenant(tenant.Id, tenant.SubscriptionTier);
         var roomType = new RoomType

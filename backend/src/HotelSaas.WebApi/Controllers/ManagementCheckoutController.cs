@@ -29,6 +29,8 @@ public class ManagementCheckoutController : ControllerBase
         var reservation = await CheckoutQuery().FirstOrDefaultAsync(item => item.Id == reservationId);
         var stateError = ValidateOpenStay(reservation);
         if (stateError != null) return stateError;
+        var entitlementError = ValidateAdvancedFolioEntitlement(reservation!);
+        if (entitlementError != null) return entitlementError;
         if (request.Quantity <= 0 || request.Quantity != decimal.Truncate(request.Quantity))
             return BadRequest(new { message = "Số lượng dịch vụ phải là số nguyên lớn hơn 0." });
         if (request.ChargeType is not ("SERVICE" or "MINIBAR"))
@@ -63,6 +65,8 @@ public class ManagementCheckoutController : ControllerBase
         var reservation = await CheckoutQuery().FirstOrDefaultAsync(item => item.Id == reservationId);
         var stateError = ValidateOpenStay(reservation);
         if (stateError != null) return stateError;
+        var entitlementError = ValidateAdvancedFolioEntitlement(reservation!);
+        if (entitlementError != null) return entitlementError;
         if (request.Amount <= 0 || string.IsNullOrWhiteSpace(request.Description))
             return BadRequest(new { message = "Mô tả và số tiền điều chỉnh hợp lệ là bắt buộc." });
 
@@ -171,6 +175,7 @@ public class ManagementCheckoutController : ControllerBase
     }
 
     private IQueryable<Reservation> CheckoutQuery() => _context.Reservations
+        .Include(item => item.Tenant)
         .Include(item => item.Folio!).ThenInclude(folio => folio!.Items)
         .Include(item => item.Payments).ThenInclude(payment => payment.Refunds)
         .Include(item => item.Details).ThenInclude(detail => detail.Room)
@@ -185,6 +190,15 @@ public class ManagementCheckoutController : ControllerBase
             return new ConflictObjectResult(new { message = "Folio không tồn tại hoặc đã đóng." });
         return null;
     }
+
+    private static ObjectResult? ValidateAdvancedFolioEntitlement(Reservation reservation) =>
+        reservation.Tenant?.SubscriptionTier == SubscriptionTier.Basic
+            ? new ConflictObjectResult(new
+            {
+                code = "FOLIO_UPGRADE_REQUIRED",
+                message = "Thêm dịch vụ và điều chỉnh folio chỉ khả dụng từ gói PRO. Vui lòng nâng cấp gói dịch vụ."
+            })
+            : null;
 
     private static FolioItem? FindReplay(Folio folio, string? key) => string.IsNullOrWhiteSpace(key)
         ? null : folio.Items.FirstOrDefault(item => item.CreatedByStaffName == MutationMarker(key));

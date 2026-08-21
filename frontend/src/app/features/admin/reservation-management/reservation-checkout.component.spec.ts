@@ -194,6 +194,25 @@ describe('ReservationCheckoutComponent', () => {
     expect(retryKey).toBe(firstKey);
   });
 
+  it('shows the server upgrade instruction when the Basic plan blocks folio charges', () => {
+    component.serviceForm.setValue({ serviceId: 17, chargeType: 'SERVICE', quantity: 1 });
+    checkoutService.addServiceCharge.mockReturnValue(throwError(() => ({
+      status: 409,
+      error: {
+        code: 'FOLIO_UPGRADE_REQUIRED',
+        message: 'Thêm dịch vụ và điều chỉnh folio chỉ khả dụng từ gói PRO. Vui lòng nâng cấp gói dịch vụ.',
+      },
+    })));
+
+    component.addService();
+    fixture.detectChanges();
+
+    expect(component.errorMessage()).toContain('gói PRO');
+    const alert = fixture.nativeElement.querySelector('.feedback.error[role="alert"]');
+    expect(alert).not.toBeNull();
+    expect(alert.textContent).toContain('nâng cấp gói dịch vụ');
+  });
+
   it('reuses the same idempotency key when an approved adjustment is retried', () => {
     component.adjustmentForm.setValue({
       mode: 'NEGATIVE_ADJUSTMENT',

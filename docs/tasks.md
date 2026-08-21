@@ -29,7 +29,7 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
   - [ ] 5.1 Dựng Sơ đồ ma trận phòng (Room Grid) với mã màu trạng thái: Xanh (Clean), Vàng (Dirty), Đỏ (Occupied).
   - [ ] 5.2 Móc API Lễ tân Check-in (Gán số phòng vật lý 101, 102).
   - [ ] 5.3 Móc API Ghi nhận chi phí Minibar/Giặt ủi vào Folio và Check-out quyết toán.
-  - [ ] 5.4 Kiểm tra phân tầng gói cước: Hiển thị cảnh báo nâng cấp gói nếu cơ sở dùng gói Basic cố vào Folio.
+  - [x] 5.4 Chặn service/surcharge folio authoritative ở backend cho gói Basic và hiển thị cảnh báo nâng cấp gói PRO ngay trong workspace quyết toán.
 
 - [ ] **Giai Đoạn 6: Portal Quản Trị Sàn SaaS (SuperAdmin Portal)**
   - Ghi nhận audit (2026-08-21): đã có API/controller/test cho tenant, subscription và platform analytics; checklist UI chưa có bằng chứng E2E đủ cho duyệt/kích hoạt và nâng/hạ gói.
