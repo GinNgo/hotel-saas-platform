@@ -22,6 +22,7 @@ import { ActionCode, FunctionCode, PermissionService } from '../../../core/servi
 import { Observable, finalize, fromEvent, merge, switchMap, timer } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { RoomStatusRealtimeService } from '../../../core/services/room-status-realtime.service';
+import { AdminInventoryService, AdminRoom } from '../../../core/services/admin-inventory.service';
 
 @Component({
   selector: 'app-reservation-management',
@@ -47,6 +48,12 @@ export class ReservationManagement implements OnInit {
   statusFilter = '';
 
   showCheckoutDialog = false;
+  showCheckInDialog = false;
+  checkInReservation: Reservation | null = null;
+  availableCheckInRooms: AdminRoom[] = [];
+  selectedCheckInRoomIds: (string | number)[] = [];
+  guestIdentityCard = '';
+  checkInRoomsLoading = false;
   selectedReservationId: string | number | null = null;
   selectedBookingCode = '';
   private permissionService = inject(PermissionService);
@@ -64,6 +71,7 @@ export class ReservationManagement implements OnInit {
   noShowPendingId: string | number | null = null;
   readonly destroyRef = inject(DestroyRef);
   private readonly realtime = inject(RoomStatusRealtimeService);
+  private readonly inventory = inject(AdminInventoryService);
   readonly document = inject(DOCUMENT);
   syncing = false;
   syncWarning = '';
@@ -296,9 +304,53 @@ export class ReservationManagement implements OnInit {
     );
   }
 
-  checkIn(id: string | number | undefined) {
+  openCheckIn(reservation: Reservation) {
+    if (!reservation.id || !this.canCheckIn) return;
+    this.checkInReservation = reservation;
+    this.selectedCheckInRoomIds = (reservation.details || []).map(detail => detail.roomId).filter((id): id is string | number => id != null);
+    this.guestIdentityCard = '';
+    this.availableCheckInRooms = [];
+    this.showCheckInDialog = true;
+    this.checkInRoomsLoading = true;
+    this.inventory.getAvailableRooms(reservation.checkInDate, reservation.checkOutDate).pipe(
+      finalize(() => this.checkInRoomsLoading = false),
+    ).subscribe({
+      next: rooms => this.availableCheckInRooms = rooms.filter(room => room.status === 'AVAILABLE' || room.status === 'CLEAN'),
+      error: () => this.messageService.add({ severity: 'error', summary: 'Không thể tải phòng', detail: 'Vui lòng tải lại danh sách phòng sạch rồi thử lại.' }),
+    });
+  }
+
+  checkIn(id: string | number | undefined): void {
     if (!id || !this.canCheckIn) return;
-    this.runLifecycleAction(id, 'CHECK_IN', this.reservationService.checkIn(id), 'Đã nhận phòng');
+    const reservation = this.reservations.find(item => String(item.id) === String(id));
+    if (reservation) this.openCheckIn(reservation);
+  }
+
+  toggleCheckInRoom(roomId: string | number, checked: boolean): void {
+    this.selectedCheckInRoomIds = checked
+      ? [...new Set([...this.selectedCheckInRoomIds, roomId])]
+      : this.selectedCheckInRoomIds.filter(id => String(id) !== String(roomId));
+  }
+
+  roomMatchesBooking(room: AdminRoom): boolean {
+    const requiredTypes = new Set((this.checkInReservation?.details || []).map(detail => String(detail.roomTypeId || '')));
+    return !requiredTypes.size || requiredTypes.has(String(room.roomTypeId));
+  }
+
+  submitCheckIn(): void {
+    const reservation = this.checkInReservation;
+    if (!reservation?.id || this.selectedCheckInRoomIds.length !== reservation.details.length) return;
+    this.lifecycleActionKey.set(`CHECK_IN:${reservation.id}`);
+    this.reservationService.checkInWithRooms(reservation.id, this.selectedCheckInRoomIds, this.guestIdentityCard).pipe(
+      finalize(() => this.lifecycleActionKey.set(null)),
+    ).subscribe({
+      next: () => {
+        this.showCheckInDialog = false;
+        this.messageService.add({ severity: 'success', summary: 'Đã nhận phòng', detail: `Đã gán ${this.selectedCheckInRoomIds.length} phòng vật lý cho booking.` });
+        this.loadReservations();
+      },
+      error: error => this.messageService.add({ severity: 'error', summary: 'Không thể check-in', detail: error?.error?.message || 'Phòng đã thay đổi trạng thái. Vui lòng kiểm tra và thử lại.' }),
+    });
   }
 
   cancelOperational(id: string | number | undefined) {

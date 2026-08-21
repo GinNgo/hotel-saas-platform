@@ -1011,7 +1011,7 @@ public class ReservationsController : ControllerBase
             reservation.TotalAmount, StatusName(reservation.Status),
             PaymentMethodName(payment?.Method ?? reservation.PaymentMethodSnapshot), reservation.SpecialRequests,
             reservation.CancellationReason, reservation.Details.Select(detail => new OperationalReservationDetailDto(
-                detail.Id, reservation.Id, detail.RoomId, detail.Room?.RoomNumber, detail.NightlyPrice)).ToList(),
+                detail.Id, reservation.Id, detail.RoomTypeId, detail.RoomId, detail.Room?.RoomNumber, detail.NightlyPrice)).ToList(),
             payment == null ? null : new OperationalPaymentDto(
                 "VNPAY", payment.Amount, "VND", PaymentStatusName(payment),
                 payment.CreatedAtUtc.AddMinutes(15), payment.PaidAtUtc, false, null, payment.Id.ToString()),
@@ -1105,7 +1105,7 @@ public class ReservationsController : ControllerBase
             reservation.Tenant == null ? null : new CustomerPropertyDto(reservation.TenantId, reservation.Tenant.Name,
                 reservation.Tenant.Address, reservation.Tenant.PhoneNumber, reservation.Tenant.Email),
              reservation.Details.Select(detail => new OperationalReservationDetailDto(
-                detail.Id, reservation.Id, detail.RoomId, detail.Room?.RoomNumber, detail.NightlyPrice)).ToList(),
+                detail.Id, reservation.Id, detail.RoomTypeId, detail.RoomId, detail.Room?.RoomNumber, detail.NightlyPrice)).ToList(),
              review == null ? null : new CustomerReviewDto(review.Id, review.Score, review.Title, review.Comment, review.CreatedAtUtc),
              reservation.IsRefundableSnapshot, reservation.FreeCancellationHoursSnapshot, reservation.CancellationDeadlineUtc,
              cancellationBlockReason is null, cancellationBlockReason, guestAccessKey,
@@ -1212,7 +1212,7 @@ public class ReservationsController : ControllerBase
         Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
 
-public record OperationalReservationDetailDto(Guid Id, Guid ReservationId, Guid? RoomId, string? RoomNumber, decimal PriceAtBooking);
+public record OperationalReservationDetailDto(Guid Id, Guid ReservationId, Guid RoomTypeId, Guid? RoomId, string? RoomNumber, decimal PriceAtBooking);
 public record OperationalPaymentDto(string Provider, decimal Amount, string Currency, string Status,
     DateTime? ExpiresAt, DateTime? CompletedAt, bool ReconciliationRequired, string? FailureCode,
     string? PublicId = null);

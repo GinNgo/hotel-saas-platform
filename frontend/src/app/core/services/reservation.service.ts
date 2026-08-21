@@ -6,6 +6,7 @@ import { environment } from '../../../environments/environment';
 export interface ReservationDetail {
   id?: string | number;
   reservationId?: string | number;
+  roomTypeId?: string | number;
   roomId: string | number | null;
   roomNumber?: string;
   priceAtBooking?: number;
@@ -115,6 +116,14 @@ export class ReservationService {
 
   checkIn(id: string | number): Observable<Reservation> {
     return this.http.post<Reservation>(`${this.apiUrl}/${id}/check-in`, {});
+  }
+
+  checkInWithRooms(reservationId: string | number, assignedRoomIds: (string | number)[], guestIdentityCard?: string): Observable<{ succeeded: boolean; message: string }> {
+    return this.http.post<{ succeeded: boolean; message: string }>(`${environment.apiUrl}/frontdesk/check-in`, {
+      reservationId,
+      assignedRoomIds,
+      guestIdentityCard: guestIdentityCard?.trim() || null,
+    });
   }
 
   assignRooms(id: string | number): Observable<Reservation> {

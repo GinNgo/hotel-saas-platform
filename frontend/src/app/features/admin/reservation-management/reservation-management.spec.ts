@@ -7,6 +7,7 @@ import { HotelServiceService } from '../../../core/services/hotel-service.servic
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { ReservationManagement } from './reservation-management';
 import { PermissionService } from '../../../core/services/permission.service';
+import { AdminInventoryService } from '../../../core/services/admin-inventory.service';
 
 describe('ReservationManagement payment and refund states', () => {
   let component: ReservationManagement;
@@ -32,6 +33,7 @@ describe('ReservationManagement payment and refund states', () => {
         { provide: PaymentService, useValue: {} },
         { provide: InvoiceService, useValue: invoiceService },
         { provide: PermissionService, useValue: { hasPermission: vi.fn(() => true) } },
+        { provide: AdminInventoryService, useValue: { getAvailableRooms: vi.fn(() => of([])) } },
         { provide: HotelServiceService, useValue: { getServices: vi.fn(() => of([])) } },
         { provide: Router, useValue: { url: '/admin/reservations', navigate: vi.fn() } },
         { provide: ActivatedRoute, useValue: { snapshot: { get queryParamMap() { return convertToParamMap(routeQuery); } } } },

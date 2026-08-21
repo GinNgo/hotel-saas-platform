@@ -92,12 +92,16 @@ test.describe('Operational management smoke', () => {
     const reservation = () => ({
       id: 42, userId: 8, username: 'guest', userFullName: 'Nguyễn Minh Anh',
       checkInDate: '2026-08-18', checkOutDate: '2026-08-19', guests: 2,
-      totalAmount: 1_200_000, paymentMethod: 'BANK_TRANSFER', status, details: [{ roomId: 1 }],
+      totalAmount: 1_200_000, paymentMethod: 'BANK_TRANSFER', status, details: [{ roomId: null, roomTypeId: 10 }],
     });
     await page.route('**/api/reservations**', route => route.fulfill({ json: [reservation()] }));
-    await page.route('**/api/reservations/42/check-in', route => {
+    await page.route('**/api/rooms/available**', route => route.fulfill({ json: [
+      { id: 1, roomNumber: '101', floor: 1, roomTypeId: 10, roomTypeNameVi: 'Deluxe', status: 'AVAILABLE' },
+      { id: 2, roomNumber: '102', floor: 1, roomTypeId: 20, roomTypeNameVi: 'Suite', status: 'AVAILABLE' },
+    ] }));
+    await page.route('**/api/frontdesk/check-in', route => {
       status = 'CHECKED_IN';
-      return route.fulfill({ json: reservation() });
+      return route.fulfill({ json: { succeeded: true, message: 'ok' } });
     });
     await page.route('**/api/management/reservations/42/checkout-preview', route => route.fulfill({ json: {
       reservationId: 42, hotelId: 7, settlementState: 'SETTLED', checkoutAllowed: true,
@@ -116,6 +120,9 @@ test.describe('Operational management smoke', () => {
     await page.getByPlaceholder('Tìm theo mã hoặc tên khách').fill('Minh Anh');
     await expect(page.locator('[data-booking-id="42"]')).toBeVisible();
     await page.getByRole('button', { name: 'Nhận phòng' }).click();
+    await expect(page.getByText('Gán phòng và nhận khách', { exact: true })).toBeVisible();
+    await page.getByText('Phòng 101').click();
+    await page.getByRole('button', { name: 'Xác nhận nhận phòng' }).click();
     await expect(page.locator('[data-booking-id="42"]')).toContainText('Đang lưu trú');
     await page.getByRole('button', { name: 'Mở folio thanh toán' }).click();
     await expect(page.getByRole('heading', { name: 'Dịch vụ & quyết toán lưu trú' })).toBeVisible();

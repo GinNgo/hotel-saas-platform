@@ -200,7 +200,7 @@
                 *ngIf="canCheckIn && res.status === 'CONFIRMED' && isCheckInDue(res)"
                 [loading]="isLifecycleBusy(res.id, 'CHECK_IN')"
                 [disabled]="lifecycleActionKey() !== null"
-                (click)="checkIn(res.id)"
+                (click)="openCheckIn(res)"
               ></button>
               <ng-container *ngIf="canMarkNoShow && res.status === 'CONFIRMED' && isNoShowDue(res)">
                 <button
@@ -287,6 +287,31 @@
       </ng-template>
     </p-table>
   </p-card>
+
+  <p-dialog
+    header="Gán phòng và nhận khách"
+    [(visible)]="showCheckInDialog"
+    [modal]="true"
+    [style]="{ width: 'min(680px, 96vw)' }"
+    [breakpoints]="{ '640px': '100vw' }"
+  >
+    <section *ngIf="checkInReservation as booking" class="checkin-workspace" [attr.aria-busy]="checkInRoomsLoading">
+      <p><strong>{{ booking.bookingCode || ('RES-' + booking.id) }}</strong> · Cần chọn đúng {{ booking.details.length }} phòng sạch.</p>
+      <div *ngIf="checkInRoomsLoading" role="status">Đang tải phòng khả dụng...</div>
+      <div class="checkin-room-grid" *ngIf="!checkInRoomsLoading">
+        <label *ngFor="let room of availableCheckInRooms" [class.incompatible]="!roomMatchesBooking(room)">
+          <input type="checkbox" [checked]="selectedCheckInRoomIds.includes(room.id)" [disabled]="!roomMatchesBooking(room)" (change)="toggleCheckInRoom(room.id, $any($event.target).checked)">
+          <span><strong>Phòng {{ room.roomNumber }}</strong><small>Tầng {{ room.floor }} · {{ room.roomTypeNameVi }}</small></span>
+        </label>
+      </div>
+      <p *ngIf="!checkInRoomsLoading && !availableCheckInRooms.length" role="alert">Không còn phòng sạch phù hợp trong kỳ lưu trú.</p>
+      <label class="identity-field">CCCD/Hộ chiếu (không bắt buộc)<input [(ngModel)]="guestIdentityCard" maxlength="50" autocomplete="off"></label>
+      <footer>
+        <button pButton class="p-button-text" label="Đóng" (click)="showCheckInDialog = false"></button>
+        <button pButton label="Xác nhận nhận phòng" icon="pi pi-sign-in" [loading]="isLifecycleBusy(booking.id, 'CHECK_IN')" [disabled]="selectedCheckInRoomIds.length !== booking.details.length" (click)="submitCheckIn()"></button>
+      </footer>
+    </section>
+  </p-dialog>
 
   <p-dialog
     [(visible)]="showCheckoutDialog"

@@ -8,6 +8,7 @@ import { PermissionService, ActionCode, FunctionCode } from '../../../core/servi
 import { PropertyCheckoutService } from '../../../core/services/property-checkout.service';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { ReservationManagement } from './reservation-management';
+import { AdminInventoryService } from '../../../core/services/admin-inventory.service';
 
 describe('ReservationManagement lifecycle permissions', () => {
   let fixture: ComponentFixture<ReservationManagement>;
@@ -15,6 +16,7 @@ describe('ReservationManagement lifecycle permissions', () => {
   let reservationService: {
     getAllReservations: ReturnType<typeof vi.fn>;
     checkIn: ReturnType<typeof vi.fn>;
+    checkInWithRooms: ReturnType<typeof vi.fn>;
     assignRooms: ReturnType<typeof vi.fn>;
     cancelOperational: ReturnType<typeof vi.fn>;
     markNoShow: ReturnType<typeof vi.fn>;
@@ -31,13 +33,14 @@ describe('ReservationManagement lifecycle permissions', () => {
     totalAmount: 500000,
     status: 'CONFIRMED',
     paymentMethod: 'MOMO',
-    details: [{ roomId: null }],
+    details: [{ roomId: null, roomTypeId: 'type-deluxe' }],
   };
 
   beforeEach(async () => {
     reservationService = {
       getAllReservations: vi.fn(() => of([reservation])),
       checkIn: vi.fn(() => of(reservation)),
+      checkInWithRooms: vi.fn(() => of({ succeeded: true, message: 'ok' })),
       assignRooms: vi.fn(() => of(reservation)),
       cancelOperational: vi.fn(() => of(reservation)),
       markNoShow: vi.fn(() => of(reservation)),
@@ -51,6 +54,7 @@ describe('ReservationManagement lifecycle permissions', () => {
         { provide: PaymentService, useValue: {} },
         { provide: InvoiceService, useValue: {} },
         { provide: HotelServiceService, useValue: { getServices: vi.fn(() => of([])) } },
+        { provide: AdminInventoryService, useValue: { getAvailableRooms: vi.fn(() => of([{ id: 'room-101', roomNumber: '101', floor: 1, roomTypeId: 'type-deluxe', roomTypeNameVi: 'Deluxe', status: 'AVAILABLE' }])) } },
         { provide: PropertyCheckoutService, useValue: { preview: vi.fn(() => NEVER) } },
         { provide: Router, useValue: { url: '/admin/reservations', navigate: vi.fn() } },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({}) } } },
@@ -90,7 +94,7 @@ describe('ReservationManagement lifecycle permissions', () => {
     component.markNoShow(55);
     component.cancelOperational(55);
 
-    expect(reservationService.checkIn).toHaveBeenCalledWith(55);
+    expect(component.showCheckInDialog).toBe(true);
     expect(reservationService.markNoShow).toHaveBeenCalledWith(55);
     expect(reservationService.cancelOperational).toHaveBeenCalledWith(55);
   });

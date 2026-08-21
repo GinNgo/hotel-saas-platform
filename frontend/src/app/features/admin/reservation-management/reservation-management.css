@@ -108,3 +108,13 @@
   :host ::ng-deep .p-paginator{flex-wrap:wrap}
 }
 @media(max-width:430px){:host ::ng-deep .m-3>.d-flex:first-child>.d-flex{grid-template-columns:1fr}:host ::ng-deep .p-datatable-tbody>tr>td{flex-direction:column;gap:5px;text-align:left!important}:host ::ng-deep .p-datatable-tbody>tr>td::before{flex-basis:auto}:host ::ng-deep .financial-cell{align-items:flex-start;text-align:left}}
+.checkin-room-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .75rem; margin: 1rem 0; }
+.checkin-room-grid label { display: flex; align-items: center; gap: .75rem; min-height: 56px; padding: .75rem; border: 1px solid var(--surface-border); border-radius: 12px; cursor: pointer; }
+.checkin-room-grid label:has(input:checked) { border-color: var(--primary-color); background: color-mix(in srgb, var(--primary-color) 10%, transparent); }
+.checkin-room-grid label.incompatible { opacity: .48; cursor: not-allowed; }
+.checkin-room-grid input { width: 20px; height: 20px; }
+.checkin-room-grid span { display: grid; }
+.checkin-room-grid small { color: var(--text-color-secondary); }
+.identity-field { display: grid; gap: .4rem; margin-top: 1rem; }
+.identity-field input { min-height: 44px; padding: .65rem .75rem; border: 1px solid var(--surface-border); border-radius: 10px; }
+.checkin-workspace footer { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1.25rem; }
