@@ -9,12 +9,13 @@ export type ReservationChargeType =
   | 'ROOM'
   | 'SERVICE'
   | 'MINIBAR'
+  | 'LAUNDRY'
   | 'SURCHARGE'
   | 'TAX'
   | 'FEE'
   | 'DISCOUNT'
   | 'ADJUSTMENT';
-export type ServiceChargeType = Extract<ReservationChargeType, 'SERVICE' | 'MINIBAR'>;
+export type ServiceChargeType = Extract<ReservationChargeType, 'SERVICE' | 'MINIBAR' | 'LAUNDRY'>;
 export type SurchargeType =
   | 'EARLY_CHECK_IN'
   | 'LATE_CHECK_OUT'

@@ -32,6 +32,20 @@ public class ManagementCheckoutControllerTests
     }
 
     [Fact]
+    public async Task Laundry_charge_is_preserved_as_a_laundry_folio_item()
+    {
+        var setup = await Setup(totalCredits: 1_000_000);
+        await using var db = setup.Db;
+        var controller = Controller(db);
+
+        var result = Charge(await controller.AddServiceCharge(setup.Reservation.Id,
+            new(setup.Service.Id, "LAUNDRY", 1, null), "laundry-key"));
+
+        Assert.Equal("LAUNDRY", result.ChargeType);
+        Assert.Equal(FolioItemType.Laundry, setup.Reservation.Folio!.Items.Single(item => item.Id == result.Id).ItemType);
+    }
+
+    [Fact]
     public async Task Basic_tier_cannot_add_advanced_folio_charges()
     {
         var setup = await Setup(totalCredits: 1_000_000, tier: SubscriptionTier.Basic);

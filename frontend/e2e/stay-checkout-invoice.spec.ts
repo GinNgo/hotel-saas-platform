@@ -54,12 +54,17 @@ async function installJourneyApi(page: Page, state: JourneyState): Promise<void>
     if (method === 'GET' && path === '/api/notifications') {
       return json(200, { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 });
     }
-    if (method === 'GET' && path === '/api/services') return json(200, [breakfastService()]);
+    if (method === 'GET' && path === '/api/services') return json(200, [laundryService()]);
+    if (method === 'GET' && path === '/api/rooms/available') return json(200, [{
+      id: roomId, roomNumber: '1204', floor: 12, roomTypeId: 44,
+      roomTypeNameVi: 'Deluxe', status: 'AVAILABLE', housekeepingStatus: 'CLEAN', maintenanceStatus: 'NONE',
+    }]);
 
     if (method === 'GET' && path === '/api/reservations') {
       return json(200, [reservationSummary(state)]);
     }
-    if (method === 'POST' && path === `/api/reservations/${reservationId}/check-in`) {
+    if (method === 'POST' && path === '/api/frontdesk/check-in') {
+      expect(request.postDataJSON()).toEqual({ reservationId, assignedRoomIds: [roomId], guestIdentityCard: null });
       state.checkInMutations += 1;
       state.reservationStatus = 'CHECKED_IN';
       state.roomStatus = 'OCCUPIED';
@@ -68,16 +73,16 @@ async function installJourneyApi(page: Page, state: JourneyState): Promise<void>
 
     if (method === 'POST' && path === `/api/management/reservations/${reservationId}/charges/services`) {
       const body = request.postDataJSON() as Record<string, unknown>;
-      expect(body).toEqual({ serviceId: 81, chargeType: 'SERVICE', quantity: 1 });
+      expect(body).toEqual({ serviceId: 81, chargeType: 'LAUNDRY', quantity: 1 });
       expect(body).not.toHaveProperty('unitPrice');
       state.serviceAdded = true;
       state.serviceMutations += 1;
       return json(201, {
         id: 610,
         reservationId,
-        chargeType: 'SERVICE',
-        code: 'BREAKFAST',
-        name: 'Breakfast buffet',
+        chargeType: 'LAUNDRY',
+        code: 'LAUNDRY',
+        name: 'Giặt ủi tiêu chuẩn',
         description: null,
         quantity: 1,
         unitPrice: 50_000,
@@ -210,7 +215,7 @@ async function installJourneyApi(page: Page, state: JourneyState): Promise<void>
           'Content-Disposition': 'attachment; filename="INV-2026-0314.pdf"',
           'X-Content-SHA256': 'fixture-checksum',
         },
-        body: '%PDF-1.4\nBreakfast buffet\nMineral water\n%%EOF',
+        body: '%PDF-1.4\nGiặt ủi tiêu chuẩn\nMineral water\n%%EOF',
       });
     }
     if (method === 'POST' && path === `/api/invoices/${invoiceId}/email`) {
@@ -275,9 +280,9 @@ async function addServerPricedService(page: Page): Promise<void> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Idempotency-Key': 'stay-service-breakfast',
+        'Idempotency-Key': 'stay-service-laundry',
       },
-      body: JSON.stringify({ serviceId: 81, chargeType: 'SERVICE', quantity: 1 }),
+      body: JSON.stringify({ serviceId: 81, chargeType: 'LAUNDRY', quantity: 1 }),
     });
     return result.status;
   }, reservationId);
@@ -309,6 +314,8 @@ test.describe('Stay checkout and invoice journey', () => {
     await expect(reservationRow).toBeVisible();
 
     await reservationRow.locator('button:has(.pi-sign-in)').click();
+    await page.getByText('Phòng 1204').click();
+    await page.getByRole('button', { name: 'Xác nhận nhận phòng' }).click();
     await expect.poll(() => state.checkInMutations).toBe(1);
     await expect(reservationRow.locator('button:has(.pi-sign-out)')).toBeVisible();
 
@@ -329,7 +336,7 @@ test.describe('Stay checkout and invoice journey', () => {
       });
       return response.json() as Promise<{ folio: { lines: Array<{ name: string }> } }>;
     }, reservationId);
-    expect(servicePreview.folio.lines.map(line => line.name)).toContain('Breakfast buffet');
+    expect(servicePreview.folio.lines.map(line => line.name)).toContain('Giặt ủi tiêu chuẩn');
 
     await collectBalancePayment(page, 1);
     await collectBalancePayment(page, 2);
@@ -356,7 +363,7 @@ test.describe('Stay checkout and invoice journey', () => {
     await expect(finalizedRow).toContainText('Invoice Customer');
     await finalizedRow.getByRole('button', { name: /Xem và in|View & print/i }).click();
     const adminInvoice = page.locator('#invoice-print-area');
-    await expect(adminInvoice).toContainText('Breakfast buffet');
+    await expect(adminInvoice).toContainText('Giặt ủi tiêu chuẩn');
     await expect(adminInvoice).toContainText('Deluxe room');
     await expect(adminInvoice).toContainText('MANUAL_TRANSFER');
     await page.getByRole('button', { name: /In hóa đơn|Print invoice/i }).click();
@@ -364,7 +371,7 @@ test.describe('Stay checkout and invoice journey', () => {
     expect(state.legacyInvoiceMutations).toBe(0);
 
     await page.goto('/admin/rooms', { waitUntil: 'domcontentloaded' });
-    const roomRow = page.locator('tbody tr').filter({ hasText: '1204' });
+    const roomRow = page.locator('.room-card').filter({ hasText: '1204' });
     await expect(roomRow).toContainText('Chờ dọn');
 
     state.customerView = true;
@@ -383,7 +390,7 @@ test.describe('Stay checkout and invoice journey', () => {
     await expect(invoiceCard).toBeVisible();
     await invoiceCard.click();
     await expect(customerPage.locator('.detail-panel')).toContainText('INV-2026-0314');
-    await expect(customerPage.locator('.detail-panel')).toContainText('Breakfast buffet');
+    await expect(customerPage.locator('.detail-panel')).toContainText('Giặt ủi tiêu chuẩn');
     await expect(customerPage.locator('.detail-panel')).toContainText('MANUAL_TRANSFER');
     await customerPage.getByRole('button', { name: /In hóa đơn|Print invoice/i }).click();
     await expect(customerPage.locator('body')).toHaveAttribute('data-invoice-printed', 'true');
@@ -410,7 +417,7 @@ function reservationSummary(state: JourneyState) {
     totalAmount: grossAmount(state),
     status: state.reservationStatus,
     paymentMethod: 'MIXED',
-    details: [{ id: 1, reservationId, roomId, roomNumber: '1204', priceAtBooking: 1_000_000 }],
+    details: [{ id: 1, reservationId, roomTypeId: 44, roomId: state.reservationStatus === 'CONFIRMED' ? null : roomId, roomNumber: state.reservationStatus === 'CONFIRMED' ? null : '1204', priceAtBooking: 1_000_000 }],
     payment: {
       provider: 'MIXED',
       amount: state.paidAmount,
@@ -423,12 +430,12 @@ function reservationSummary(state: JourneyState) {
   };
 }
 
-function breakfastService() {
+function laundryService() {
   return {
     id: 81,
-    code: 'BREAKFAST',
-    nameVi: 'Bữa sáng',
-    nameEn: 'Breakfast buffet',
+    code: 'LAUNDRY',
+    nameVi: 'Giặt ủi tiêu chuẩn',
+    nameEn: 'Standard laundry',
     price: 50_000,
     status: 'ACTIVE',
   };
@@ -470,8 +477,8 @@ function checkoutPreview(state: JourneyState) {
           usageStartedAt: '2026-07-31T14:00:00Z', usageEndedAt: '2026-08-01T09:00:00Z',
         },
         ...(state.serviceAdded ? [{
-          sourceType: 'CHARGE', sourceId: 610, category: 'SERVICE', code: 'BREAKFAST',
-          name: 'Breakfast buffet', description: null, quantity: 1, unitPrice: 50_000,
+          sourceType: 'CHARGE', sourceId: 610, category: 'SERVICE', code: 'LAUNDRY',
+          name: 'Giặt ủi tiêu chuẩn', description: null, quantity: 1, unitPrice: 50_000,
           taxAmount: 0, discountAmount: 0, snapshotAmount: 50_000, signedEffect: 50_000,
           usageStartedAt: '2026-08-01T08:00:00Z', usageEndedAt: null,
         }] : []),
@@ -538,7 +545,7 @@ function invoiceDetail(state: JourneyState) {
         totalAmount: 1_000_000, usageStartedAt: '2026-07-31T14:00:00Z', usageEndedAt: '2026-08-01T09:00:00Z',
       },
       {
-        id: 2, lineType: 'SERVICE', code: 'BREAKFAST', name: 'Breakfast buffet', description: null,
+        id: 2, lineType: 'SERVICE', code: 'LAUNDRY', name: 'Giặt ủi tiêu chuẩn', description: null,
         quantity: 1, unitPrice: 50_000, taxAmount: 0, discountAmount: 0,
         totalAmount: 50_000, usageStartedAt: '2026-08-01T08:00:00Z', usageEndedAt: null,
       },

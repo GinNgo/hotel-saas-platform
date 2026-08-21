@@ -164,18 +164,33 @@ describe('ReservationCheckoutComponent', () => {
     vi.useRealTimers();
   });
 
-  it('presents service and minibar as explicit usage choices', () => {
+  it('presents service, minibar and laundry as explicit usage choices', () => {
     fixture.detectChanges();
     const options = fixture.nativeElement.querySelectorAll('.charge-type-option');
 
-    expect(options).toHaveLength(2);
+    expect(options).toHaveLength(3);
     expect(options[0].textContent).toContain('Dịch vụ');
-    expect(options[1].textContent).toContain('Minibar');
+    expect(options[1].textContent).toContain('Giặt ủi');
+    expect(options[2].textContent).toContain('Minibar');
+
+    options[2].click();
+    fixture.detectChanges();
+    expect(component.serviceForm.controls.chargeType.value).toBe('MINIBAR');
+    expect(options[2].getAttribute('aria-pressed')).toBe('true');
 
     options[1].click();
     fixture.detectChanges();
-    expect(component.serviceForm.controls.chargeType.value).toBe('MINIBAR');
+    expect(component.serviceForm.controls.chargeType.value).toBe('LAUNDRY');
     expect(options[1].getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('rejects fractional service quantities before calling the authoritative API', () => {
+    component.serviceForm.setValue({ serviceId: 17, chargeType: 'LAUNDRY', quantity: 1.5 });
+
+    component.addService();
+
+    expect(component.serviceForm.invalid).toBe(true);
+    expect(checkoutService.addServiceCharge).not.toHaveBeenCalled();
   });
 
   it('reuses the same idempotency key when a service submission is retried', () => {

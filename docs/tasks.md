@@ -28,7 +28,7 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
   - Ghi nhận audit (2026-08-21): backend đã có các controller/test cho check-in, folio, check-out, housekeeping và realtime; cần bổ sung nghiệm thu UI trên môi trường backend thật và đối chiếu feature-gating Basic/Pro.
   - [x] 5.1 Dựng Room Grid realtime theo tầng với xanh (Clean), vàng (Dirty), đỏ (Occupied), kèm icon/nhãn accessible, view danh sách và filter server-side.
   - [x] 5.2 Móc API Lễ tân Check-in: workspace chọn đúng số phòng sạch theo hạng, gọi nghiệp vụ authoritative và xử lý xung đột trạng thái.
-  - [ ] 5.3 Móc API Ghi nhận chi phí Minibar/Giặt ủi vào Folio và Check-out quyết toán.
+  - [x] 5.3 Móc API ghi nhận Minibar/Giặt ủi đúng loại folio, giá catalog authoritative, số lượng nguyên, idempotency và check-out quyết toán tạo hóa đơn/việc dọn phòng.
   - [x] 5.4 Chặn service/surcharge folio authoritative ở backend cho gói Basic và hiển thị cảnh báo nâng cấp gói PRO ngay trong workspace quyết toán.
 
 - [ ] **Giai Đoạn 6: Portal Quản Trị Sàn SaaS (SuperAdmin Portal)**

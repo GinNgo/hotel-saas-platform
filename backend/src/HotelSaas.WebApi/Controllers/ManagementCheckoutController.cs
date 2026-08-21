@@ -33,19 +33,24 @@ public class ManagementCheckoutController : ControllerBase
         if (entitlementError != null) return entitlementError;
         if (request.Quantity <= 0 || request.Quantity != decimal.Truncate(request.Quantity))
             return BadRequest(new { message = "Số lượng dịch vụ phải là số nguyên lớn hơn 0." });
-        if (request.ChargeType is not ("SERVICE" or "MINIBAR"))
+        if (request.ChargeType is not ("SERVICE" or "MINIBAR" or "LAUNDRY"))
             return BadRequest(new { message = "Loại phí dịch vụ không hợp lệ." });
 
         var replay = FindReplay(reservation!.Folio!, idempotencyKey);
         if (replay != null) return Ok(ToCharge(reservationId, replay, true));
         var service = await _context.HotelServices.FirstOrDefaultAsync(item =>
-            item.Id == request.ServiceId && item.IsActive && !item.IsDeleted);
+            item.Id == request.ServiceId && item.TenantId == reservation.TenantId && item.IsActive && !item.IsDeleted);
         if (service == null) return BadRequest(new { message = "Dịch vụ không tồn tại hoặc đã ngừng bán." });
 
         var item = new FolioItem
         {
             TenantId = reservation.TenantId, FolioId = reservation.Folio!.Id,
-            ItemType = request.ChargeType == "MINIBAR" ? FolioItemType.Minibar : FolioItemType.Restaurant,
+            ItemType = request.ChargeType switch
+            {
+                "MINIBAR" => FolioItemType.Minibar,
+                "LAUNDRY" => FolioItemType.Laundry,
+                _ => FolioItemType.Restaurant
+            },
             Description = service.NameVi, UnitPrice = service.Price, Quantity = (int)request.Quantity,
             DateIncurredUtc = request.ServiceUsedAt ?? DateTime.UtcNow,
             CreatedByStaffName = MutationMarker(idempotencyKey)

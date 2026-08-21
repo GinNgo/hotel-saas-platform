@@ -61,7 +61,17 @@
               (click)="selectChargeType('SERVICE')"
             >
               <i class="pi pi-sparkles" aria-hidden="true"></i>
-              <span><strong>Dịch vụ</strong><small>Đồ ăn, đồ uống, giặt ủi...</small></span>
+              <span><strong>Dịch vụ</strong><small>Đồ ăn, đồ uống và dịch vụ khác</small></span>
+            </button>
+            <button
+              type="button"
+              class="charge-type-option"
+              [class.selected]="serviceForm.controls.chargeType.value === 'LAUNDRY'"
+              [attr.aria-pressed]="serviceForm.controls.chargeType.value === 'LAUNDRY'"
+              (click)="selectChargeType('LAUNDRY')"
+            >
+              <i class="pi pi-inbox" aria-hidden="true"></i>
+              <span><strong>Giặt ủi</strong><small>Quần áo và đồ vải của khách</small></span>
             </button>
             <button
               type="button"
@@ -93,13 +103,16 @@
             <span>Số lượng</span>
             <p-inputNumber
               formControlName="quantity"
-              [min]="0.01"
+              [min]="1"
               [minFractionDigits]="0"
-              [maxFractionDigits]="2"
+              [maxFractionDigits]="0"
               [showButtons]="true"
               inputId="checkout-service-quantity"
               styleClass="field-control"
             ></p-inputNumber>
+            <small *ngIf="serviceForm.controls.quantity.touched && serviceForm.controls.quantity.invalid">
+              Số lượng phải là số nguyên từ 1 trở lên.
+            </small>
           </label>
           <button
             pButton

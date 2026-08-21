@@ -76,7 +76,7 @@ export class ReservationCheckoutComponent implements OnChanges {
   readonly serviceForm = this.formBuilder.nonNullable.group({
     serviceId: ['' as string | number, Validators.required],
     chargeType: ['SERVICE' as ServiceChargeType, Validators.required],
-    quantity: [1, [Validators.required, Validators.min(0.01)]],
+    quantity: [1, [Validators.required, Validators.min(1), Validators.pattern(/^\d+$/)]],
   });
 
   readonly adjustmentForm = this.formBuilder.nonNullable.group({
