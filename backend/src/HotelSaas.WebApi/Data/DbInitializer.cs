@@ -92,6 +92,13 @@ public static class DbInitializer
         context.TenantStaffs.Add(hotelAStaff);
         context.RoomTypes.Add(standardTypeA);
         context.Rooms.AddRange(room101, room102);
+        context.PropertyPaymentConfigurations.Add(new PropertyPaymentConfiguration
+        {
+            TenantId = hotelA.Id,
+            Enabled = true,
+            Environment = "SANDBOX",
+            MethodsJson = "[{\"Method\":\"VNPAY\",\"Enabled\":true,\"Provider\":\"VNPAY\",\"MerchantReference\":\"DEMOSAAS\"}]"
+        });
 
         // 3. Seed Khách sạn B (Gói BASIC)
         var hotelB = new Tenant

@@ -112,6 +112,7 @@ try {
     try {
       & $playwright `
         test `
+        integrated-stay-lifecycle.spec.ts `
         real-environment-smoke.spec.ts `
         ui-real-flow-audit.spec.ts `
         --config=playwright.authenticated-audit.config.ts `

@@ -40,12 +40,12 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
   - [x] 6.3 Móc API `GET /api/analytics/platform-overview` hiển thị KPI GMV/booking/cơ sở toàn sàn, tách rõ khỏi doanh thu SaaS và breakdown Platform Billing.
 
 - [ ] **Giai Đoạn 7: Kiểm Thử E2E & Nghiệm Thu Đồ Án**
-  - [ ] 7.1 Kiểm thử E2E luồng người dùng từ Tìm phòng -> Giữ chỗ 15p -> VNPay -> Lễ tân Check-in -> Folio -> Check-out.
+  - [x] 7.1 Kiểm thử E2E luồng người dùng từ Tìm phòng -> Giữ chỗ 15p -> VNPay -> Lễ tân Check-in -> Folio -> Check-out.
     - [x] Gate smoke chạy hành trình tạo booking + payment idempotency và check-in -> folio -> thanh toán nhiều lần -> check-out -> hóa đơn bất biến.
     - [x] Integration test SQLite chạy cùng một reservation qua hold -> booking -> VNPay IPN -> check-in -> service folio -> checkout -> housekeeping.
     - [x] Runner authenticated browser đã chuyển từ Java/Spring cũ sang .NET WebApi, tự tạo database SQL Server E2E cô lập và xác minh login/portal bằng tài khoản seed thật.
-    - [ ] Ghép search/hold/VNPay và PMS thành một journey liên tục dùng chung reservation identity trên môi trường tích hợp.
-    - Phần còn thiếu: browser E2E chạy trên backend tích hợp thật; các gate Playwright hiện vẫn dùng fixture riêng.
+    - [x] Ghép search/hold/VNPay và PMS thành một journey liên tục dùng chung reservation identity trên môi trường tích hợp.
+    - Ghi nhận nghiệm thu (2026-08-21): Playwright chạy trên .NET WebApi và SQL Server cô lập, xác minh cùng một reservation qua public search/inventory, hold, booking, VNPay IPN ký HMAC, check-in, check-out, hóa đơn finalized và phòng chuyển `DIRTY`.
   - [x] 7.3 Thêm relational concurrency test và k6 load scenario cho luồng hold chống overbooking.
   - [x] 7.4 Thêm Playwright visual regression gate desktop/mobile với reduced-motion và baseline Liquid Glass.
   - [ ] 7.2 Hoàn thiện báo cáo Đồ án Tốt nghiệp và xuất tài liệu hướng dẫn vận hành.
