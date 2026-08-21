@@ -486,6 +486,7 @@ $RECYCLE.BIN/
 
 # Temporary alternate build output used while the development server is running.
 .tmp-build/
+.tmp-build*/
 .tmp-test/
 .tmp-test-full/
 .tmp-build-sort/
