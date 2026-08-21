@@ -182,32 +182,26 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             relationship.DeleteBehavior = DeleteBehavior.Restrict;
         }
 
-        // Áp dụng Global Query Filter tự động lọc theo TenantId
-        modelBuilder.Entity<TenantStaff>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
+        ApplyTenantQueryFilters(modelBuilder);
         modelBuilder.Entity<AccessRole>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || !e.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
         modelBuilder.Entity<RolePermission>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.Role == null || !e.Role.TenantId.HasValue || e.Role.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<RoomType>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<RoomRateOverride>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<Room>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<RoomImage>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<BookingHold>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<RoomDateLock>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<Reservation>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<ReservationDetail>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<Folio>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<FolioItem>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<HotelService>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<Payment>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<PaymentTransaction>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<PropertyRefund>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<PropertyPaymentAttempt>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<PropertyPaymentConfiguration>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<OperationalTask>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<HousekeepingTask>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
-        modelBuilder.Entity<PropertyReview>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || (Guid?)e.TenantId == _currentTenantService.TenantId);
-        modelBuilder.Entity<PropertyAmenity>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || (Guid?)e.TenantId == _currentTenantService.TenantId);
-        modelBuilder.Entity<RoomTypeAmenity>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || (Guid?)e.TenantId == _currentTenantService.TenantId);
     }
+
+    private void ApplyTenantQueryFilters(ModelBuilder modelBuilder)
+    {
+        var method = GetType().GetMethod(nameof(ApplyTenantQueryFilter), BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var tenantTypes = modelBuilder.Model.GetEntityTypes()
+            .Select(entity => entity.ClrType)
+            .Where(type => typeof(ITenantScopedEntity).IsAssignableFrom(type))
+            .Distinct();
+        foreach (var entityType in tenantTypes)
+            method.MakeGenericMethod(entityType).Invoke(this, [modelBuilder]);
+    }
+
+    private void ApplyTenantQueryFilter<TEntity>(ModelBuilder modelBuilder)
+        where TEntity : class, ITenantScopedEntity =>
+        modelBuilder.Entity<TEntity>().HasQueryFilter(entity =>
+            !_currentTenantService.TenantId.HasValue || (Guid?)entity.TenantId == _currentTenantService.TenantId);
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
