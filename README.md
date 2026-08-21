@@ -25,3 +25,4 @@ Hệ thống là nền tảng SaaS Đa Khách Sạn (Multi-Tenant Hotel Platform
 - [Tasks - Danh sách nhiệm vụ thực thi](docs/tasks.md)
 - [Báo cáo đồ án tốt nghiệp](docs/graduation-project-report.md)
 - [Sổ tay cài đặt và vận hành](docs/operations-guide.md)
+- [Ma trận đối chiếu hoàn thành kế hoạch](docs/implementation-audit.md)

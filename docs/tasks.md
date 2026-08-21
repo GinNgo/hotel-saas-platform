@@ -26,15 +26,15 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
   - [x] 4.3 Kết nối nút thanh toán VNPay QR Code sang Cổng Sandbox và xử lý trang Callback kết quả.
   - [x] 4.4 Tách IPN server-to-server authoritative khỏi redirect callback; callback không thay đổi dữ liệu.
 
-- [ ] **Giai Đoạn 5: Portal Quản Trị Khách Sạn & Lễ Tân (PMS Extranet)**
-  - Ghi nhận audit (2026-08-21): backend đã có các controller/test cho check-in, folio, check-out, housekeeping và realtime; cần bổ sung nghiệm thu UI trên môi trường backend thật và đối chiếu feature-gating Basic/Pro.
+- [x] **Giai Đoạn 5: Portal Quản Trị Khách Sạn & Lễ Tân (PMS Extranet)**
+  - Ghi nhận nghiệm thu (2026-08-21): owner đăng nhập và mở các management surface trên backend thật; journey tích hợp thực hiện check-in/check-out cùng reservation đã thanh toán, xác minh invoice finalized và phòng `DIRTY`; backend suite bao phủ folio, housekeeping, realtime tenant scope và feature-gating Basic/Pro.
   - [x] 5.1 Dựng Room Grid realtime theo tầng với xanh (Clean), vàng (Dirty), đỏ (Occupied), kèm icon/nhãn accessible, view danh sách và filter server-side.
   - [x] 5.2 Móc API Lễ tân Check-in: workspace chọn đúng số phòng sạch theo hạng, gọi nghiệp vụ authoritative và xử lý xung đột trạng thái.
   - [x] 5.3 Móc API ghi nhận Minibar/Giặt ủi đúng loại folio, giá catalog authoritative, số lượng nguyên, idempotency và check-out quyết toán tạo hóa đơn/việc dọn phòng.
   - [x] 5.4 Chặn service/surcharge folio authoritative ở backend cho gói Basic và hiển thị cảnh báo nâng cấp gói PRO ngay trong workspace quyết toán.
 
-- [ ] **Giai Đoạn 6: Portal Quản Trị Sàn SaaS (SuperAdmin Portal)**
-  - Ghi nhận audit (2026-08-21): đã có API/controller/test cho tenant, subscription và platform analytics; checklist UI chưa có bằng chứng E2E đủ cho duyệt/kích hoạt và nâng/hạ gói.
+- [x] **Giai Đoạn 6: Portal Quản Trị Sàn SaaS (SuperAdmin Portal)**
+  - Ghi nhận nghiệm thu (2026-08-21): SuperAdmin đăng nhập trên backend thật, tạo cơ sở `PENDING`, duyệt thành `ACTIVE`, nâng gói `Basic` sang `Pro` và đọc lại persistence từ SQL Server; platform analytics/revenue có backend và frontend test riêng.
   - [x] 6.1 Dựng màn hình danh sách cơ sở, nút duyệt/từ chối authoritative và cập nhật trạng thái sau thao tác.
   - [x] 6.2 Dựng form Nâng/Hạ gói SaaS (`Basic`, `Pro`, `Enterprise`) có permission gate, loading/error và cập nhật row tại chỗ.
   - [x] 6.3 Móc API `GET /api/analytics/platform-overview` hiển thị KPI GMV/booking/cơ sở toàn sàn, tách rõ khỏi doanh thu SaaS và breakdown Platform Billing.

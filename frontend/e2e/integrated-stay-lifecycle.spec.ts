@@ -124,4 +124,68 @@ test.describe('Integrated guest stay lifecycle on the real WebApi', () => {
     const finalRooms = await finalRoomsResponse.json() as Array<{ id: string; status: string }>;
     expect(finalRooms.find(room => room.id === assignedRoom!.id)?.status).toBe('DIRTY');
   });
+
+  test('admin approves a real pending property and upgrades its subscription tier', async ({ request }) => {
+    const admin = await login(
+      request,
+      process.env.LUXESTAY_E2E_ADMIN_USERNAME!,
+      process.env.LUXESTAY_E2E_ADMIN_PASSWORD!,
+    );
+    const adminHeaders = { Authorization: `Bearer ${admin.accessToken}` };
+    const uniqueName = `LuxeStay Platform Journey ${Date.now()}`;
+
+    const createResponse = await request.post(`${apiRoot}/v1/hotels`, {
+      headers: adminHeaders,
+      data: {
+        nameVi: uniqueName,
+        addressLine: '01 Đường Kiểm Thử',
+        city: 'Đà Nẵng',
+        propertyType: 'HOTEL',
+        starRating: 4,
+        checkInTime: '14:00',
+        checkOutTime: '12:00',
+        amenityCodes: ['WIFI', 'BREAKFAST'],
+      },
+    });
+    expect(createResponse.ok(), await createResponse.text()).toBe(true);
+    const created = await createResponse.json() as {
+      id: string;
+      status: string;
+      approvalStatus: string;
+      subscriptionTier: string;
+    };
+    expect(created).toMatchObject({
+      status: 'PENDING',
+      approvalStatus: 'PENDING_APPROVAL',
+      subscriptionTier: 'Basic',
+    });
+
+    const approveResponse = await request.post(`${apiRoot}/v1/hotels/${created.id}/approve`, {
+      headers: adminHeaders,
+    });
+    expect(approveResponse.ok(), await approveResponse.text()).toBe(true);
+    expect(await approveResponse.json()).toMatchObject({
+      id: created.id,
+      status: 'ACTIVE',
+      approvalStatus: 'APPROVED',
+    });
+
+    const tierResponse = await request.put(`${apiRoot}/tenants/${created.id}/subscription-tier`, {
+      headers: adminHeaders,
+      data: { newTier: 'Pro' },
+    });
+    expect(tierResponse.ok(), await tierResponse.text()).toBe(true);
+
+    const listResponse = await request.get(`${apiRoot}/v1/hotels`, { headers: adminHeaders });
+    expect(listResponse.ok(), await listResponse.text()).toBe(true);
+    const properties = await listResponse.json() as Array<{
+      id: string;
+      status: string;
+      subscriptionTier: string;
+    }>;
+    expect(properties.find(item => item.id === created.id)).toMatchObject({
+      status: 'ACTIVE',
+      subscriptionTier: 'Pro',
+    });
+  });
 });
