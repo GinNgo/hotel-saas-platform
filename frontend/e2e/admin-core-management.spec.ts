@@ -26,8 +26,22 @@ async function installAdminApiFixtures(page: Page) {
   await page.route('**/api/room-types**', route => route.fulfill({ json: [
     { id: 11, code: 'DLX', name: 'Deluxe', nameVi: 'Deluxe', status: 'ACTIVE' },
   ] }));
+  await page.route('**/api/room-types/paged**', route => route.fulfill({ json: {
+    items: [{ id: 11, hotelId: 501, code: 'DLX', nameVi: 'Deluxe', status: 'ACTIVE' }],
+    page: 1, pageSize: 15, totalItems: 1, totalPages: 1,
+  } }));
   await page.route('**/api/rooms**', route => route.fulfill({ json: [
     { id: 21, roomNumber: '101', roomTypeName: 'Deluxe', status: 'AVAILABLE', floor: 1 },
+  ] }));
+  await page.route('**/api/rooms/paged**', route => route.fulfill({ json: {
+    items: [{
+      id: 21, hotelId: 501, roomTypeId: 11, roomTypeNameVi: 'Deluxe', roomNumber: '101', floor: 1,
+      status: 'AVAILABLE', housekeepingStatus: 'CLEAN', maintenanceStatus: 'NONE',
+    }],
+    page: 1, pageSize: 15, totalItems: 1, totalPages: 1,
+  } }));
+  await page.route('**/api/v1/hotels**', route => route.fulfill({ json: [
+    { id: 501, code: 'LS-501', name: 'LuxeStay Central', nameVi: 'LuxeStay Central' },
   ] }));
 }
 
@@ -65,7 +79,7 @@ test.describe.serial('Admin core management', () => {
     await expect(page.getByRole('heading', { name: 'Quản lý phòng' })).toBeVisible();
     await expect(page.locator('body')).not.toContainText('room-management works!');
     await expect(page.getByPlaceholder('Tìm số phòng')).toBeVisible();
-    await expect(page.locator('tbody tr').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('article', { name: 'Phòng 101, Phòng trống' })).toBeVisible({ timeout: 15000 });
     await page.screenshot({ path: '../docs/screenshots/admin-rooms-after.png', fullPage: true, animations: 'disabled' });
     await page.getByRole('button', { name: 'Thêm hàng loạt' }).click();
     await expect(page.getByRole('dialog')).toContainText('Thêm phòng hàng loạt');
