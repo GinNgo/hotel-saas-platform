@@ -342,7 +342,11 @@ public class ReservationsController : ControllerBase
                 Description = $"Ưu đãi {pricing.Promotions[0].Code}", UnitPrice = -pricing.Discount, Quantity = 1
             });
         AddTaxAndFeeItems(reservation.Folio, roomType.TenantId, pricing);
-        if (bookingHold != null) bookingHold.IsConvertedToReservation = true;
+        if (bookingHold != null)
+        {
+            bookingHold.IsConvertedToReservation = true;
+            await TransferRoomDateLocks(bookingHold.Id, reservation.Id);
+        }
         _context.Reservations.Add(reservation);
         await _context.SaveChangesAsync();
         reservation.Tenant = roomType.Tenant;
@@ -518,6 +522,7 @@ public class ReservationsController : ControllerBase
         reservation.CancelledAtUtc = DateTime.UtcNow;
         foreach (var payment in reservation.Payments.Where(payment => payment.Status == PaymentStatus.Pending))
             payment.Status = PaymentStatus.Failed;
+        await ReleaseReservationDateLocks(reservation.Id);
         await _context.SaveChangesAsync();
         return Ok(ToCustomerDto(reservation));
     }
@@ -582,6 +587,7 @@ public class ReservationsController : ControllerBase
             return Conflict(new { code = "CHECK_IN_TOO_EARLY", message = "Chưa đến ngày nhận phòng nên không thể check-in." });
 
         var conflictingRoomIds = (await ConflictingRoomIds(reservation)).ToHashSet();
+        var lockedRoomIds = await LockedRoomIds(reservation.Id);
         var assignedRoomIds = reservation.Details.Where(detail => detail.RoomId.HasValue)
             .Select(detail => detail.RoomId!.Value).ToHashSet();
         if (assignedRoomIds.Overlaps(conflictingRoomIds))
@@ -592,7 +598,8 @@ public class ReservationsController : ControllerBase
 
         foreach (var detail in reservation.Details.Where(detail => !detail.RoomId.HasValue))
         {
-            var room = candidates.FirstOrDefault(item => item.RoomTypeId == detail.RoomTypeId);
+            var room = candidates.FirstOrDefault(item => item.RoomTypeId == detail.RoomTypeId &&
+                (lockedRoomIds.Count == 0 || lockedRoomIds.Contains(item.Id)));
             if (room == null)
                 return Conflict(new { message = "Không còn đủ phòng sạch đúng hạng để check-in." });
             detail.RoomId = room.Id;
@@ -625,6 +632,7 @@ public class ReservationsController : ControllerBase
         if (unassigned.Count == 0) return Ok(ToOperationalDto(reservation));
 
         var conflictingRoomIds = await ConflictingRoomIds(reservation);
+        var lockedRoomIds = await LockedRoomIds(reservation.Id);
         var alreadyAssigned = reservation.Details.Where(detail => detail.RoomId.HasValue)
             .Select(detail => detail.RoomId!.Value).ToHashSet();
         var unavailableIds = conflictingRoomIds.Concat(alreadyAssigned).ToHashSet();
@@ -636,7 +644,8 @@ public class ReservationsController : ControllerBase
         var assignments = new List<(ReservationDetail Detail, Room Room)>();
         foreach (var detail in unassigned)
         {
-            var room = candidates.FirstOrDefault(item => item.RoomTypeId == detail.RoomTypeId);
+            var room = candidates.FirstOrDefault(item => item.RoomTypeId == detail.RoomTypeId &&
+                (lockedRoomIds.Count == 0 || lockedRoomIds.Contains(item.Id)));
             if (room == null)
                 return Conflict(new { code = "ROOM_ASSIGNMENT_UNAVAILABLE", message = "Không còn đủ phòng đúng hạng trống trong toàn bộ kỳ lưu trú." });
             assignments.Add((detail, room));
@@ -670,6 +679,11 @@ public class ReservationsController : ControllerBase
         .Select(detail => detail.RoomId!.Value)
         .ToListAsync();
 
+    private async Task<HashSet<Guid>> LockedRoomIds(Guid reservationId) =>
+        (await _context.RoomDateLocks.IgnoreQueryFilters().AsNoTracking()
+            .Where(item => item.ReservationId == reservationId)
+            .Select(item => item.RoomId).Distinct().ToListAsync()).ToHashSet();
+
     [HttpPost("{reservationId:guid}/cancel-operational")]
     [Authorize(Policy = "reservation.cancel")]
     public async Task<ActionResult<OperationalReservationDto>> CancelOperational(Guid reservationId)
@@ -683,6 +697,7 @@ public class ReservationsController : ControllerBase
 
         reservation.Status = ReservationStatus.Cancelled;
         reservation.CancellationReason = "Hủy bởi nhân viên vận hành";
+        await ReleaseReservationDateLocks(reservation.Id);
         await _context.SaveChangesAsync();
         return Ok(ToOperationalDto(reservation));
     }
@@ -767,6 +782,17 @@ public class ReservationsController : ControllerBase
         if (request.Quantity > available)
             return Conflict(Result<BookingHoldResponseDto>.Failure($"Chỉ còn {available} phòng phù hợp cho thời gian đã chọn."));
 
+        var stayDates = Enumerable.Range(0, request.CheckOutDate.DayNumber - request.CheckInDate.DayNumber)
+            .Select(offset => request.CheckInDate.AddDays(offset)).ToList();
+        var roomIds = roomType.Rooms.Where(room => room.IsActive && !room.IsDeleted && room.Status != RoomStatus.OutOfService)
+            .Select(room => room.Id).ToList();
+        var lockedRoomIds = await _context.RoomDateLocks.IgnoreQueryFilters().AsNoTracking()
+            .Where(item => roomIds.Contains(item.RoomId) && stayDates.Contains(item.StayDate))
+            .Select(item => item.RoomId).Distinct().ToListAsync();
+        var selectedRoomIds = roomIds.Except(lockedRoomIds).Take(request.Quantity).ToList();
+        if (selectedRoomIds.Count < request.Quantity)
+            return Conflict(Result<BookingHoldResponseDto>.Failure("Phòng vừa được giữ bởi khách khác. Vui lòng thử lại."));
+
         var pricing = await PublicPricing.Calculate(_context, roomType, request.CheckInDate, request.CheckOutDate,
             request.Quantity, couponCode);
         if (couponCode != null && pricing.Promotions.Count == 0)
@@ -793,6 +819,16 @@ public class ReservationsController : ControllerBase
         hold.ExpiresAtUtc = now.AddMinutes(15);
         hold.IsReleased = false;
         if (existing == null) _context.BookingHolds.Add(hold);
+        foreach (var roomId in selectedRoomIds)
+            foreach (var stayDate in stayDates)
+                _context.RoomDateLocks.Add(new RoomDateLock
+                {
+                    TenantId = request.TenantId,
+                    RoomId = roomId,
+                    StayDate = stayDate,
+                    BookingHoldId = hold.Id,
+                    ExpiresAtUtc = hold.ExpiresAtUtc
+                });
         try
         {
             await _context.SaveChangesAsync();
@@ -802,7 +838,8 @@ public class ReservationsController : ControllerBase
             _context.BookingHolds.Remove(hold);
             var concurrent = await _context.BookingHolds.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(item => item.ClientRequestKey == requestKey);
-            if (concurrent == null) throw;
+            if (concurrent == null)
+                return Conflict(Result<BookingHoldResponseDto>.Failure("Phòng vừa được giữ bởi khách khác. Vui lòng chọn lại."));
             var sameRequest = concurrent.TenantId == request.TenantId && concurrent.RoomTypeId == request.RoomTypeId &&
                 concurrent.CheckInDate == checkInDt && concurrent.CheckOutDate == checkOutDt && concurrent.Quantity == request.Quantity &&
                 concurrent.CouponCode == couponCode;
@@ -828,6 +865,9 @@ public class ReservationsController : ControllerBase
         if (!hold.IsReleased)
         {
             hold.IsReleased = true;
+            var locks = await _context.RoomDateLocks.IgnoreQueryFilters()
+                .Where(item => item.BookingHoldId == hold.Id).ToListAsync();
+            _context.RoomDateLocks.RemoveRange(locks);
             await _context.SaveChangesAsync();
         }
         return Ok(Result.Success("Đã giải phóng phiên giữ phòng."));
@@ -924,6 +964,7 @@ public class ReservationsController : ControllerBase
         _context.Reservations.Add(reservation);
 
         hold.IsConvertedToReservation = true;
+        await TransferRoomDateLocks(hold.Id, reservation.Id);
         await _context.SaveChangesAsync();
 
         var dto = new ReservationDto(reservation.Id, reservation.TenantId, reservation.BookingCode, reservation.GuestFullName, reservation.GuestEmail, reservation.GuestPhoneNumber, reservation.CheckInDate, reservation.CheckOutDate, reservation.Status, reservation.TotalAmount, reservation.DepositAmount, hold.RoomType.Name, new List<string>());
@@ -934,6 +975,25 @@ public class ReservationsController : ControllerBase
         .Include(item => item.Details).ThenInclude(detail => detail.Room)
         .Include(item => item.Payments).ThenInclude(payment => payment.Refunds)
         .Where(item => !item.IsDeleted);
+
+    private async Task TransferRoomDateLocks(Guid holdId, Guid reservationId)
+    {
+        var locks = await _context.RoomDateLocks.IgnoreQueryFilters()
+            .Where(item => item.BookingHoldId == holdId).ToListAsync();
+        foreach (var item in locks)
+        {
+            item.BookingHoldId = null;
+            item.ReservationId = reservationId;
+            item.ExpiresAtUtc = null;
+        }
+    }
+
+    private async Task ReleaseReservationDateLocks(Guid reservationId)
+    {
+        var locks = await _context.RoomDateLocks.IgnoreQueryFilters()
+            .Where(item => item.ReservationId == reservationId).ToListAsync();
+        _context.RoomDateLocks.RemoveRange(locks);
+    }
 
     private IQueryable<Reservation> CustomerQuery() => _context.Reservations
         .Include(item => item.Tenant)

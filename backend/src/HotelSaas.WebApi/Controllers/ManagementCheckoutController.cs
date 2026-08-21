@@ -163,6 +163,9 @@ public class ManagementCheckoutController : ControllerBase
                 });
             }
         }
+        var dateLocks = await _context.RoomDateLocks.IgnoreQueryFilters()
+            .Where(item => item.ReservationId == reservation.Id).ToListAsync();
+        _context.RoomDateLocks.RemoveRange(dateLocks);
         await _context.SaveChangesAsync();
         return Ok(ToCheckoutResult(reservation));
     }

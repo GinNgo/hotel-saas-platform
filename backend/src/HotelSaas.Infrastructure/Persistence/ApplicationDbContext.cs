@@ -45,6 +45,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<RoomImage> RoomImages => Set<RoomImage>();
     public DbSet<BookingHold> BookingHolds => Set<BookingHold>();
+    public DbSet<RoomDateLock> RoomDateLocks => Set<RoomDateLock>();
     public DbSet<Reservation> Reservations => Set<Reservation>();
     public DbSet<ReservationDetail> ReservationDetails => Set<ReservationDetail>();
     public DbSet<Folio> Folios => Set<Folio>();
@@ -93,7 +94,11 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<PlatformPaymentConfiguration>().Property(configuration => configuration.SecretReference).HasMaxLength(500);
         modelBuilder.Entity<PlatformPaymentConfiguration>().Property(configuration => configuration.CallbackUrl).HasMaxLength(1000);
         modelBuilder.Entity<OperationalTask>().HasIndex(task => task.PublicId).IsUnique();
+        modelBuilder.Entity<OperationalTask>().HasIndex(task => task.IdempotencyKey)
+            .IsUnique().HasFilter("[IdempotencyKey] IS NOT NULL");
         modelBuilder.Entity<OperationalTask>().HasIndex(task => new { task.TenantId, task.AggregateType, task.AggregateId }).IsUnique();
+        modelBuilder.Entity<OperationalTask>().Property(task => task.ToolName).HasMaxLength(120);
+        modelBuilder.Entity<OperationalTask>().Property(task => task.IdempotencyKey).HasMaxLength(100);
         modelBuilder.Entity<HousekeepingTask>().HasIndex(task => new { task.RoomId, task.TaskType })
             .IsUnique().HasFilter("[IsDeleted] = 0 AND [Status] <> 3");
         modelBuilder.Entity<HousekeepingTask>().Property(task => task.CancellationReason).HasMaxLength(500);
@@ -107,6 +112,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<BookingHold>().Property(hold => hold.BaseSubtotal).HasPrecision(18, 2);
         modelBuilder.Entity<BookingHold>().Property(hold => hold.DiscountAmount).HasPrecision(18, 2);
         modelBuilder.Entity<BookingHold>().Property(hold => hold.FinalTotal).HasPrecision(18, 2);
+        modelBuilder.Entity<RoomDateLock>().HasIndex(item => new { item.RoomId, item.StayDate }).IsUnique();
+        modelBuilder.Entity<RoomDateLock>().HasIndex(item => new { item.BookingHoldId, item.StayDate });
+        modelBuilder.Entity<RoomDateLock>().HasIndex(item => new { item.ReservationId, item.StayDate });
         modelBuilder.Entity<FavoriteProperty>().HasIndex(favorite => new { favorite.UserId, favorite.TenantId }).IsUnique();
         modelBuilder.Entity<AccessRole>().HasIndex(role => new { role.TenantId, role.Code }).IsUnique();
         modelBuilder.Entity<TenantStaff>().HasIndex(staff => new { staff.TenantId, staff.AccessRoleId });
@@ -155,6 +163,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<RoomType>().Property(type => type.FreeCancellationHours).HasDefaultValue(24);
         modelBuilder.Entity<RoomRateOverride>().HasIndex(rate => new { rate.RoomTypeId, rate.StartDate, rate.EndDate, rate.Priority });
         modelBuilder.Entity<RoomRateOverride>().Property(rate => rate.NightlyPrice).HasPrecision(18, 2);
+        modelBuilder.Entity<RoomImage>().Property(image => image.AltText).HasMaxLength(255);
         modelBuilder.Entity<Reservation>().Property(reservation => reservation.IsRefundableSnapshot).HasDefaultValue(true);
         modelBuilder.Entity<Reservation>().Property(reservation => reservation.FreeCancellationHoursSnapshot).HasDefaultValue(24);
         modelBuilder.Entity<Reservation>().Property(reservation => reservation.AdultCount).HasDefaultValue(1);
@@ -182,6 +191,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<Room>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
         modelBuilder.Entity<RoomImage>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
         modelBuilder.Entity<BookingHold>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
+        modelBuilder.Entity<RoomDateLock>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
         modelBuilder.Entity<Reservation>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
         modelBuilder.Entity<ReservationDetail>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);
         modelBuilder.Entity<Folio>().HasQueryFilter(e => !_currentTenantService.TenantId.HasValue || e.TenantId == _currentTenantService.TenantId.Value);

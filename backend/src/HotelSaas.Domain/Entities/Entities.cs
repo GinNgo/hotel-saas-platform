@@ -428,6 +428,20 @@ public class BookingHold : BaseEntity, ITenantScopedEntity
     public DateTime ExpiresAtUtc { get; set; } = DateTime.UtcNow.AddMinutes(15);
     public bool IsReleased { get; set; } = false;
     public bool IsConvertedToReservation { get; set; } = false;
+    public ICollection<RoomDateLock> RoomDateLocks { get; set; } = new List<RoomDateLock>();
+}
+
+public class RoomDateLock : BaseEntity, ITenantScopedEntity
+{
+    public Guid TenantId { get; set; }
+    public Guid RoomId { get; set; }
+    public Room? Room { get; set; }
+    public DateOnly StayDate { get; set; }
+    public Guid? BookingHoldId { get; set; }
+    public BookingHold? BookingHold { get; set; }
+    public Guid? ReservationId { get; set; }
+    public Reservation? Reservation { get; set; }
+    public DateTime? ExpiresAtUtc { get; set; }
 }
 
 public class Reservation : BaseEntity, ITenantScopedEntity
@@ -473,6 +487,7 @@ public class Reservation : BaseEntity, ITenantScopedEntity
     public ICollection<ReservationDetail> Details { get; set; } = new List<ReservationDetail>();
     public Folio? Folio { get; set; }
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();
+    public ICollection<RoomDateLock> RoomDateLocks { get; set; } = new List<RoomDateLock>();
 }
 
 public class ReservationDetail : BaseEntity, ITenantScopedEntity

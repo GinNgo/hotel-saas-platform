@@ -50,6 +50,12 @@ hotel-saas-platform/backend/
 | `/api/payments/vnpay-url/{id}` | `POST` | Guest | Sinh URL thanh toán VNPay Sandbox chữ ký SHA512 |
 | `/api/payments/vnpay-callback` | `GET` | Public | Verify redirect từ trình duyệt và điều hướng trang kết quả, không mutation |
 | `/api/payments/vnpay-ipn` | `GET` | VNPay | IPN authoritative: verify chữ ký, amount/merchant, cập nhật payment/reservation idempotent |
+
+### Chống overbooking theo ngày
+
+- `RoomDateLock(RoomId, StayDate)` có unique constraint, được tạo cùng transaction với hold.
+- Khi confirm, lock chuyển ownership từ `BookingHoldId` sang `ReservationId`; release, expiry, cancel và checkout đều giải phóng lock.
+- Test SQLite relational chạy hai request tranh một phòng; kịch bản k6 nằm tại `backend/tests/load/booking-hold-concurrency.k6.js`.
 | `/api/frontdesk/check-in` | `POST` | Receptionist| Check-in gán phòng vật lý (chỉ phòng `Clean`) |
 | `/api/frontdesk/folio/add-item` | `POST` | Receptionist| Ghi nhận chi phí dịch vụ vào Folio (Khóa nếu gói Basic) |
 | `/api/frontdesk/check-out` | `POST` | Receptionist| Quyết toán số dư, đóng Folio, đổi phòng sang `Dirty` |

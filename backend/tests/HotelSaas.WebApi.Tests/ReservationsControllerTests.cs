@@ -83,8 +83,13 @@ public class ReservationsControllerTests
         var (tenant, roomType) = Inventory(1);
         var active = new BookingHold { TenantId = tenant.Id, RoomTypeId = roomType.Id };
         var converted = new BookingHold { TenantId = tenant.Id, RoomTypeId = roomType.Id, IsConvertedToReservation = true };
+        var activeLock = new RoomDateLock
+        {
+            TenantId = tenant.Id, RoomId = roomType.Rooms.Single().Id,
+            StayDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)), BookingHoldId = active.Id
+        };
         await using var db = CreateContext(tenant);
-        db.AddRange(roomType, active, converted);
+        db.AddRange(roomType, active, converted, activeLock);
         await db.SaveChangesAsync();
         var controller = new ReservationsController(db);
 
@@ -95,6 +100,7 @@ public class ReservationsControllerTests
         Assert.IsType<OkObjectResult>(released.Result);
         Assert.IsType<OkObjectResult>(replay.Result);
         Assert.True(active.IsReleased);
+        Assert.Empty(db.RoomDateLocks.IgnoreQueryFilters());
         Assert.IsType<ConflictObjectResult>(blocked.Result);
     }
 
@@ -114,6 +120,11 @@ public class ReservationsControllerTests
         await using var db = CreateContext(tenant);
         db.RoomTypes.Add(roomType);
         db.BookingHolds.Add(hold);
+        db.RoomDateLocks.Add(new RoomDateLock
+        {
+            TenantId = tenant.Id, RoomId = roomType.Rooms.Single().Id,
+            StayDate = DateOnly.FromDateTime(hold.CheckInDate), BookingHoldId = hold.Id
+        });
         await db.SaveChangesAsync();
         var controller = new ReservationsController(db);
         var request = new ConfirmBookingRequestDto(hold.HoldToken, "Nguyen Guest", "GUEST@EXAMPLE.COM", "0901234567", null, null, PaymentMethod.Cash, 1, 1);
@@ -128,6 +139,9 @@ public class ReservationsControllerTests
         Assert.Equal(1, db.Reservations.IgnoreQueryFilters().Single().AdultCount);
         Assert.Equal(1, db.Reservations.IgnoreQueryFilters().Single().ChildCount);
         Assert.Equal(PaymentMethod.Cash, db.Reservations.IgnoreQueryFilters().Single().PaymentMethodSnapshot);
+        var transferredLock = Assert.Single(db.RoomDateLocks.IgnoreQueryFilters());
+        Assert.Null(transferredLock.BookingHoldId);
+        Assert.Equal(db.Reservations.IgnoreQueryFilters().Single().Id, transferredLock.ReservationId);
     }
 
     [Fact]
@@ -149,6 +163,11 @@ public class ReservationsControllerTests
         Assert.IsType<OkObjectResult>(booked.Result);
         Assert.True((await db.BookingHolds.IgnoreQueryFilters().SingleAsync()).IsConvertedToReservation);
         Assert.Single(db.Reservations.IgnoreQueryFilters());
+        Assert.All(db.RoomDateLocks.IgnoreQueryFilters(), item =>
+        {
+            Assert.Null(item.BookingHoldId);
+            Assert.Equal(db.Reservations.IgnoreQueryFilters().Single().Id, item.ReservationId);
+        });
     }
 
     [Fact]

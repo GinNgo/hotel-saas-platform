@@ -171,6 +171,9 @@ public class FrontDeskController : ControllerBase
 
         reservation.Status = ReservationStatus.CheckedOut;
         reservation.ActualCheckOutUtc = DateTime.UtcNow;
+        var dateLocks = await _context.RoomDateLocks.IgnoreQueryFilters()
+            .Where(item => item.ReservationId == reservation.Id).ToListAsync();
+        _context.RoomDateLocks.RemoveRange(dateLocks);
         await _context.SaveChangesAsync();
 
         return Ok(Result.Success($"Check-out thành công cho khách {reservation.GuestFullName}."));

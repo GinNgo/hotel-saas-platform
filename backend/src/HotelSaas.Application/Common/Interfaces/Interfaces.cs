@@ -40,6 +40,7 @@ public interface IApplicationDbContext
     DbSet<Room> Rooms { get; }
     DbSet<RoomImage> RoomImages { get; }
     DbSet<BookingHold> BookingHolds { get; }
+    DbSet<RoomDateLock> RoomDateLocks { get; }
     DbSet<Reservation> Reservations { get; }
     DbSet<ReservationDetail> ReservationDetails { get; }
     DbSet<Folio> Folios { get; }

@@ -20,7 +20,7 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
 
 - [ ] **Giai Đoạn 4: Trang Đặt Phòng & Thanh Toán VNPay Sandbox (Checkout Flow)**
   - [ ] 4.1 Dựng màn hình Checkout 1 trang với đồng hồ đếm ngược 15:00 giữ chỗ.
-  - [ ] 4.2 Móc API `POST /api/reservations/hold` và `POST /api/reservations/confirm`.
+  - [x] 4.2 Móc API `POST /api/reservations/hold` và `POST /api/reservations/confirm`; khóa tồn kho bằng `RoomDateLock` unique theo phòng/ngày.
   - [x] 4.3 Kết nối nút thanh toán VNPay QR Code sang Cổng Sandbox và xử lý trang Callback kết quả.
   - [x] 4.4 Tách IPN server-to-server authoritative khỏi redirect callback; callback không thay đổi dữ liệu.
 
@@ -37,4 +37,5 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
 
 - [ ] **Giai Đoạn 7: Kiểm Thử E2E & Nghiệm Thu Đồ Án**
   - [ ] 7.1 Kiểm thử E2E luồng người dùng từ Tìm phòng $	o$ Giữ chỗ 15p $	o$ VNPay $	o$ Lễ tân Check-in $	o$ Folio $	o$ Check-out.
+  - [x] 7.3 Thêm relational concurrency test và k6 load scenario cho luồng hold chống overbooking.
   - [ ] 7.2 Hoàn thiện báo cáo Đồ án Tốt nghiệp và xuất tài liệu hướng dẫn vận hành.

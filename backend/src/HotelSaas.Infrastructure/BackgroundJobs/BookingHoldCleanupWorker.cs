@@ -40,6 +40,14 @@ public class BookingHoldCleanupWorker : BackgroundService
                 {
                     hold.IsReleased = true;
                 }
+                var expiredHoldIds = expiredHolds.Select(hold => hold.Id).ToList();
+                if (expiredHoldIds.Count > 0)
+                {
+                    var locks = await db.RoomDateLocks.IgnoreQueryFilters()
+                        .Where(item => item.BookingHoldId.HasValue && expiredHoldIds.Contains(item.BookingHoldId.Value))
+                        .ToListAsync(stoppingToken);
+                    db.RoomDateLocks.RemoveRange(locks);
+                }
 
                 var unpaidReservations = await db.Reservations
                     .IgnoreQueryFilters()
@@ -48,7 +56,16 @@ public class BookingHoldCleanupWorker : BackgroundService
                         r.CreatedAtUtc.AddMinutes(15) <= now)
                     .ToListAsync(stoppingToken);
 
-                foreach (var res in unpaidReservations) ReservationPaymentLifecycle.ExpireIfOverdue(res, now);
+                var expiredReservationIds = new List<Guid>();
+                foreach (var res in unpaidReservations)
+                    if (ReservationPaymentLifecycle.ExpireIfOverdue(res, now)) expiredReservationIds.Add(res.Id);
+                if (expiredReservationIds.Count > 0)
+                {
+                    var reservationLocks = await db.RoomDateLocks.IgnoreQueryFilters()
+                        .Where(item => item.ReservationId.HasValue && expiredReservationIds.Contains(item.ReservationId.Value))
+                        .ToListAsync(stoppingToken);
+                    db.RoomDateLocks.RemoveRange(reservationLocks);
+                }
 
                 if (expiredHolds.Any() || unpaidReservations.Any())
                 {
