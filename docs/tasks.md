@@ -25,12 +25,14 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
   - [x] 4.4 Tách IPN server-to-server authoritative khỏi redirect callback; callback không thay đổi dữ liệu.
 
 - [ ] **Giai Đoạn 5: Portal Quản Trị Khách Sạn & Lễ Tân (PMS Extranet)**
+  - Ghi nhận audit (2026-08-21): backend đã có các controller/test cho check-in, folio, check-out, housekeeping và realtime; cần bổ sung nghiệm thu UI trên môi trường backend thật và đối chiếu feature-gating Basic/Pro.
   - [ ] 5.1 Dựng Sơ đồ ma trận phòng (Room Grid) với mã màu trạng thái: Xanh (Clean), Vàng (Dirty), Đỏ (Occupied).
   - [ ] 5.2 Móc API Lễ tân Check-in (Gán số phòng vật lý 101, 102).
   - [ ] 5.3 Móc API Ghi nhận chi phí Minibar/Giặt ủi vào Folio và Check-out quyết toán.
   - [ ] 5.4 Kiểm tra phân tầng gói cước: Hiển thị cảnh báo nâng cấp gói nếu cơ sở dùng gói Basic cố vào Folio.
 
 - [ ] **Giai Đoạn 6: Portal Quản Trị Sàn SaaS (SuperAdmin Portal)**
+  - Ghi nhận audit (2026-08-21): đã có API/controller/test cho tenant, subscription và platform analytics; checklist UI chưa có bằng chứng E2E đủ cho duyệt/kích hoạt và nâng/hạ gói.
   - [ ] 6.1 Dựng màn hình danh sách cơ sở, nút duyệt/kích hoạt tài khoản.
   - [ ] 6.2 Dựng form Nâng/Hạ gói dịch vụ SaaS (`Basic`, `Pro`, `Enterprise`).
   - [ ] 6.3 Móc API `GET /api/analytics/platform-overview` hiển thị biểu đồ doanh thu toàn sàn.
@@ -38,7 +40,8 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
 - [ ] **Giai Đoạn 7: Kiểm Thử E2E & Nghiệm Thu Đồ Án**
   - [ ] 7.1 Kiểm thử E2E luồng người dùng từ Tìm phòng -> Giữ chỗ 15p -> VNPay -> Lễ tân Check-in -> Folio -> Check-out.
     - [x] Gate smoke chạy hành trình tạo booking + payment idempotency và check-in -> folio -> thanh toán nhiều lần -> check-out -> hóa đơn bất biến.
-    - [ ] Ghép search/hold/VNPay và PMS thành một journey liên tục dùng chung reservation identity trên môi trường tích hợp.
+  - [ ] Ghép search/hold/VNPay và PMS thành một journey liên tục dùng chung reservation identity trên môi trường tích hợp.
+    - Audit hiện tại: các gate smoke đang kiểm tra booking/payment và PMS bằng các fixture riêng; chưa được tính là journey tích hợp liên tục.
   - [x] 7.3 Thêm relational concurrency test và k6 load scenario cho luồng hold chống overbooking.
   - [x] 7.4 Thêm Playwright visual regression gate desktop/mobile với reduced-motion và baseline Liquid Glass.
   - [ ] 7.2 Hoàn thiện báo cáo Đồ án Tốt nghiệp và xuất tài liệu hướng dẫn vận hành.
