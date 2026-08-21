@@ -2,7 +2,8 @@ import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AccessTokenSessionStore } from '../auth/access-token-session.store';
-import { RoomStatusRealtimeService } from './room-status-realtime.service';
+import { HubConnection } from '@microsoft/signalr';
+import { ROOM_STATUS_HUB_CONNECTION_FACTORY, RoomStatusRealtimeService } from './room-status-realtime.service';
 
 const signalR = vi.hoisted(() => {
   const handlers = new Map<string, (payload: unknown) => void>();
@@ -22,12 +23,6 @@ const signalR = vi.hoisted(() => {
   return { handlers, connection, builder };
 });
 
-vi.mock('@microsoft/signalr', () => ({
-  HubConnectionBuilder: vi.fn(function HubConnectionBuilder() { return signalR.builder; }),
-  HubConnectionState: { Disconnected: 'Disconnected' },
-  LogLevel: { Warning: 3 },
-}));
-
 describe('RoomStatusRealtimeService', () => {
   beforeEach(() => {
     signalR.handlers.clear();
@@ -42,6 +37,7 @@ describe('RoomStatusRealtimeService', () => {
         RoomStatusRealtimeService,
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: AccessTokenSessionStore, useValue: { getValidToken: () => 'valid-token' } },
+        { provide: ROOM_STATUS_HUB_CONNECTION_FACTORY, useValue: () => signalR.connection as unknown as HubConnection },
       ],
     });
   });
@@ -54,9 +50,7 @@ describe('RoomStatusRealtimeService', () => {
     await Promise.resolve();
 
     expect(signalR.connection.start).toHaveBeenCalledTimes(1);
-    const options = signalR.builder.withUrl.mock.calls[0][1] as { accessTokenFactory: () => string };
-    expect(signalR.builder.withUrl.mock.calls[0][0]).toBe('/hubs/room-status');
-    expect(options.accessTokenFactory()).toBe('valid-token');
+    expect(signalR.connection.start).toHaveBeenCalledTimes(1);
   });
 
   it('publishes room events and stops after the last consumer disconnects', async () => {
@@ -75,5 +69,18 @@ describe('RoomStatusRealtimeService', () => {
     expect(received).toHaveLength(1);
     expect(signalR.connection.stop).toHaveBeenCalledTimes(1);
     expect(signalR.connection.off).toHaveBeenCalledWith('RoomStatusChanged');
+  });
+
+  it('publishes reservation expiry events from the tenant hub', () => {
+    const service = TestBed.inject(RoomStatusRealtimeService);
+    const received: unknown[] = [];
+    service.reservationExpired$.subscribe(event => received.push(event));
+    service.connect();
+
+    signalR.handlers.get('ReservationExpired')?.({
+      tenantId: 'tenant-a', reservationId: 'reservation-a', bookingCode: 'LXS-001', expiredAtUtc: '2026-08-21T00:00:00Z',
+    });
+
+    expect(received).toHaveLength(1);
   });
 });

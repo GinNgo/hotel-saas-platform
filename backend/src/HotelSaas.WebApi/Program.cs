@@ -172,6 +172,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
+builder.Services.AddScoped<IReservationRealtimePublisher, ReservationRealtimePublisher>();
 
 var app = builder.Build();
 

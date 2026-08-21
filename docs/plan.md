@@ -61,6 +61,11 @@ hotel-saas-platform/backend/
 
 - `ApplicationDbContext` tự động gắn query filter bằng reflection cho mọi entity triển khai `ITenantScopedEntity`.
 - Metadata test bắt buộc mọi tenant-scoped entity có filter; isolation test xác nhận `RoomDateLock` mới không đọc chéo tenant.
+
+### Realtime vận hành
+
+- `RoomStatusChanged` và `ReservationExpired` chỉ được publish vào SignalR group `tenant:{tenantId}`.
+- Worker chỉ publish expiration sau khi transaction cập nhật reservation và giải phóng date lock đã lưu thành công.
 | `/api/frontdesk/check-in` | `POST` | Receptionist| Check-in gán phòng vật lý (chỉ phòng `Clean`) |
 | `/api/frontdesk/folio/add-item` | `POST` | Receptionist| Ghi nhận chi phí dịch vụ vào Folio (Khóa nếu gói Basic) |
 | `/api/frontdesk/check-out` | `POST` | Receptionist| Quyết toán số dư, đóng Folio, đổi phòng sang `Dirty` |

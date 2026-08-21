@@ -29,6 +29,7 @@ public class BookingHoldCleanupWorker : BackgroundService
             {
                 using var scope = _serviceProvider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+                var realtime = scope.ServiceProvider.GetService<IReservationRealtimePublisher>();
                 var now = DateTime.UtcNow;
 
                 var expiredHolds = await db.BookingHolds
@@ -70,6 +71,9 @@ public class BookingHoldCleanupWorker : BackgroundService
                 if (expiredHolds.Any() || unpaidReservations.Any())
                 {
                     await db.SaveChangesAsync(stoppingToken);
+                    if (realtime != null)
+                        foreach (var reservation in unpaidReservations.Where(item => expiredReservationIds.Contains(item.Id)))
+                            await realtime.PublishExpiredAsync(reservation.TenantId, reservation.Id, reservation.BookingCode, stoppingToken);
                     _logger.LogInformation("Released {HoldCount} holds and cancelled {ResCount} unpaid bookings.", expiredHolds.Count, unpaidReservations.Count);
                 }
             }

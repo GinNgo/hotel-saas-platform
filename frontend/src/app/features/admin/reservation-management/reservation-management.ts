@@ -21,6 +21,7 @@ import { ReservationCheckoutComponent } from './reservation-checkout.component';
 import { ActionCode, FunctionCode, PermissionService } from '../../../core/services/permission.service';
 import { Observable, finalize, fromEvent, merge, switchMap, timer } from 'rxjs';
 import { FormsModule } from '@angular/forms';
+import { RoomStatusRealtimeService } from '../../../core/services/room-status-realtime.service';
 
 @Component({
   selector: 'app-reservation-management',
@@ -62,6 +63,7 @@ export class ReservationManagement implements OnInit {
   cancelPendingId: string | number | null = null;
   noShowPendingId: string | number | null = null;
   readonly destroyRef = inject(DestroyRef);
+  private readonly realtime = inject(RoomStatusRealtimeService);
   readonly document = inject(DOCUMENT);
   syncing = false;
   syncWarning = '';
@@ -81,6 +83,11 @@ export class ReservationManagement implements OnInit {
     this.statusFilter = (this.route.snapshot.queryParamMap.get('status') || '').trim().toUpperCase();
     this.loadReservations();
     this.startBackgroundRefresh();
+    this.realtime.reservationExpired$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(event => {
+      if (this.reservations.some(item => String(item.id) === String(event.reservationId))) this.loadReservations();
+    });
+    this.realtime.connect();
+    this.destroyRef.onDestroy(() => this.realtime.disconnect());
   }
 
   loadReservations() {

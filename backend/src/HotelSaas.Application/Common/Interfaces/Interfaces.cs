@@ -77,6 +77,11 @@ public interface IVnPayService
     (bool IsValidSignature, bool IsSuccess, string TransactionNo, string ResponseCode) ProcessIpn(IDictionary<string, string> queryParams, string? customHashSecret = null);
 }
 
+public interface IReservationRealtimePublisher
+{
+    Task PublishExpiredAsync(Guid tenantId, Guid reservationId, string bookingCode, CancellationToken cancellationToken = default);
+}
+
 public interface IEmailDeliveryService
 {
     bool IsConfigured { get; }
