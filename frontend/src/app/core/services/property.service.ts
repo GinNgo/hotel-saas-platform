@@ -12,6 +12,7 @@ export interface AdminProperty extends Hotel {
   operationStatus?: string;
   taxRatePercent?: number;
   serviceFeeRatePercent?: number;
+  subscriptionTier?: 'Basic' | 'Pro' | 'Enterprise';
 }
 
 export interface PropertyLocation {
@@ -116,5 +117,9 @@ export class PropertyService {
 
   rejectProperty(id: string | number): Observable<AdminProperty> {
     return this.http.post<AdminProperty>(`${this.apiUrl}/${id}/reject`, {});
+  }
+
+  updateSubscriptionTier(id: string | number, newTier: 'Basic' | 'Pro' | 'Enterprise'): Observable<{ succeeded: boolean; message: string }> {
+    return this.http.put<{ succeeded: boolean; message: string }>(`${environment.apiUrl}/tenants/${id}/subscription-tier`, { newTier });
   }
 }

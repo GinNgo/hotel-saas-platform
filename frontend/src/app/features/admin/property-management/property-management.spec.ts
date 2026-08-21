@@ -128,4 +128,29 @@ describe('PropertyManagementComponent', () => {
     expect(component.properties[0].taxRatePercent).toBe(10);
     fixture.destroy();
   });
+
+  it('approves a pending property and updates its SaaS tier authoritatively', () => {
+    const fixture = TestBed.createComponent(PropertyManagementComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+    const property = { id: 'hotel-1', name: 'LuxeStay', status: 'PENDING', approvalStatus: 'PENDING_APPROVAL', subscriptionTier: 'Basic' } as any;
+    http.expectOne(`${environment.apiUrl}/v1/hotels`).flush([property]);
+    http.expectOne(`${environment.apiUrl}/public/locations/provinces`).flush([]);
+
+    component.approve(property);
+    http.expectOne({ method: 'POST', url: `${environment.apiUrl}/v1/hotels/hotel-1/approve` }).flush({ ...property, status: 'ACTIVE', approvalStatus: 'APPROVED' });
+    http.expectOne(`${environment.apiUrl}/v1/hotels`).flush([{ ...property, status: 'ACTIVE', approvalStatus: 'APPROVED' }]);
+
+    component.openSubscription(property);
+    component.selectedSubscriptionTier = 'Pro';
+    component.saveSubscription();
+    const tier = http.expectOne({ method: 'PUT', url: `${environment.apiUrl}/tenants/hotel-1/subscription-tier` });
+    expect(tier.request.body).toEqual({ newTier: 'Pro' });
+    tier.flush({ succeeded: true, message: 'Đã cập nhật gói.' });
+    fixture.detectChanges();
+
+    expect(property.subscriptionTier).toBe('Pro');
+    expect(component.subscriptionDialogVisible).toBe(false);
+    fixture.destroy();
+  });
 });

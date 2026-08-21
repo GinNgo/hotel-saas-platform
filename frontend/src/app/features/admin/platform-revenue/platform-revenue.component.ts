@@ -21,6 +21,7 @@ import {
   RevenueTransactionRow,
 } from '../../../core/services/revenue-report.service';
 import { FeedbackStateComponent } from '../../../shared/components/feedback-state/feedback-state.component';
+import { AnalyticsService, PlatformOverview } from '../../../core/services/analytics';
 
 type ExportState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -34,9 +35,12 @@ type ExportState = 'idle' | 'loading' | 'success' | 'error';
 })
 export class PlatformRevenueComponent implements OnInit {
   private readonly reportService = inject(RevenueReportService);
+  private readonly analyticsService = inject(AnalyticsService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly report = signal<RevenueReportResult | null>(null);
+  readonly platformOverview = signal<PlatformOverview | null>(null);
+  readonly overviewError = signal('');
   readonly loading = signal(false);
   readonly errorMessage = signal('');
   readonly exportState = signal<ExportState>('idle');
@@ -51,6 +55,7 @@ export class PlatformRevenueComponent implements OnInit {
   planCode = '';
 
   ngOnInit(): void {
+    this.loadPlatformOverview();
     this.loadReport();
   }
 
@@ -156,6 +161,19 @@ export class PlatformRevenueComponent implements OnInit {
           this.errorMessage.set((error.error as { message?: string } | null)?.message || 'Không thể tải báo cáo Platform Billing.');
         },
       });
+  }
+
+  retryPlatformOverview(): void { this.loadPlatformOverview(); }
+
+  private loadPlatformOverview(): void {
+    this.overviewError.set('');
+    this.analyticsService.getPlatformOverview().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: overview => this.platformOverview.set(overview),
+      error: () => {
+        this.platformOverview.set(null);
+        this.overviewError.set('Không thể tải tổng quan toàn sàn.');
+      },
+    });
   }
 
   private filters(): PlatformRevenueReportFilters {

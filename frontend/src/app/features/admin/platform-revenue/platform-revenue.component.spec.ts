@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { RevenueReportResult, RevenueReportService } from '../../../core/services/revenue-report.service';
 import { PlatformRevenueComponent } from './platform-revenue.component';
+import { AnalyticsService } from '../../../core/services/analytics';
 
 const reportFixture: RevenueReportResult = {
   context: 'PLATFORM_BILLING',
@@ -71,6 +72,9 @@ describe('PlatformRevenueComponent', () => {
           getPlatformRevenue: () => of(reportFixture),
           exportPlatformRevenue: () => throwError(() => new HttpErrorResponse({ status: 404, error: { message: 'Export unavailable' } })),
         },
+      }, {
+        provide: AnalyticsService,
+        useValue: { getPlatformOverview: () => of({ totalTenants: 12, activeTenants: 9, totalBookings: 240, grossMerchandiseValue: 850000000 }) },
       }],
     }).compileComponents();
 
@@ -84,6 +88,8 @@ describe('PlatformRevenueComponent', () => {
     expect(text).toContain('Phạm vi hệ thống');
     expect(text).toContain('PLAT-1');
     expect(text).toContain('CSV');
+    expect(text).toContain('GMV toàn sàn');
+    expect(text).toContain('850.000.000');
 
     component.export('PDF');
     await fixture.whenStable();

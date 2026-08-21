@@ -15,6 +15,7 @@ export default defineConfig({
     'admin-core-management.spec.ts',
     'room-type-image-lifecycle.spec.ts',
     'ai-approval-inbox.spec.ts',
+    'platform-admin-workflows.spec.ts',
   ],
   retries: 0,
   use: { ...baseConfig.use, baseURL: smokeUrl },

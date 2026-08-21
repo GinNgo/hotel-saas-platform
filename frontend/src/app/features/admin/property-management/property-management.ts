@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { finalize, timeout } from 'rxjs/operators';
 import { MessageService } from 'primeng/api';
@@ -22,6 +22,7 @@ import {
 } from '../../../core/services/property.service';
 
 type PropertyStatus = 'DRAFT' | 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'REJECTED';
+type SubscriptionTier = 'Basic' | 'Pro' | 'Enterprise';
 
 @Component({
   selector: 'app-property-management',
@@ -29,6 +30,7 @@ type PropertyStatus = 'DRAFT' | 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'REJECTED';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     TableModule,
     ButtonModule,
     ToastModule,
@@ -63,11 +65,22 @@ export class PropertyManagementComponent implements OnInit {
   canCreate = false;
   canApprove = false;
   canUpdate = false;
+  canManageSubscription = false;
   formError = '';
   pricingDialogVisible = false;
   pricingSaving = false;
   pricingError = '';
   pricingProperty: AdminProperty | null = null;
+  subscriptionDialogVisible = false;
+  subscriptionSaving = false;
+  subscriptionError = '';
+  subscriptionProperty: AdminProperty | null = null;
+  selectedSubscriptionTier: SubscriptionTier = 'Basic';
+  readonly subscriptionTiers: Array<{ label: string; value: SubscriptionTier; description: string }> = [
+    { label: 'Basic', value: 'Basic', description: 'Vận hành cơ bản, không có folio dịch vụ nâng cao.' },
+    { label: 'Pro', value: 'Pro', description: 'Folio dịch vụ, vận hành và báo cáo nâng cao.' },
+    { label: 'Enterprise', value: 'Enterprise', description: 'Hạn mức lớn nhất cho chuỗi và đội ngũ mở rộng.' },
+  ];
 
   readonly pricingForm = this.formBuilder.nonNullable.group({
     taxRatePercent: [0, [Validators.required, Validators.min(0), Validators.max(30)]],
@@ -112,6 +125,7 @@ export class PropertyManagementComponent implements OnInit {
     this.canCreate = this.permissions.hasPermission(FunctionCode.HOTEL, ActionCode.CREATE);
     this.canUpdate = this.permissions.hasPermission(FunctionCode.HOTEL, ActionCode.UPDATE);
     this.canApprove = this.permissions.hasPermission(FunctionCode.HOTEL, ActionCode.APPROVE);
+    this.canManageSubscription = this.permissions.hasPermission(FunctionCode.PLATFORM_BILLING, ActionCode.UPDATE);
     this.isAdmin = this.canCreate;
     this.canManagePricing = this.canUpdate;
     this.loadProperties();
@@ -339,6 +353,42 @@ export class PropertyManagementComponent implements OnInit {
   isInvalid(controlName: keyof typeof this.form.controls): boolean {
     const control = this.form.controls[controlName];
     return control.invalid && (control.dirty || control.touched);
+  }
+
+  openSubscription(property: AdminProperty): void {
+    if (!this.canManageSubscription) return;
+    this.subscriptionProperty = property;
+    this.selectedSubscriptionTier = property.subscriptionTier || 'Basic';
+    this.subscriptionError = '';
+    this.subscriptionDialogVisible = true;
+  }
+
+  closeSubscription(): void {
+    if (this.subscriptionSaving) return;
+    this.subscriptionDialogVisible = false;
+    this.subscriptionProperty = null;
+    this.subscriptionError = '';
+  }
+
+  saveSubscription(): void {
+    const property = this.subscriptionProperty;
+    if (!property || this.subscriptionSaving || !this.canManageSubscription) return;
+    this.subscriptionSaving = true;
+    this.subscriptionError = '';
+    this.propertyService.updateSubscriptionTier(property.id, this.selectedSubscriptionTier).pipe(
+      timeout(10000),
+      finalize(() => { this.subscriptionSaving = false; this.cdr.detectChanges(); }),
+    ).subscribe({
+      next: result => {
+        property.subscriptionTier = this.selectedSubscriptionTier;
+        this.messageService.add({ severity: 'success', summary: 'Đã cập nhật gói', detail: result.message || `Cơ sở đã chuyển sang gói ${this.selectedSubscriptionTier}.` });
+        this.subscriptionDialogVisible = false;
+        this.subscriptionProperty = null;
+      },
+      error: error => {
+        this.subscriptionError = error?.error?.message || 'Không thể cập nhật gói dịch vụ.';
+      },
+    });
   }
 
   openPricingSettings(property: AdminProperty): void {

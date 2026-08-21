@@ -8,6 +8,16 @@
     <div class="context-lock"><span class="material-symbols-outlined" aria-hidden="true">verified_user</span><div><strong>Phạm vi hệ thống</strong><small>Không bao gồm doanh thu đặt phòng của cơ sở.</small></div></div>
   </header>
 
+  @if (platformOverview(); as overview) {
+    <section class="marketplace-overview" aria-label="Tổng quan toàn sàn">
+      <article><small>Tổng cơ sở</small><strong>{{ overview.totalTenants }}</strong><span>{{ overview.activeTenants }} đang hoạt động</span></article>
+      <article><small>Tổng booking</small><strong>{{ overview.totalBookings }}</strong><span>Toàn bộ cơ sở trên nền tảng</span></article>
+      <article class="gmv"><small>GMV toàn sàn</small><strong>{{ formatMoney(overview.grossMerchandiseValue) }}</strong><span>Không đồng nhất với doanh thu SaaS bên dưới</span></article>
+    </section>
+  } @else if (overviewError()) {
+    <div class="overview-error" role="alert"><span>{{ overviewError() }}</span><button type="button" (click)="retryPlatformOverview()">Thử lại</button></div>
+  }
+
   <form class="report-filters" (ngSubmit)="applyFilters()" aria-label="Bộ lọc doanh thu nền tảng">
     <div class="filter-grid">
       <label><span>Từ ngày</span><input type="date" name="fromDate" [(ngModel)]="fromDate" required /></label>

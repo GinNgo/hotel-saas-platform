@@ -33,9 +33,9 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
 
 - [ ] **Giai Đoạn 6: Portal Quản Trị Sàn SaaS (SuperAdmin Portal)**
   - Ghi nhận audit (2026-08-21): đã có API/controller/test cho tenant, subscription và platform analytics; checklist UI chưa có bằng chứng E2E đủ cho duyệt/kích hoạt và nâng/hạ gói.
-  - [ ] 6.1 Dựng màn hình danh sách cơ sở, nút duyệt/kích hoạt tài khoản.
-  - [ ] 6.2 Dựng form Nâng/Hạ gói dịch vụ SaaS (`Basic`, `Pro`, `Enterprise`).
-  - [ ] 6.3 Móc API `GET /api/analytics/platform-overview` hiển thị biểu đồ doanh thu toàn sàn.
+  - [x] 6.1 Dựng màn hình danh sách cơ sở, nút duyệt/từ chối authoritative và cập nhật trạng thái sau thao tác.
+  - [x] 6.2 Dựng form Nâng/Hạ gói SaaS (`Basic`, `Pro`, `Enterprise`) có permission gate, loading/error và cập nhật row tại chỗ.
+  - [x] 6.3 Móc API `GET /api/analytics/platform-overview` hiển thị KPI GMV/booking/cơ sở toàn sàn, tách rõ khỏi doanh thu SaaS và breakdown Platform Billing.
 
 - [ ] **Giai Đoạn 7: Kiểm Thử E2E & Nghiệm Thu Đồ Án**
   - [ ] 7.1 Kiểm thử E2E luồng người dùng từ Tìm phòng -> Giữ chỗ 15p -> VNPay -> Lễ tân Check-in -> Folio -> Check-out.

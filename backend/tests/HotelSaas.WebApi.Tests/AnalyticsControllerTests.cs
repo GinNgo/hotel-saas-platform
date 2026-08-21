@@ -13,6 +13,29 @@ namespace HotelSaas.WebApi.Tests;
 public class AnalyticsControllerTests
 {
     [Fact]
+    public async Task Platform_overview_aggregates_tenants_bookings_and_gmv_without_property_detail()
+    {
+        var tenantService = new CurrentTenantService();
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+        await using var db = new ApplicationDbContext(options, tenantService);
+        var active = new Tenant { Name = "Active", Code = "ACTIVE", Slug = "active", Address = "1 Test", City = "Hue", Status = TenantStatus.Active };
+        var pending = new Tenant { Name = "Pending", Code = "PENDING", Slug = "pending", Address = "2 Test", City = "Hue", Status = TenantStatus.PendingApproval };
+        db.AddRange(active, pending,
+            new Reservation { TenantId = active.Id, BookingCode = "PLAT-1", GuestFullName = "Guest", GuestEmail = "g1@example.com", GuestPhoneNumber = "0901", CheckInDate = DateOnly.FromDateTime(DateTime.UtcNow), CheckOutDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)), Status = ReservationStatus.Confirmed, TotalAmount = 2_000_000 },
+            new Reservation { TenantId = pending.Id, BookingCode = "PLAT-2", GuestFullName = "Guest", GuestEmail = "g2@example.com", GuestPhoneNumber = "0902", CheckInDate = DateOnly.FromDateTime(DateTime.UtcNow), CheckOutDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)), Status = ReservationStatus.Cancelled, TotalAmount = 9_000_000 });
+        await db.SaveChangesAsync();
+
+        var result = await new AnalyticsController(db, tenantService).GetPlatformOverview();
+
+        var envelope = JsonSerializer.SerializeToElement(Assert.IsType<OkObjectResult>(result.Result).Value);
+        var overview = envelope.GetProperty("Data");
+        Assert.Equal(2, overview.GetProperty("TotalTenants").GetInt32());
+        Assert.Equal(1, overview.GetProperty("ActiveTenants").GetInt32());
+        Assert.Equal(2, overview.GetProperty("TotalBookings").GetInt32());
+        Assert.Equal(2_000_000, overview.GetProperty("GrossMerchandiseValue").GetDecimal());
+    }
+
+    [Fact]
     public async Task Dashboard_returns_real_seven_day_room_revenue_and_occupancy()
     {
         var tenant = new Tenant { Name = "Analytics Hotel", Code = "ANALYTICS", Slug = "analytics", Address = "1 Test", City = "Hue", Status = TenantStatus.Active };
