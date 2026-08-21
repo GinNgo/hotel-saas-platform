@@ -21,7 +21,8 @@ Dưới đây là danh sách công việc đập đi xây lại từng bước t
 - [ ] **Giai Đoạn 4: Trang Đặt Phòng & Thanh Toán VNPay Sandbox (Checkout Flow)**
   - [ ] 4.1 Dựng màn hình Checkout 1 trang với đồng hồ đếm ngược 15:00 giữ chỗ.
   - [ ] 4.2 Móc API `POST /api/reservations/hold` và `POST /api/reservations/confirm`.
-  - [ ] 4.3 Kết nối nút thanh toán VNPay QR Code sang Cổng Sandbox và xử lý trang Callback kết quả.
+  - [x] 4.3 Kết nối nút thanh toán VNPay QR Code sang Cổng Sandbox và xử lý trang Callback kết quả.
+  - [x] 4.4 Tách IPN server-to-server authoritative khỏi redirect callback; callback không thay đổi dữ liệu.
 
 - [ ] **Giai Đoạn 5: Portal Quản Trị Khách Sạn & Lễ Tân (PMS Extranet)**
   - [ ] 5.1 Dựng Sơ đồ ma trận phòng (Room Grid) với mã màu trạng thái: Xanh (Clean), Vàng (Dirty), Đỏ (Occupied).

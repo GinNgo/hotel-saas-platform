@@ -248,7 +248,7 @@ public class PaymentsControllerTests
     }
 
     [Fact]
-    public async Task Callback_uses_tenant_secret_and_confirms_payment()
+    public async Task Ipn_uses_tenant_secret_and_confirms_payment()
     {
         var (db, reservation) = await SeedReservation();
         await using var context = db;
@@ -256,13 +256,30 @@ public class PaymentsControllerTests
         var gateway = new FakeVnPayService { Result = (true, true, "TXN-001", "00") };
         var controller = Controller(context, gateway, payment.Id);
 
-        var result = await controller.VnPayCallback();
+        var result = await controller.VnPayIpn();
 
-        Assert.IsType<RedirectResult>(result);
+        Assert.IsType<OkObjectResult>(result);
         Assert.Equal("tenant-secret", gateway.ReceivedSecret);
         Assert.Equal(ReservationStatus.Confirmed, reservation.Status);
         Assert.Equal(PaymentStatus.Completed, payment.Status);
         Assert.Single(context.PaymentTransactions.IgnoreQueryFilters());
+    }
+
+    [Fact]
+    public async Task Browser_callback_is_informational_and_does_not_mutate_payment_state()
+    {
+        var (db, reservation) = await SeedReservation();
+        await using var context = db;
+        var payment = await AddPendingPayment(context, reservation);
+        var gateway = new FakeVnPayService { Result = (true, true, "TXN-REDIRECT", "00") };
+        var controller = Controller(context, gateway, payment.Id);
+
+        var result = Assert.IsType<RedirectResult>(await controller.VnPayCallback());
+
+        Assert.Contains("status=PENDING", result.Url);
+        Assert.Equal(PaymentStatus.Pending, payment.Status);
+        Assert.Equal(ReservationStatus.PendingPayment, reservation.Status);
+        Assert.Empty(context.PaymentTransactions.IgnoreQueryFilters());
     }
 
     [Fact]
@@ -274,7 +291,7 @@ public class PaymentsControllerTests
         var gateway = new FakeVnPayService { Result = (true, true, "TXN-WRONG-AMOUNT", "00") };
         var controller = Controller(context, gateway, payment.Id, callbackAmount: payment.Amount - 1);
 
-        await controller.VnPayCallback();
+        await controller.VnPayIpn();
 
         Assert.Equal(ReservationStatus.PendingPayment, reservation.Status);
         Assert.Equal(PaymentStatus.Failed, payment.Status);
@@ -302,7 +319,7 @@ public class PaymentsControllerTests
         var gateway = new FakeVnPayService { Result = (true, true, "TXN-ALREADY-USED", "00") };
         var controller = Controller(context, gateway, payment.Id);
 
-        await controller.VnPayCallback();
+        await controller.VnPayIpn();
 
         Assert.Equal(ReservationStatus.PendingPayment, reservation.Status);
         Assert.Equal(PaymentStatus.Failed, payment.Status);
@@ -312,7 +329,7 @@ public class PaymentsControllerTests
     }
 
     [Fact]
-    public async Task Invalid_signature_does_not_mutate_payment_or_reservation()
+    public async Task Invalid_ipn_signature_returns_97_and_does_not_mutate_payment_or_reservation()
     {
         var (db, reservation) = await SeedReservation();
         await using var context = db;
@@ -320,8 +337,9 @@ public class PaymentsControllerTests
         var gateway = new FakeVnPayService { Result = (false, false, "TXN-TAMPERED", "00") };
         var controller = Controller(context, gateway, payment.Id);
 
-        await controller.VnPayCallback();
+        var result = Assert.IsType<OkObjectResult>(await controller.VnPayIpn());
 
+        Assert.Equal("97", ReadProperty(result.Value, "RspCode"));
         Assert.Equal(ReservationStatus.PendingPayment, reservation.Status);
         Assert.Equal(PaymentStatus.Pending, payment.Status);
         Assert.Empty(context.PaymentTransactions.IgnoreQueryFilters());
@@ -339,9 +357,11 @@ public class PaymentsControllerTests
         var gateway = new FakeVnPayService { Result = (true, true, "TXN-REPLAY", "00") };
         var controller = Controller(context, gateway, payment.Id);
 
-        await controller.VnPayCallback();
-        await controller.VnPayCallback();
+        var first = Assert.IsType<OkObjectResult>(await controller.VnPayIpn());
+        var repeated = Assert.IsType<OkObjectResult>(await controller.VnPayIpn());
 
+        Assert.Equal("00", ReadProperty(first.Value, "RspCode"));
+        Assert.Equal("00", ReadProperty(repeated.Value, "RspCode"));
         Assert.Single(context.PaymentTransactions.IgnoreQueryFilters());
         Assert.Equal(payment.Amount, reservation.Folio.TotalCredits);
     }
@@ -357,7 +377,7 @@ public class PaymentsControllerTests
         var gateway = new FakeVnPayService { Result = (true, true, "TXN-LATE", "00") };
         var controller = Controller(context, gateway, payment.Id);
 
-        await controller.VnPayCallback();
+        await controller.VnPayIpn();
         var response = await controller.GetSession(payment.Id, "guest-booking-key");
         var status = Assert.IsType<PaymentSessionStatusDto>(Assert.IsType<OkObjectResult>(response.Result).Value);
 
@@ -432,6 +452,9 @@ public class PaymentsControllerTests
         if (tenantId.HasValue) claims.Add(new Claim("tenant_id", tenantId.Value.ToString()));
         controller.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
     }
+
+    private static string? ReadProperty(object? value, string propertyName) =>
+        value?.GetType().GetProperty(propertyName)?.GetValue(value)?.ToString();
 
     private static async Task<Payment> AddPendingPayment(ApplicationDbContext db, Reservation reservation)
     {

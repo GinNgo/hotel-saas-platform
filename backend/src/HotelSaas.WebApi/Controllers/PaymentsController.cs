@@ -178,13 +178,46 @@ public class PaymentsController : ControllerBase
 
         var payment = await _context.Payments.IgnoreQueryFilters()
             .Include(p => p.Reservation!).ThenInclude(r => r!.Tenant)
-            .Include(p => p.Reservation!).ThenInclude(r => r!.Folio)
             .FirstOrDefaultAsync(p => p.Id == sessionId && p.Method == PaymentMethod.VNPay);
         if (payment?.Reservation == null) return RedirectToResult(sessionId, "FAILED");
 
-        var (isValidSignature, isSuccess, txnNo, responseCode) = _vnPayService.ProcessIpn(
+        var (isValidSignature, isSuccess, _, _) = _vnPayService.ProcessIpn(
             query, payment.Reservation.Tenant?.CustomVnPayHashSecret);
         if (!isValidSignature) return RedirectToResult(sessionId, "FAILED");
+
+        var amountMatches = TryReadVnPayAmount(query, out var callbackAmount) && callbackAmount == payment.Amount;
+        var merchantMatches = string.IsNullOrWhiteSpace(payment.Reservation.Tenant?.CustomVnPayTmnCode) ||
+            string.Equals(query.GetValueOrDefault("vnp_TmnCode"), payment.Reservation.Tenant.CustomVnPayTmnCode,
+                StringComparison.Ordinal);
+        if (!isSuccess || !amountMatches || !merchantMatches) return RedirectToResult(sessionId, "FAILED");
+
+        // The browser redirect is informational only. VNPay IPN is the authoritative mutation channel.
+        return RedirectToResult(sessionId, payment.Status == PaymentStatus.Completed ? "SUCCEEDED" : "PENDING");
+    }
+
+    [HttpGet("vnpay-ipn")]
+    public async Task<IActionResult> VnPayIpn()
+    {
+        var query = Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString());
+        var result = await ProcessVnPayIpnAsync(query);
+        return Ok(new { RspCode = result.ResponseCode, RspMsg = result.ResponseMessage });
+    }
+
+    private async Task<VnPayIpnResult> ProcessVnPayIpnAsync(Dictionary<string, string> query)
+    {
+        var txnRef = query.GetValueOrDefault("vnp_TxnRef", string.Empty);
+        if (!Guid.TryParse(txnRef, out var sessionId))
+            return new("01", "Order not found");
+
+        var payment = await _context.Payments.IgnoreQueryFilters()
+            .Include(p => p.Reservation!).ThenInclude(r => r!.Tenant)
+            .Include(p => p.Reservation!).ThenInclude(r => r!.Folio)
+            .FirstOrDefaultAsync(p => p.Id == sessionId && p.Method == PaymentMethod.VNPay);
+        if (payment?.Reservation == null) return new("01", "Order not found");
+
+        var (isValidSignature, isSuccess, txnNo, responseCode) = _vnPayService.ProcessIpn(
+            query, payment.Reservation.Tenant?.CustomVnPayHashSecret);
+        if (!isValidSignature) return new("97", "Invalid signature");
 
         var amountMatches = TryReadVnPayAmount(query, out var callbackAmount) && callbackAmount == payment.Amount;
         var merchantMatches = string.IsNullOrWhiteSpace(payment.Reservation.Tenant?.CustomVnPayTmnCode) ||
@@ -241,10 +274,12 @@ public class PaymentsController : ControllerBase
         }
         catch (DbUpdateException) when (callbackAccepted)
         {
-            // The filtered unique index is the final guard when callbacks race with one provider transaction.
-            return RedirectToResult(sessionId, "FAILED");
+            // The filtered unique index is the final guard when concurrent IPNs reuse one provider transaction.
+            return new("02", "Order already confirmed");
         }
-        return RedirectToResult(sessionId, callbackAccepted ? "SUCCEEDED" : "FAILED");
+        if (!amountMatches) return new("04", "Invalid amount");
+        if (!merchantMatches || transactionBelongsToAnotherPayment) return new("99", "Invalid transaction");
+        return new("00", callbackAccepted ? "Confirm success" : "Confirm failure");
     }
 
     private ObjectResult? ValidatePayableReservation(Reservation? reservation)
@@ -324,6 +359,8 @@ public class PaymentsController : ControllerBase
 
     private static string ReadMessage(object? value) =>
         value?.GetType().GetProperty("message")?.GetValue(value)?.ToString() ?? "Không thể tạo phiên thanh toán.";
+
+    private sealed record VnPayIpnResult(string ResponseCode, string ResponseMessage);
 }
 
 public record CreatePaymentSessionRequest(Guid ReservationId, string Provider);

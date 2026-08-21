@@ -48,7 +48,8 @@ hotel-saas-platform/backend/
 | `/api/reservations/hold` | `POST` | Guest | Khóa giữ chỗ 15 phút (chống overbooking) |
 | `/api/reservations/confirm` | `POST` | Guest | Xác nhận thông tin và tạo đơn đặt phòng kèm Folio |
 | `/api/payments/vnpay-url/{id}` | `POST` | Guest | Sinh URL thanh toán VNPay Sandbox chữ ký SHA512 |
-| `/api/payments/vnpay-callback` | `GET` | Public | Xử lý VNPay Callback & IPN xác nhận đơn |
+| `/api/payments/vnpay-callback` | `GET` | Public | Verify redirect từ trình duyệt và điều hướng trang kết quả, không mutation |
+| `/api/payments/vnpay-ipn` | `GET` | VNPay | IPN authoritative: verify chữ ký, amount/merchant, cập nhật payment/reservation idempotent |
 | `/api/frontdesk/check-in` | `POST` | Receptionist| Check-in gán phòng vật lý (chỉ phòng `Clean`) |
 | `/api/frontdesk/folio/add-item` | `POST` | Receptionist| Ghi nhận chi phí dịch vụ vào Folio (Khóa nếu gói Basic) |
 | `/api/frontdesk/check-out` | `POST` | Receptionist| Quyết toán số dư, đóng Folio, đổi phòng sang `Dirty` |
